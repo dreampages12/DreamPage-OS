@@ -1,0 +1,62 @@
+# cloudflared named tunnel for DESKTOP-TIF6H5B.
+#
+# Tunnelen er TRANSPORT, ikke autentisering. Bearer-tokenet kreves uansett hvor
+# kallet kommer fra - se flow/worker/api.py. Cloudflare Access kan legges foran
+# som et ekstra lag; det erstatter ikke tokenet.
+#
+# KUN flow-API-et eksponeres. ComfyUI (8188), n8n (5678), mockup-serveren
+# (8790) og RabbitMQ skal ALDRI ut. Derfor er catch-all 404 den siste regelen,
+# og derfor er ingress skrevet som eksplisitte stier i stedet for en
+# vert-til-port-regel: uten path-filteret ville alt paa porten vaert naabart.
+#
+# UTGAAENDE trafikk trenger ingen tunnel: RabbitMQ over Tailscale, Gelato,
+# Google Drive og Telegram fungerer som i dag. Tunnelen finnes bare for at
+# admin-dashbordet skal naa API-et INN.
+#
+# Se README.md i denne mappa for hvordan den settes opp - og for hvorfor denne
+# filen IKKE er i bruk enda.
+
+tunnel: REPLACE_WITH_TUNNEL_ID
+credentials-file: C:\DreamPage-OS\tunnel\credentials.json
+
+# Ingen ekstra logging av forespoerselinnhold: ordrepayloadene inneholder
+# adresser og e-post.
+loglevel: info
+transport-loglevel: warn
+
+originRequest:
+  connectTimeout: 30s
+  # Et sidebygg kan holde en forespoersel i timer hvis noen poller /api/jobs
+  # gjennom tunnelen. SSE-stroemmen (/api/events) er aapen saa lenge
+  # dashbordet er aapent.
+  noHappyEyeballs: false
+  keepAliveTimeout: 90s
+
+ingress:
+  # --- admin-dashbordet: flow-API-et -------------------------------------
+  - hostname: desktop-tif6h5b.dreampage.store
+    path: ^/api/
+    service: http://127.0.0.1:8765
+
+  # Panelet. Selve siden har ingen data og ingen hemmeligheter; alt innhold
+  # hentes av nettleseren fra /api/ med token.
+  - hostname: desktop-tif6h5b.dreampage.store
+    path: ^/panel$
+    service: http://127.0.0.1:8765
+
+  # Alt annet paa vaart eget vertsnavn -> 404. Uten denne ville en feil i en
+  # senere regel kunne eksponere en annen port.
+  - hostname: desktop-tif6h5b.dreampage.store
+    service: http_status:404
+
+  # --- eksisterende rute, maa beholdes -----------------------------------
+  # admin.dreampage.store -> localhost:3000 kjoerer i dag paa tunnel
+  # d9b1ec20-d7a4-421b-9d56-ba1ce8305aca med --token, altsaa med ingress
+  # styrt fra Cloudflare-dashbordet. Skal den tunnelen konverteres til en
+  # named tunnel med DENNE filen, MAA regelen under vaere med - ellers
+  # forsvinner admin-dashbordet i det tjenesten startes paa nytt.
+  - hostname: admin.dreampage.store
+    service: http://127.0.0.1:3000
+
+  # Global catch-all.
+  - service: http_status:404

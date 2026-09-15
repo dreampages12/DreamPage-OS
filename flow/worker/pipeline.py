@@ -35,6 +35,7 @@ from typing import Callable
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config as flow_config  # noqa: E402
 import steps  # noqa: E402
+import steps_post  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -105,10 +106,71 @@ PAGES_PIPELINE: tuple[Step, ...] = (
          retries=1, timeout_s=300),
 )
 
+# ---------------------------------------------------------------------------
+# FASE 5: hele veien, uten n8n.
+#
+# Rekkefoelgen er hentet fra de faktiske koblingene i workflowen, ikke gjettet.
+# Build Last Page (inne i build_pdfs) MAA komme foer tekstscriptet: den skriver
+# input/blank-back.png, som tekstscriptet leser som siste innerside.
+#
+# Pipelinen stopper ved GELATO-UTKASTET. Godkjenningsloekka i n8n er doed kode
+# - Confirm Gelato Order, Send Telegram Confirmation og Init Approval Poll har
+# ingen inngaaende kobling - og dagens oppfoersel er at et menneske bestiller
+# manuelt. Automatisk bekreftelse her ville sendt boeker til trykk uten at noen
+# hadde sett dem.
+# ---------------------------------------------------------------------------
+FULL_PIPELINE: tuple[Step, ...] = PAGES_PIPELINE + (
+    Step("claim_post_comfy", steps_post.claim_post_comfy,
+         "Skriv .post_comfy_claim.json. Overfloedig naar koeen er serialisert, "
+         "men boten leser den for aa finne en ordre.",
+         retries=1, timeout_s=60),
+
+    Step("wp_book_creating", steps_post.wp_book_creating,
+         "Fortell WooCommerce at boka lages. Sidespor.",
+         retries=1, timeout_s=60, optional=True),
+
+    Step("build_pdfs", steps_post.build_pdfs,
+         "Prepare -> fortsett-side -> tekstscript -> QR-stempel -> Gelato-PDF, "
+         "med de strenge sidetall-guardene (33 samlet, 30/31 innersider).",
+         retries=0, timeout_s=3600, checkpoint=True),
+
+    Step("validate_gelato_files", steps_post.validate_gelato_files,
+         "Filene finnes og har stoerrelse. Logger MB, saa en bok som vokser "
+         "over 100 MB blir synlig foer den blir et mysterium.",
+         retries=0, timeout_s=120),
+
+    Step("upload_and_draft", steps_post.upload_and_draft,
+         "Drive-opplasting + Gelato-UTKAST. Bekrefter ingenting.",
+         retries=2, timeout_s=3600, checkpoint=True),
+
+    Step("auto_merge_multibook", steps_post.auto_merge_multibook,
+         "Flere boeker i samme ordre samles i ett utkast. Sidespor.",
+         retries=0, timeout_s=1800, optional=True),
+
+    Step("telegram_approval", steps_post.telegram_approval,
+         "Varsle operatoeren om at utkastet er klart. Bestillingen gjoeres "
+         "manuelt - det er dagens oppfoersel.",
+         retries=2, timeout_s=120, optional=True),
+
+    Step("wp_quality_check", steps_post.wp_quality_check,
+         "Fortell WooCommerce at boka er til kvalitetssjekk. Sidespor.",
+         retries=1, timeout_s=60, optional=True),
+
+    Step("cleanup_comfy_folder", steps_post.cleanup_comfy_folder,
+         "Slett ordrens comfy-mappe. Kjoeres bare naar det finnes et utkast - "
+         "sidene er det eneste vi ikke kan lage om igjen uten GPU-tid.",
+         retries=0, timeout_s=600, optional=True),
+)
+
 PIPELINES: dict[str, tuple[Step, ...]] = {
+    # Fase 2: flow eier side-loekka, n8n gjoer resten. Dette er den aktive.
     "pages": PAGES_PIPELINE,
+    # Fase 5: flow eier alt fram til Gelato-utkastet. Settes aktiv naar
+    # "pages" er verifisert paa ekte ordre og n8n-workflowen deaktiveres.
+    "full": FULL_PIPELINE,
 }
 
+# Byttes til "full" i fase 5. Én linje, og den er i git.
 ACTIVE = "pages"
 
 

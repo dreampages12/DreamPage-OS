@@ -32,13 +32,13 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from paths import BOOKS, CONFIG  # noqa: E402
+from paths import BOOKS, CONFIG, PANEL  # noqa: E402
 import config as flow_config  # noqa: E402
 import jobs as jobs_mod  # noqa: E402
 import pipeline as pipeline_mod  # noqa: E402
@@ -398,5 +398,23 @@ def create_app(runner=None, consumer=None) -> FastAPI:
         return StreamingResponse(stream(), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache",
                                           "X-Accel-Buffering": "no"})
+
+    # -- panelet ----------------------------------------------------------
+    @app.get("/panel")
+    def panel():
+        """Selve siden, uten auth.
+
+        Den inneholder ingen data og ingen hemmeligheter - bare markup og
+        JavaScript. Hvert datakall den gjoer gaar til /api/* og krever
+        bearer-token, som operatoeren limer inn én gang. En nettleser kan
+        ikke sende en Authorization-header paa en vanlig sidelasting, saa
+        alternativet ville vaert et token i URL-en - og det havner i
+        historikk, logger og Referer-headere.
+        """
+        path = PANEL / "index.html"
+        if not path.is_file():
+            raise HTTPException(404, "panel/index.html finnes ikke")
+        return FileResponse(path, media_type="text/html; charset=utf-8",
+                            headers={"Cache-Control": "no-store"})
 
     return app

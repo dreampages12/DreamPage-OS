@@ -1,0 +1,434 @@
+<!--
+  DreamPage-panelet.
+
+  Holder seg bevisst enkelt. Operatoer-UI er Telegram; panelet skal VISE, ikke
+  duplisere. Ingen fri node-wiring, ingen drag-and-drop, ingen node-type-editor
+  - det er n8n paa nytt, og det er nettopp det vi flykter fra.
+
+  Flow-visningen er en VISNING av pipeline-definisjonen, som allerede finnes
+  som data i flow/worker/pipeline.py. Panelet vet ikke hva et steg gjoer.
+
+  Denne filen inneholder ingen data og ingen hemmeligheter. Alt innhold hentes
+  fra /api/* med bearer-token, som operatoeren limer inn én gang og som ligger
+  i localStorage i denne nettleseren. Derfor kan selve siden serveres uten
+  auth, mens hvert eneste datakall krever token.
+-->
+<!doctype html>
+<meta charset="utf-8">
+<title>DreamPage OS</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #faf9f7; --panel: #fff; --ink: #1b1a19; --muted: #6b6864;
+    --line: #e5e1dc; --accent: #2d6cdf;
+    --ok: #1f8a4c; --run: #2d6cdf; --wait: #8a7a1f; --fail: #c2352b; --idle: #9a958f;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a; --panel: #1f2124; --ink: #ecebe9; --muted: #9b9792;
+      --line: #32353a; --accent: #6ea0ff;
+      --ok: #4cc27f; --run: #6ea0ff; --wait: #d4bd52; --fail: #f0736a; --idle: #6e6b67;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 14px/1.5 -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  header {
+    display: flex; gap: 14px; align-items: baseline; flex-wrap: wrap;
+    padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+    position: sticky; top: 0; z-index: 5;
+  }
+  header h1 { font-size: 16px; margin: 0; font-weight: 650; letter-spacing: -.01em; }
+  .grow { flex: 1; }
+  .muted { color: var(--muted); }
+  .mono { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; }
+  main { padding: 20px; display: grid; gap: 20px; max-width: 1400px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); }
+  section > h2 {
+    font-size: 12px; text-transform: uppercase; letter-spacing: .06em;
+    margin: 0; padding: 12px 16px; border-bottom: 1px solid var(--line);
+    color: var(--muted); font-weight: 650;
+  }
+  .pad { padding: 16px; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; }
+
+  /* helse */
+  .health { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex; gap: 7px; align-items: center;
+    border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
+    background: var(--bg); font-size: 13px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--idle); flex: none; }
+  .dot.ok { background: var(--ok); } .dot.fail { background: var(--fail); }
+  .dot.run { background: var(--run); } .dot.wait { background: var(--wait); }
+
+  /* tabell */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th {
+    text-align: left; font-weight: 600; color: var(--muted); font-size: 11px;
+    text-transform: uppercase; letter-spacing: .05em;
+    padding: 8px 16px; border-bottom: 1px solid var(--line);
+  }
+  td { padding: 9px 16px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover td { background: var(--bg); }
+  .status { font-weight: 600; font-size: 12px; }
+  .status.done { color: var(--ok); } .status.running { color: var(--run); }
+  .status.pending { color: var(--wait); } .status.failed { color: var(--fail); }
+  .status.cancelled { color: var(--idle); }
+  .bar { height: 5px; background: var(--line); border-radius: 3px; overflow: hidden; min-width: 90px; }
+  .bar > i { display: block; height: 100%; background: var(--run); }
+
+  /* flow-visning: bokser og piler */
+  .flow { display: flex; gap: 0; overflow-x: auto; padding: 16px; align-items: stretch; }
+  .step {
+    flex: none; width: 168px; border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px 12px; background: var(--bg); position: relative;
+  }
+  .step.checkpoint { border-color: var(--accent); }
+  .step.off { opacity: .45; border-style: dashed; }
+  .step .name { font-weight: 600; font-size: 12.5px; word-break: break-word; }
+  .step .meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .step .state { font-size: 11px; font-weight: 600; margin-top: 6px; }
+  .arrow {
+    flex: none; width: 26px; display: grid; place-items: center; color: var(--line);
+    font-size: 15px;
+  }
+  .step .tick {
+    position: absolute; top: -8px; right: 8px; font-size: 9px; font-weight: 700;
+    letter-spacing: .04em; background: var(--accent); color: #fff;
+    padding: 1px 6px; border-radius: 999px;
+  }
+
+  button {
+    font: inherit; padding: 5px 11px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--ink); border-radius: 7px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); color: var(--accent); }
+  button:disabled { opacity: .45; cursor: default; }
+  input[type=text], input[type=password] {
+    font: inherit; padding: 6px 10px; border: 1px solid var(--line);
+    border-radius: 7px; background: var(--bg); color: var(--ink); min-width: 320px;
+  }
+  pre {
+    margin: 0; padding: 12px 16px; background: var(--bg); border-radius: 8px;
+    overflow-x: auto; font-size: 12px; max-height: 340px; overflow-y: auto;
+  }
+  dialog {
+    border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+    color: var(--ink); max-width: min(900px, 92vw); width: 100%; padding: 0;
+  }
+  dialog::backdrop { background: #0008; }
+  .banner {
+    padding: 10px 16px; border-radius: 8px; background: color-mix(in srgb, var(--fail) 12%, transparent);
+    border: 1px solid var(--fail); color: var(--fail); font-size: 13px;
+  }
+</style>
+
+<header>
+  <h1>DreamPage OS</h1>
+  <div class="health" id="health"></div>
+  <span class="grow"></span>
+  <span class="muted mono" id="clock"></span>
+  <button id="refresh">Oppdater</button>
+</header>
+
+<main>
+  <div id="setup" hidden>
+    <section><h2>API-token</h2><div class="pad">
+      <p class="muted" style="margin-top:0">
+        Panelet leser alt fra flow-API-et, og hvert kall krever et bearer-token.
+        Ta det fra <span class="mono">config/api.json</span>. Det lagres bare i
+        denne nettleseren.
+      </p>
+      <div class="row" style="align-items:center">
+        <input type="password" id="token" placeholder="bearer-token" autocomplete="off">
+        <button id="save">Lagre</button>
+      </div>
+      <p class="banner" id="setup-error" hidden></p>
+    </div></section>
+  </div>
+
+  <div id="app" hidden>
+    <section>
+      <h2>Aktiv pipeline <span id="wf-name" class="mono"></span></h2>
+      <div class="flow" id="flow"></div>
+      <div class="pad muted" style="padding-top:0;font-size:12px">
+        Blaa ramme = sjekkpunkt: naar steget er ferdig, er arbeidet varig lagret
+        og RabbitMQ-meldingen ackes. Stiplet = avskrudd i
+        <span class="mono">config/flow.json</span>. Klikk et steg for logg og
+        feilmelding for jobben som vises.
+      </div>
+    </section>
+
+    <section>
+      <h2>Koe</h2>
+      <div id="queue" class="pad"></div>
+    </section>
+
+    <section>
+      <h2>Ordre</h2>
+      <div class="pad" style="padding-bottom:0" id="filters"></div>
+      <table><thead><tr>
+        <th>job_key</th><th>bok</th><th>barn</th><th>status</th>
+        <th>steg</th><th>sider</th><th>koelagt</th><th></th>
+      </tr></thead><tbody id="jobs"></tbody></table>
+    </section>
+
+    <section>
+      <h2>Boeker</h2>
+      <div id="books" class="pad"></div>
+    </section>
+  </div>
+</main>
+
+<dialog id="detail">
+  <div style="display:flex;gap:12px;align-items:baseline;padding:14px 16px;border-bottom:1px solid var(--line)">
+    <strong class="mono" id="d-key"></strong>
+    <span class="muted" id="d-sub"></span>
+    <span class="grow"></span>
+    <button id="d-retry">Kjoer paa nytt</button>
+    <button id="d-cancel">Avbryt</button>
+    <button id="d-close">Lukk</button>
+  </div>
+  <div class="pad" id="d-body"></div>
+</dialog>
+
+<script>
+const API = location.origin;
+let token = localStorage.getItem('dp-token') || '';
+let jobsFilter = '';
+let selected = null;
+let timer = null;
+
+const el = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[<>&"]/g, c =>
+  ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+
+async function api(path, options = {}) {
+  const res = await fetch(API + path, {
+    ...options,
+    headers: { 'Authorization': 'Bearer ' + token,
+               'Content-Type': 'application/json', ...(options.headers || {}) },
+  });
+  if (res.status === 401 || res.status === 403) throw new Error('auth');
+  if (!res.ok) throw new Error('HTTP ' + res.status + ': ' + (await res.text()).slice(0, 300));
+  return res.json();
+}
+
+// -- oppsett ---------------------------------------------------------------
+el('save').onclick = async () => {
+  token = el('token').value.trim();
+  try {
+    await api('/api/health');
+    localStorage.setItem('dp-token', token);
+    el('setup').hidden = true; el('app').hidden = false;
+    start();
+  } catch (err) {
+    el('setup-error').hidden = false;
+    el('setup-error').textContent = err.message === 'auth'
+      ? 'Tokenet ble avvist.' : err.message;
+  }
+};
+
+// -- helse -----------------------------------------------------------------
+function chip(label, state, extra) {
+  return `<span class="chip"><i class="dot ${state}"></i>${esc(label)}${
+    extra ? ` <span class="muted mono">${esc(extra)}</span>` : ''}</span>`;
+}
+
+function renderHealth(h) {
+  const w = h.worker || {}, c = h.comfy || {}, mq = h.rabbitmq || {};
+  el('health').innerHTML = [
+    chip('worker', w.alive ? (w.running ? 'run' : 'ok') : 'fail',
+         w.running ? `${w.running} · ${w.running_step || ''}` : 'ledig'),
+    chip('ComfyUI', c.ok ? 'ok' : 'fail', c.version || ''),
+    chip('RabbitMQ', mq.connected ? 'ok' : 'fail',
+         mq.broker_depth != null ? `${mq.broker_depth} i koe` : ''),
+    chip('jobber', (h.jobs?.failed > 0) ? 'fail' : 'ok',
+         `${h.jobs?.running || 0} kjoerer · ${h.jobs?.pending || 0} venter · ${h.jobs?.failed || 0} feilet`),
+  ].join('');
+  el('clock').textContent = (h.at || '').replace('T', ' ').slice(0, 19);
+}
+
+// -- flow-visning ----------------------------------------------------------
+// Tegner pipeline-definisjonen. Naar en jobb er valgt, males stegene med
+// den jobbens faktiske status.
+function renderFlow(wf, job) {
+  el('wf-name').textContent = wf.name;
+  const byName = {};
+  for (const s of (job?.steps || [])) byName[s.name] = s;   // siste forsoek vinner
+  el('flow').innerHTML = wf.steps.map((s, i) => {
+    const run = byName[s.name];
+    let state = '', cls = '';
+    if (run) {
+      state = run.status;
+      cls = run.status === 'done' ? 'done'
+          : run.status === 'running' ? 'running'
+          : run.status === 'retry' ? 'pending' : 'failed';
+    } else if (job) {
+      state = 'ikke naadd'; cls = 'cancelled';
+    }
+    const secs = run?.seconds != null ? `${run.seconds.toFixed(1)} s` : '';
+    return (i ? '<div class="arrow">&rarr;</div>' : '') + `
+      <div class="step ${s.checkpoint ? 'checkpoint' : ''} ${s.enabled ? '' : 'off'}"
+           data-step="${esc(s.name)}" title="${esc(s.description)}">
+        ${s.checkpoint ? '<span class="tick">SJEKKPUNKT</span>' : ''}
+        <div class="name">${esc(s.name)}</div>
+        <div class="meta">retry ${s.retries} · ${s.timeout_s}s${s.optional ? ' · valgfritt' : ''}</div>
+        ${state ? `<div class="state status ${cls}">${esc(state)} ${esc(secs)}</div>` : ''}
+      </div>`;
+  }).join('');
+  for (const node of el('flow').querySelectorAll('.step')) {
+    node.onclick = () => { if (selected) openDetail(selected, node.dataset.step); };
+  }
+}
+
+// -- koe -------------------------------------------------------------------
+function renderQueue(q) {
+  const parts = [];
+  if (q.running) {
+    const p = q.running.progress || {};
+    parts.push(`<div><strong>Kjoerer naa:</strong>
+      <span class="mono">${esc(q.running.job_key)}</span>
+      ${esc(q.running.book_slug || '')} &middot; steg
+      <span class="mono">${esc(q.running.step || '-')}</span>
+      &middot; ${p.done || 0}/${p.total || 0} sider</div>`);
+  } else {
+    parts.push('<div class="muted">Ingen jobb kjoerer.</div>');
+  }
+  if (q.pending?.length) {
+    parts.push('<ol style="margin:10px 0 0;padding-left:20px">' + q.pending.map(p =>
+      `<li><span class="mono">${esc(p.job_key)}</span> ${esc(p.book_slug || '')}</li>`
+    ).join('') + '</ol>');
+  }
+  parts.push(`<div class="muted" style="margin-top:10px;font-size:12px">
+    intern koe ${q.internal_queue_depth ?? '?'} &middot;
+    hos brokeren ${q.broker_depth ?? '?'}</div>`);
+  el('queue').innerHTML = parts.join('');
+}
+
+// -- ordre -----------------------------------------------------------------
+function renderJobs(data) {
+  el('filters').innerHTML = ['', 'running', 'pending', 'failed', 'done', 'cancelled']
+    .map(s => `<button data-f="${s}" ${s === jobsFilter ? 'disabled' : ''}>${
+      s || 'alle'}${data.counts[s] != null ? ` (${data.counts[s]})` : ''}</button>`)
+    .join(' ');
+  for (const b of el('filters').querySelectorAll('button')) {
+    b.onclick = () => { jobsFilter = b.dataset.f; refresh(); };
+  }
+  el('jobs').innerHTML = data.jobs.map(j => {
+    const p = j.progress || {};
+    const pct = p.total ? Math.round(100 * p.done / p.total) : 0;
+    return `<tr class="clickable" data-key="${esc(j.job_key)}">
+      <td class="mono">${esc(j.job_key)}</td>
+      <td>${esc(j.book_slug || '')}</td>
+      <td>${esc(j.child_name || '')}</td>
+      <td><span class="status ${esc(j.status)}">${esc(j.status)}</span></td>
+      <td class="mono muted">${esc(j.step || '')}</td>
+      <td><div class="bar"><i style="width:${pct}%"></i></div>
+          <span class="muted" style="font-size:11px">${p.done || 0}/${p.total || 0}</span></td>
+      <td class="muted mono" style="font-size:11.5px">${esc((j.queued_at || '').replace('T', ' ').slice(0, 16))}</td>
+      <td class="muted" style="max-width:280px">${esc((j.error || '').slice(0, 120))}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="muted">Ingen ordre.</td></tr>';
+  for (const tr of el('jobs').querySelectorAll('tr.clickable')) {
+    tr.onclick = () => openDetail(tr.dataset.key);
+  }
+}
+
+function renderBooks(data) {
+  const bad = data.books.filter(b => !b.buildable);
+  el('books').innerHTML = `
+    <div>${data.buildable} av ${data.count} boeker kan bygges.</div>
+    ${bad.length ? `<div class="banner" style="margin-top:10px">
+      <strong>Ikke byggbare:</strong> ${bad.map(b =>
+        `${esc(b.slug)} (mangler ${esc(b.missing.join('; '))})`).join(' &middot; ')}
+      <div style="margin-top:6px">En ordre paa en slik bok kan ikke fullfoeres.
+      Ordre 1517 stoppet noeyaktig her.</div>
+    </div>` : ''}`;
+}
+
+// -- detaljer --------------------------------------------------------------
+async function openDetail(key, focusStep) {
+  selected = key;
+  const job = await api(`/api/jobs/${encodeURIComponent(key)}?log_lines=300`);
+  el('d-key').textContent = job.job_key;
+  el('d-sub').textContent = `${job.book_slug || ''} · ${job.child_name || ''} · ${job.status}`
+    + (job.permanent ? ' · permanent feil' : '');
+  el('d-retry').disabled = job.status === 'running';
+  el('d-cancel').disabled = ['done', 'cancelled'].includes(job.status);
+  el('d-retry').onclick = () => act(key, 'retry');
+  el('d-cancel').onclick = () => act(key, 'cancel');
+
+  const steps = job.steps.map(s => `<tr>
+      <td class="mono">${esc(s.name)}</td>
+      <td><span class="status ${s.status === 'done' ? 'done' : s.status === 'running' ? 'running' : 'failed'}">${esc(s.status)}</span></td>
+      <td>${s.attempt}</td>
+      <td class="mono">${s.seconds != null ? s.seconds.toFixed(2) + ' s' : ''}</td>
+      <td class="muted">${esc(s.error || '')}</td>
+    </tr>`).join('');
+
+  const lines = (job.log || [])
+    .filter(l => !focusStep || l.step === focusStep || !l.step)
+    .map(l => `${(l.at || '').slice(11, 23)}  ${(l.level || '').padEnd(5)} ${
+      (l.step || '').padEnd(18)} ${l.msg || ''}${
+      l.feil ? '  ' + l.feil : ''}`).join('\n');
+
+  el('d-body').innerHTML = `
+    ${job.error ? `<div class="banner" style="margin-bottom:14px">${esc(job.error)}</div>` : ''}
+    <table><thead><tr><th>steg</th><th>status</th><th>forsoek</th><th>tid</th><th>feil</th></tr></thead>
+    <tbody>${steps}</tbody></table>
+    <h2 style="border:0;padding:16px 0 6px">Logg${focusStep ? ` — ${esc(focusStep)}` : ''}</h2>
+    <pre class="mono">${esc(lines || '(ingen linjer)')}</pre>`;
+  el('detail').showModal();
+}
+
+async function act(key, what) {
+  if (what === 'cancel' && !confirm(`Avbryt ${key}?`)) return;
+  try {
+    await api(`/api/jobs/${encodeURIComponent(key)}/${what}`, { method: 'POST' });
+    el('detail').close();
+    refresh();
+  } catch (err) { alert(err.message); }
+}
+el('d-close').onclick = () => el('detail').close();
+
+// -- oppdatering -----------------------------------------------------------
+async function refresh() {
+  try {
+    const [health, queue, jobs, workflows, books] = await Promise.all([
+      api('/api/health'),
+      api('/api/queue'),
+      api('/api/jobs?limit=60' + (jobsFilter ? '&status=' + jobsFilter : '')),
+      api('/api/workflows'),
+      api('/api/books'),
+    ]);
+    renderHealth(health);
+    renderQueue(queue);
+    renderJobs(jobs);
+    renderBooks(books);
+    const active = workflows.workflows.find(w => w.active) || workflows.workflows[0];
+    // Mal flowen med den jobben som kjoerer, ellers den nyeste.
+    const paint = queue.running?.job_key || jobs.jobs[0]?.job_key;
+    let job = null;
+    if (paint) { try { job = await api(`/api/jobs/${encodeURIComponent(paint)}?log_lines=0`); } catch {} }
+    renderFlow(active, job);
+  } catch (err) {
+    if (err.message === 'auth') { stop(); el('app').hidden = true; el('setup').hidden = false; }
+    else console.error(err);
+  }
+}
+el('refresh').onclick = refresh;
+
+function start() { refresh(); stop(); timer = setInterval(refresh, 4000); }
+function stop() { if (timer) clearInterval(timer); timer = null; }
+
+if (token) { el('app').hidden = false; start(); }
+else { el('setup').hidden = false; }
+</script>
