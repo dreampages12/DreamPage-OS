@@ -28,7 +28,7 @@ function Copy-Tree($from, $to, [string[]]$excludeDirs = @(), [string[]]$excludeF
 }
 
 Section 'mapper'
-foreach ($d in 'flow','flow\tools','flow\text','flow\face_variants','books','nodes',
+foreach ($d in 'flow','flow\text','flow\face_variants','books','nodes',
                'assets','panel','tunnel','archive','config','server','docs',
                'tools\migrate','state','output','models') {
     $p = Join-Path $DST $d
@@ -72,7 +72,9 @@ foreach ($f in $pipeline) {
 }
 Copy-Tree "$SRC\script\face_variants" "$DST\flow\face_variants" -excludeDirs @('__pycache__')
 
-Section 'flow/tools (operative verktoey)'
+# Verktoeyene ligger i flow/, ikke i en undermappe: de 12 filene importerer
+# hverandre og modulene i flow/ bart, og en undermappe brakk 12 importer.
+Section 'flow (operative verktoey)'
 $tools = @(
     'finish_order.py','finish_merged_order.py','refresh_merged_draft.py','republish_job.py',
     'rerun_order_comfy.py','render_next_cover.py','make_headmask.py',
@@ -80,10 +82,10 @@ $tools = @(
     'sync_title_params.py','n8n_credential.py','ensure_dp_bot.ps1','start_dp_bot.ps1'
 )
 foreach ($f in $tools) {
-    if (Test-Path "$SRC\script\$f") { Copy-Item "$SRC\script\$f" "$DST\flow\tools\$f" -Force; Write-Host "  $f" }
+    if (Test-Path "$SRC\script\$f") { Copy-Item "$SRC\script\$f" "$DST\flow\$f" -Force; Write-Host "  $f" }
     else { Write-Host "  MANGLER: $f" -ForegroundColor Yellow }
 }
-Copy-Tree "$SRC\script\pre" "$DST\flow\tools\pre" -excludeDirs @('__pycache__')
+Copy-Tree "$SRC\script\pre" "$DST\flow\pre" -excludeDirs @('__pycache__')
 
 # ---------------------------------------------------------------------------
 # assets/ - fonter, logo, bakside, ryggrad, lastpages.

@@ -47,16 +47,13 @@ OLD = "C:/ComfyUI"
 NEW = str(ROOT).replace("\\", "/")             # C:/DreamPage-OS
 
 # ---------------------------------------------------------------------------
-# Verktoeyene som ble flyttet til flow/tools/ i stedet for flow/.
-# Maa stemme med tools/migrate/phase0_seed.ps1.
+# Verktoeyene laa foerst i flow/tools/, men de 12 filene der importerer
+# hverandre og modulene i flow/ BART (`from finish_order import ...`,
+# `import dp_order`) og stoler paa at scriptets egen mappe er paa sys.path.
+# Undermappa brakk 12 importer, saa flow/ er flat. Det som faktisk skulle
+# skilles ut var n8n-stillaset, og det ligger i archive/.
 # ---------------------------------------------------------------------------
-TOOLS = {
-    "finish_order.py", "finish_merged_order.py", "refresh_merged_draft.py",
-    "republish_job.py", "rerun_order_comfy.py", "render_next_cover.py",
-    "make_headmask.py", "make_shorthair_templates.py", "make_darkskin_templates.py",
-    "upscale_2x_ultrasharp.py", "sync_title_params.py", "n8n_credential.py",
-    "ensure_dp_bot.ps1", "start_dp_bot.ps1",
-}
+TOOLS: set[str] = set()
 LOCALES = ("nb", "nn", "sv", "en-US", "en-GB")
 ASSET_DIRS = ("logo", "bakside", "ryggrad", "lastpages")
 
@@ -71,9 +68,9 @@ def _rules() -> list[tuple[str, str]]:
     for d in ASSET_DIRS:
         rules.append((f"{OLD}/script/{d}", f"{NEW}/assets/{d}"))
     rules.append((f"{OLD}/script/face_variants", f"{NEW}/flow/face_variants"))
-    rules.append((f"{OLD}/script/pre", f"{NEW}/flow/tools/pre"))
+    rules.append((f"{OLD}/script/pre", f"{NEW}/flow/pre"))
     for name in sorted(TOOLS):
-        rules.append((f"{OLD}/script/{name}", f"{NEW}/flow/tools/{name}"))
+        rules.append((f"{OLD}/script/{name}", f"{NEW}/flow/{name}"))
 
     # Toppmapper.
     rules += [

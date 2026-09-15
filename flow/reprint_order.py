@@ -44,7 +44,12 @@ LAST_PAGE = os.path.join(SCRIPT_DIR, "build_last_page.py")
 GELATO_PDF = os.path.join(SCRIPT_DIR, "build_gelato_pdf.py")
 DRIVE_UPLOAD = os.path.join(SCRIPT_DIR, "drive_upload.py")
 MOCKUP_TEMPLATE = "psd_1c8e5a0dfdc188d1_layer-1"
-CONTINUE_SECRET = "<CONTINUE_CALLBACK_SECRET>"
+# Laa hardkodet her. Naa i config/secrets.json, som staar i .gitignore -
+# en delt hemmelighet i git-historikk maa roteres, ikke slettes.
+CONTINUE_SECRET = (os.environ.get("DP_CONTINUE_CALLBACK_SECRET") or
+                   __import__("json").load(open(os.path.join(
+                       SCRIPT_DIR, "..", "config", "secrets.json"),
+                       encoding="utf-8-sig")).get("continue_callback_secret", ""))
 DRAFT_STATE_DIR = r"C:\ComfyUI\state\gelato_drafts"
 PREPARED_DIR = r"C:\ComfyUI\state\reprint\prepared"
 
