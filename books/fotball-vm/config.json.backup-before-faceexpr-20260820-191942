@@ -1,0 +1,27 @@
+{
+  "slug": "fotball-vm",
+  "displayName": "Fotball VM",
+  "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page15), textScript, prepareScript og bakside/ryggrad mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i fotballstjernen.",
+  "_continuationOf": "fotballstjernen",
+  "orderBasePath": "C:/ComfyUI/books/fotball-vm/orders",
+  "comfyOutputPrefix": "fotball-vm/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(fotball-vm).png",
+      "mask_image": "forside-headmask(fotball-vm).png"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}

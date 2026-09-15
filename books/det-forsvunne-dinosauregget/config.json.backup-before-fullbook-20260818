@@ -1,0 +1,26 @@
+{
+  "slug": "det-forsvunne-dinosauregget",
+  "displayName": "Det Forsvunne Dinosauregget",
+  "_status": "UNDER ARBEID: kun forside er laget. Innsidene (page01-page14), textScript, prepareScript og bakside/ryggrad mangler. Boka kan IKKE produseres ennaa - den brukes foreloepig kun som next_book for QR-siste-siden i dinosaurenes-dal.",
+  "orderBasePath": "C:/ComfyUI/books/det-forsvunne-dinosauregget/orders",
+  "comfyOutputPrefix": "det-forsvunne-dinosauregget/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(dinosauregget).png",
+      "mask_image": "forside-headmask(dinosauregget).png"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}

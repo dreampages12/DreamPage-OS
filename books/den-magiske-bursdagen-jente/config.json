@@ -1,0 +1,137 @@
+{
+  "slug": "den-magiske-bursdagen-jente",
+  "displayName": "Den Magiske Bursdagen",
+  "textScript": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+  "prepareScript": "C:/ComfyUI/books/den-magiske-bursdagen-jente/script/prepare_order_den_magiske_bursdagen_jente.py",
+  "driveFolderId": "12LvdWt0_Dz8EPPL_3q9zoo2rkSUdz8iX",
+  "orderBasePath": "C:/ComfyUI/books/den-magiske-bursdagen-jente/orders",
+  "comfyOutputPrefix": "den-magiske-bursdagen-jente/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(magiske-bursdag-jente).png",
+      "mask_image": "forside-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page01",
+      "template_image": "01(magiske-bursdag-jente).png",
+      "mask_image": "01-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page02",
+      "template_image": "02(magiske-bursdag-jente).png",
+      "mask_image": "02-headmask(magiske-bursdag-jente).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page03",
+      "template_image": "03(magiske-bursdag-jente).png",
+      "mask_image": "03-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page04",
+      "template_image": "04(magiske-bursdag-jente).png",
+      "mask_image": "04-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page05",
+      "template_image": "05(magiske-bursdag-jente).png",
+      "mask_image": "05-headmask(magiske-bursdag-jente).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page06",
+      "template_image": "06(magiske-bursdag-jente).png",
+      "mask_image": "06-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page07",
+      "template_image": "07(magiske-bursdag-jente).png",
+      "mask_image": "07-headmask(magiske-bursdag-jente).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page08",
+      "template_image": "08(magiske-bursdag-jente).png",
+      "mask_image": "08-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page09",
+      "template_image": "09(magiske-bursdag-jente).png",
+      "mask_image": "09-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page10",
+      "template_image": "10(magiske-bursdag-jente).png",
+      "mask_image": "10-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page11",
+      "template_image": "11(magiske-bursdag-jente).png",
+      "mask_image": "11-headmask(magiske-bursdag-jente).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page12",
+      "template_image": "12(magiske-bursdag-jente).png",
+      "mask_image": "12-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page13",
+      "template_image": "13(magiske-bursdag-jente).png",
+      "mask_image": "13-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page14",
+      "template_image": "14(magiske-bursdag-jente).png",
+      "mask_image": "14-headmask(magiske-bursdag-jente).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "workflowApi": "workflow_api.json",
+  "textScripts": {
+    "nb": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+    "no": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+    "nb-no": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+    "nn": "C:/ComfyUI/script/nn/den-magiske-bursdagen-jente-text-nn.py",
+    "nn-no": "C:/ComfyUI/script/nn/den-magiske-bursdagen-jente-text-nn.py",
+    "en-US": "C:/ComfyUI/script/en-US/den-magiske-bursdagen-jente-text-en-US.py",
+    "en-us": "C:/ComfyUI/script/en-US/den-magiske-bursdagen-jente-text-en-US.py",
+    "en": "C:/ComfyUI/script/en-US/den-magiske-bursdagen-jente-text-en-US.py",
+    "en-GB": "C:/ComfyUI/script/en-GB/den-magiske-bursdagen-jente-text-en-GB.py",
+    "en-gb": "C:/ComfyUI/script/en-GB/den-magiske-bursdagen-jente-text-en-GB.py",
+    "sv": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+    "sv-SE": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+    "sv-se": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+    "se": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+    "swedish": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+    "svensk": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py"
+  }
+}

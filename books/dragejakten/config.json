@@ -1,0 +1,139 @@
+{
+  "slug": "dragejakten",
+  "displayName": "Dragejakten",
+  "nextBookSlug": "dragedalen",
+  "nextBookTitle": "Dragedalen",
+  "textScript": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+  "prepareScript": "C:/ComfyUI/books/dragejakten/script/prepare_order_dragejakten.py",
+  "driveFolderId": "1oNitHNXxFe7LCUJazQY4ROfSLFOboDhX",
+  "orderBasePath": "C:/ComfyUI/books/dragejakten/orders",
+  "comfyOutputPrefix": "dragejakten/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(dragejakten).png",
+      "mask_image": "forside-headmask(dragejakten).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page01",
+      "template_image": "01(dragejakten).png",
+      "mask_image": "01-headmask(dragejakten).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page02",
+      "template_image": "02(dragejakten).png",
+      "mask_image": "02-headmask(dragejakten).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page03",
+      "template_image": "03(dragejakten).png",
+      "mask_image": "03-headmask(dragejakten).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page04",
+      "template_image": "04(dragejakten).png",
+      "mask_image": "04-headmask(dragejakten).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page05",
+      "template_image": "05(dragejakten).png",
+      "mask_image": "05-headmask(dragejakten).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page06",
+      "template_image": "06(dragejakten).png",
+      "mask_image": "06-headmask(dragejakten).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page07",
+      "template_image": "07(dragejakten).png",
+      "mask_image": "07-headmask(dragejakten).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page08",
+      "template_image": "08(dragejakten).png",
+      "mask_image": "08-headmask(dragejakten).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page09",
+      "template_image": "09(dragejakten).png",
+      "mask_image": "09-headmask(dragejakten).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page10",
+      "template_image": "10(dragejakten).png",
+      "mask_image": "10-headmask(dragejakten).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page11",
+      "template_image": "11(dragejakten).png",
+      "mask_image": "11-headmask(dragejakten).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page12",
+      "template_image": "12(dragejakten).png",
+      "mask_image": "12-headmask(dragejakten).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page13",
+      "template_image": "13(dragejakten).png",
+      "mask_image": "13-headmask(dragejakten).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page14",
+      "template_image": "14(dragejakten).png",
+      "mask_image": "14-headmask(dragejakten).png",
+      "face_expression": "smil"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "workflowApi": "workflow_api.json",
+  "textScripts": {
+    "nb": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+    "nn": "C:/ComfyUI/script/nn/dragejakten-text-nn.py",
+    "en-US": "C:/ComfyUI/script/en-US/dragejakten-text-en-US.py",
+    "en-GB": "C:/ComfyUI/script/en-GB/dragejakten-text-en-GB.py",
+    "en": "C:/ComfyUI/script/en-US/dragejakten-text-en-US.py",
+    "en-us": "C:/ComfyUI/script/en-US/dragejakten-text-en-US.py",
+    "en-gb": "C:/ComfyUI/script/en-GB/dragejakten-text-en-GB.py",
+    "no": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+    "nb-no": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+    "nn-no": "C:/ComfyUI/script/nn/dragejakten-text-nn.py",
+    "sv": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+    "sv-SE": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+    "sv-se": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+    "se": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+    "swedish": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+    "svensk": "C:/ComfyUI/script/sv/dragejakten-text-sv.py"
+  }
+}

@@ -1,0 +1,306 @@
+{
+  "2": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "flux-2-klein-9b.safetensors",
+      "weight_dtype": "default"
+    },
+    "_meta": {
+      "title": "Klein 9B  /  existing model"
+    }
+  },
+  "3": {
+    "class_type": "CLIPLoaderGGUF",
+    "inputs": {
+      "clip_name": "Qwen3-8B-Q8_0.gguf",
+      "type": "flux2"
+    },
+    "_meta": {
+      "title": "Qwen3-8B  /  text encoder"
+    }
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "_meta": {
+      "title": "FLUX.2  /  image encoder + decoder"
+    }
+  },
+  "7": {
+    "class_type": "DP_LoadPhoto",
+    "inputs": {
+      "image": "26063001.jpg",
+      "mask_channel": "red"
+    },
+    "_meta": {
+      "title": "A  /  person to insert"
+    }
+  },
+  "8": {
+    "class_type": "DP_LoadPhoto",
+    "inputs": {
+      "image": "forside(dyreparken).jpg",
+      "mask_channel": "red"
+    },
+    "_meta": {
+      "title": "B  /  original scene"
+    }
+  },
+  "9": {
+    "class_type": "DP_LoadPhoto",
+    "inputs": {
+      "image": "forside-headmask(dyreparken).png",
+      "mask_channel": "red"
+    },
+    "_meta": {
+      "title": "C  /  scene headmask · RED"
+    }
+  },
+  "11": {
+    "class_type": "DP_ReferenceStudio",
+    "inputs": {
+      "resolution": 768,
+      "context": 1.25,
+      "background_strength": 0.0,
+      "person": [
+        "7",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Prepare identity views"
+    }
+  },
+  "12": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "11",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Prepared identity  /  what Klein sees"
+    }
+  },
+  "13": {
+    "class_type": "DP_IdentityEncoder",
+    "inputs": {
+      "references": [
+        "11",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Identity Encoder  /  pretrained VAE"
+    }
+  },
+  "16": {
+    "class_type": "DP_SceneStudio",
+    "inputs": {
+      "resolution": 1024,
+      "context": 1.5,
+      "expand": 0,
+      "feather": 8.0,
+      "edge_protection": 0.65,
+      "scene_mode": "original",
+      "template": [
+        "8",
+        0
+      ],
+      "headmask": [
+        "9",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Scene Studio  /  crop + mask authority"
+    }
+  },
+  "17": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "16",
+        1
+      ]
+    },
+    "_meta": {
+      "title": "Scene reference  /  image 1"
+    }
+  },
+  "18": {
+    "class_type": "PreviewImage",
+    "inputs": {
+      "images": [
+        "16",
+        3
+      ]
+    },
+    "_meta": {
+      "title": "Teal overlay  /  allowed edit area"
+    }
+  },
+  "21": {
+    "class_type": "DP_SwapPrompt",
+    "inputs": {
+      "extra_instructions": "",
+      "identity": [
+        "13",
+        0
+      ],
+      "scene": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Swap Direction  /  optional extra instructions"
+    }
+  },
+  "22": {
+    "class_type": "DP_KleinConditioning",
+    "inputs": {
+      "clip": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "identity": [
+        "13",
+        0
+      ],
+      "scene": [
+        "16",
+        0
+      ],
+      "prompt": [
+        "21",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Klein Conditioning  /  scene then identity"
+    }
+  },
+  "23": {
+    "class_type": "DP_DreamSwap",
+    "inputs": {
+      "seed": 19347,
+      "steps": 4,
+      "engine": "native",
+      "sampler": "euler",
+      "scheduler": "simple",
+      "lanpaint_steps": 2,
+      "model": [
+        "2",
+        0
+      ],
+      "positive": [
+        "22",
+        0
+      ],
+      "negative": [
+        "22",
+        1
+      ],
+      "masked_latent": [
+        "22",
+        2
+      ]
+    },
+    "_meta": {
+      "title": "DreamSwap  /  Klein 9B"
+    }
+  },
+  "24": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "23",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Decode generated head crop"
+    }
+  },
+  "27": {
+    "class_type": "DP_SeamFinish",
+    "inputs": {
+      "color_strength": 0.0,
+      "max_shift": 0.04,
+      "generated_crop": [
+        "24",
+        0
+      ],
+      "scene": [
+        "16",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Seam Finish  /  exact page composite"
+    }
+  },
+  "28": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "DreamPage/Studio/final",
+      "images": [
+        "27",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "FINAL PAGE  /  original dimensions"
+    }
+  },
+  "29": {
+    "class_type": "DP_ReviewBoard",
+    "inputs": {
+      "tile_size": 384,
+      "final_image": [
+        "27",
+        0
+      ],
+      "scene": [
+        "16",
+        0
+      ],
+      "references": [
+        "11",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Review Board  /  identity + protected pixels"
+    }
+  },
+  "30": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "filename_prefix": "DreamPage/Studio/review",
+      "images": [
+        "29",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "REVIEW BOARD  /  compare before & after"
+    }
+  }
+}

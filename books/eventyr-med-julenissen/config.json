@@ -1,0 +1,34 @@
+{
+  "slug": "eventyr-med-julenissen",
+  "displayName": "Eventyr med Julenissen",
+  "_status": "UNDER ARBEID: kun forside + headmask finnes (forside(julenissen).png). GJENSTAAR: 14 innersider + headmasker, historie i 5 sprak, tekstscript, prepare-script, bakside/ryggrad og registrering i worker (patch_worker_add_book_egget.py). Registrert i DP Title Tester 2026-08-24.",
+  "orderBasePath": "C:/ComfyUI/books/eventyr-med-julenissen/orders",
+  "comfyOutputPrefix": "eventyr-med-julenissen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(julenissen).png",
+      "mask_image": "forside-headmask(julenissen).png",
+      "face_expression": "smil"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "textScripts": {}
+}

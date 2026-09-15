@@ -1,0 +1,37 @@
+{
+  "formatVersion": 2,
+  "width": 1631,
+  "height": 1323,
+  "source": "psd-local",
+  "calibrationVersion": 8,
+  "layerName": "Layer 1",
+  "highlightLayer": "Highlight",
+  "coverRect": [
+    479,
+    133,
+    1606,
+    1259
+  ],
+  "cropBox": [
+    456,
+    304,
+    2087,
+    1627
+  ],
+  "bgAlphaRemoved": 3,
+  "coverSpace": {
+    "width": 1127,
+    "height": 1127
+  },
+  "influenceRatio": 0.588054201174986,
+  "validation": {
+    "model": {
+      "mean": 0.3798169964851215,
+      "p99": 0.6997748052450561,
+      "max": 3.579581222641025,
+      "samples": 3800205
+    }
+  },
+  "accepted": true,
+  "calibratedAt": "2026-08-07T10:12:19Z"
+}

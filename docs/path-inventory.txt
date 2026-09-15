@@ -1,0 +1,759 @@
+=== DreamPage sti-inventar (generert 2026-09-15T22:44:59+02:00) ===
+
+### 1. script/*.py (ekskl. *.backup*) ###
+script/auto_merge_multibook.py:45:DRAFT_STATE_DIR = r"C:\ComfyUI\state\gelato_drafts"
+script/build_last_page.py:58:TITLES_CONFIG = "C:/ComfyUI/config/next_book_titles.json"
+script/build_last_page.py:205:        hits = sorted(glob.glob(f"C:/ComfyUI/books/{book_slug}/dreampage-first*.png"))
+script/build_last_page.py:312:        with open(f"C:/ComfyUI/books/{next_slug}/config.json", encoding="utf-8-sig") as fh:
+script/build_last_page.py:315:        path = os.path.join("C:/ComfyUI/input", front["template_image"])
+script/dp_bot.py:56:CONFIG_PATH = r"C:\ComfyUI\config\dp_bot.json"
+script/dp_bot.py:57:STATE_DIR = r"C:\ComfyUI\state\reprint"
+script/dp_bot.py:61:NEXT_STATE_DIR = r"C:\ComfyUI\state\next_cover"
+script/dp_bot.py:65:INFLIGHT_DIR = r"C:\ComfyUI\state\reprint\inflight"
+script/dp_bot.py:66:PREVIEW_DIR = r"C:\ComfyUI\tmp\dp_bot_previews"
+script/dp_bot.py:67:LOG_PATH = r"C:\ComfyUI\state\dp_bot.log"
+script/dp_bot.py:70:UPLOAD_DIR = r"C:\ComfyUI\tmp\dp_bot_uploads"
+script/dp_bot.py:1895:BOOKS_DIR = r"C:\ComfyUI\books"
+script/dp_bot.py:2296:        dest = os.path.join(r"C:\ComfyUI\input",
+script/dp_bot.py:2634:        config_path = os.path.join(r"C:\ComfyUI\books", order_id, "config.json")
+script/dp_merge.py:44:SESSION_DIR = r"C:\ComfyUI\state\reprint"
+script/dp_order.py:37:CACHE_DIR = r"C:\ComfyUI\state\orders"
+script/dp_order.py:38:BOOKS_DIR = r"C:\ComfyUI\books"
+script/dp_order.py:334:    comfy_dir = os.path.join(r"C:\ComfyUI\output",
+script/dp_order.py:406:# side om side med de vanlige i C:/ComfyUI/input og heter det samme pluss et
+script/dp_order.py:413:INPUT_DIR = r"C:\ComfyUI\input"
+script/dp_testbook.py:51:COMFY_INPUT = r"C:\ComfyUI\input"
+script/dp_testbook.py:104:    # regen_page leter etter C:/ComfyUI/input/<order_id>.jpg, samme som for
+script/dp_testbook.py:201:        out = os.path.join(r"C:\ComfyUI\output", prefix.replace("/", os.sep), order_id)
+script/en-GB/den-magiske-reisen-jente-text-en-GB.py:291:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-GB/dyreparken-text-en-GB.py:324:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-GB/fotballstjernen-text-en-GB.py:283:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-GB/havfruen-text-en-GB.py:336:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-GB/styrken-text-en-GB.py:504:    """Resolve Styrken cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-US/den-magiske-reisen-jente-text-en-US.py:291:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-US/dyreparken-text-en-US.py:324:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-US/fotballstjernen-text-en-US.py:283:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-US/havfruen-text-en-US.py:336:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/en-US/styrken-text-en-US.py:504:    """Resolve Styrken cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/face_variants/analyse_photo.py:45:MODEL = "C:/ComfyUI/models/mediapipe/face_landmarker.task"
+script/face_variants/apply_face_expressions.py:18:BOOKS = "C:/ComfyUI/books"
+script/face_variants/build_face_variants.py:56:INPUT_DIR = os.environ.get("DP_COMFY_INPUT", "C:/ComfyUI/input")
+script/face_variants/build_face_variants.py:57:OUTPUT_DIR = os.environ.get("DP_COMFY_OUTPUT", "C:/ComfyUI/output")
+script/face_variants/build_trist_variant.py:8:Ut kommer C:/ComfyUI/input/<job_key>-trist.jpg. Det er filnavnet "Pages Config"
+script/face_variants/build_trist_variant.py:16:Scriptet tar SAMME laas som sideloopen (C:/ComfyUI/.dreampage-comfy.lock), slik
+script/face_variants/build_trist_variant.py:36:LOCK = "C:/ComfyUI/.dreampage-comfy.lock"
+script/face_variants/make_child_photo.py:182:    ap.add_argument("--out", default="C:/ComfyUI/output/barnebilde")
+script/face_variants/patch_worker_face_expressions.py:37:SCRIPT = "C:/ComfyUI/script/face_variants/build_face_variants.py"
+script/face_variants/patch_worker_face_expressions.py:46:// build_face_variants.py har lagt <order_id>-<uttrykk>.jpg i C:/ComfyUI/input.
+script/face_variants/patch_worker_face_expressions.py:58:    if (fsExpr.existsSync('C:/ComfyUI/input/' + candidate)) return candidate;
+script/face_variants/patch_worker_trist.py:37:SCRIPT = "C:/ComfyUI/script/face_variants/build_trist_variant.py"
+script/finish_merged_order.py:32:STATE_DIR = "C:/ComfyUI/state/gelato_drafts"
+script/finish_merged_order.py:131:        b["pdf"] = (f"C:/ComfyUI/books/{b['slug']}/orders/{b['order_id']}"
+script/finish_merged_order.py:197:        with open(f"C:/ComfyUI/books/{b['slug']}/config.json", encoding="utf-8-sig") as fh:
+script/finish_order.py:91:    merge_state = f"C:/ComfyUI/state/gelato_drafts/{args.order}.json"
+script/finish_order.py:107:    with open(f"C:/ComfyUI/books/{args.slug}/config.json", encoding="utf-8-sig") as fh:
+script/finish_order.py:111:    pdf_dir = f"C:/ComfyUI/books/{args.slug}/orders/{args.order}/pdf"
+script/fix_enhjorning_blankback_continue.py:28:Malen prepare_order_enhjorning kopierer er C:\\ComfyUI\\script\\blank-back.png.
+script/fix_sides2.py:7:FILES = ["C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+script/fix_sides2.py:8:         "C:/ComfyUI/script/nn/motet-i-hjertet-text-nn.py",
+script/fix_sides2.py:9:         "C:/ComfyUI/script/en-US/motet-i-hjertet-text-en-US.py",
+script/fix_sides2.py:10:         "C:/ComfyUI/script/en-GB/motet-i-hjertet-text-en-GB.py",
+script/fix_sides2.py:11:         "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py"]
+script/gelato_merge.py:52:STATE_DIR = "C:/ComfyUI/state/gelato_drafts"
+script/gelato_merge.py:53:CONFIG_PATH = "C:/ComfyUI/config/merge_orders.json"
+script/gelato_merge.py:55:LOG_PATH = "C:/ComfyUI/state/gelato_merge.log"
+script/make_darkskin_templates.py:80:INPUT_DIR = r"C:\ComfyUI\input"
+script/make_darkskin_templates.py:81:OUTPUT_DIR = r"C:\ComfyUI\output"
+script/make_darkskin_templates.py:82:BOOKS_DIR = r"C:\ComfyUI\books"
+script/make_headmask.py:10:  python make_headmask.py --image "C:/ComfyUI/input/01(dinosaur)2-4aar.png" \
+script/make_headmask.py:11:      --out "C:/ComfyUI/input/01-headmask(dinosaur)2-4aar.png"
+script/make_shorthair_templates.py:67:INPUT_DIR = r"C:\ComfyUI\input"
+script/make_shorthair_templates.py:68:OUTPUT_DIR = r"C:\ComfyUI\output"
+script/make_shorthair_templates.py:69:BOOKS_DIR = r"C:\ComfyUI\books"
+script/nb/den-magiske-reisen-jente-text-nb.py:291:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nb/det-magiske-kartet-text-nb.py:291:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nb/dyreparken-text-nb.py:333:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nb/fotballstjernen-text-nb.py:283:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nb/havfruen-text-nb.py:336:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nb/styrken-text-nb.py:525:    """Resolve Styrken cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nn/den-magiske-reisen-jente-text-nn.py:291:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nn/dyreparken-text-nn.py:325:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nn/fotballstjernen-text-nn.py:283:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nn/havfruen-text-nn.py:336:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/nn/styrken-text-nn.py:504:    """Resolve Styrken cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/patch_bakside_soft.py:12:FILES = ["C:/ComfyUI/script/%s/motet-i-hjertet-text-%s.py" % (l, l)
+script/patch_dinosaur_cover_logo.py:44:    return "C:/ComfyUI/script/%s/dinosaur-text-%s.py" % (locale, locale)
+script/patch_egget_cover_logo.py:31:    "C:/ComfyUI/script/nb/dinosauregget-text-nb.py",
+script/patch_egget_cover_logo.py:32:    "C:/ComfyUI/script/nn/dinosauregget-text-nn.py",
+script/patch_egget_cover_logo.py:33:    "C:/ComfyUI/script/en-US/dinosauregget-text-en-US.py",
+script/patch_egget_cover_logo.py:34:    "C:/ComfyUI/script/en-GB/dinosauregget-text-en-GB.py",
+script/patch_egget_cover_logo.py:35:    "C:/ComfyUI/script/sv/dinosauregget-text-sv.py",
+script/patch_motet_bakside_backdrop.py:25:    "C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+script/patch_motet_bakside_backdrop.py:26:    "C:/ComfyUI/script/nn/motet-i-hjertet-text-nn.py",
+script/patch_motet_bakside_backdrop.py:27:    "C:/ComfyUI/script/en-US/motet-i-hjertet-text-en-US.py",
+script/patch_motet_bakside_backdrop.py:28:    "C:/ComfyUI/script/en-GB/motet-i-hjertet-text-en-GB.py",
+script/patch_motet_bakside_backdrop.py:29:    "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+script/patch_motet_cover_logo.py:25:    "C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+script/patch_motet_cover_logo.py:26:    "C:/ComfyUI/script/nn/motet-i-hjertet-text-nn.py",
+script/patch_motet_cover_logo.py:27:    "C:/ComfyUI/script/en-US/motet-i-hjertet-text-en-US.py",
+script/patch_motet_cover_logo.py:28:    "C:/ComfyUI/script/en-GB/motet-i-hjertet-text-en-GB.py",
+script/patch_motet_cover_logo.py:29:    "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+script/patch_motet_story.py:32:    "nb": "C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+script/patch_motet_story.py:33:    "nn": "C:/ComfyUI/script/nn/motet-i-hjertet-text-nn.py",
+script/patch_motet_story.py:34:    "en-US": "C:/ComfyUI/script/en-US/motet-i-hjertet-text-en-US.py",
+script/patch_motet_story.py:35:    "en-GB": "C:/ComfyUI/script/en-GB/motet-i-hjertet-text-en-GB.py",
+script/patch_motet_story.py:36:    "sv": "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+script/patch_title_tester_bottomlogo.py:33:    ("bottom_logo", "C:/ComfyUI/script/pre/DreamPage_logo_blue.png"),
+script/patch_title_tester_dragedalen.py:31:COVER = "C:/ComfyUI/input/forside(dragedalen).png"
+script/patch_title_tester_dragedalen.py:32:LOGO = "C:/ComfyUI/script/logo/nb/dragedalen-logo-nb.png"
+script/patch_title_tester_egget.py:8:Parametrene holdes i synk med C:/ComfyUI/config/next_book_titles.json, som
+script/patch_title_tester_egget.py:24:TITLES_CONFIG = "C:/ComfyUI/config/next_book_titles.json"
+script/patch_title_tester_egget.py:31:COVER = "C:/ComfyUI/input/forside(dinosauregget).png"
+script/patch_title_tester_havfruen.py:7:   den gamle `C:/ComfyUI/input/<...>-logo.png`-konvensjonen; logoene ble flyttet
+script/patch_title_tester_havfruen.py:60:    "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+script/patch_title_tester_havfruen.py:65:    NEW_NB_NAME: {"line2_image": "C:/ComfyUI/script/logo/nb/havfruen-logo.png"},
+script/patch_title_tester_havfruen.py:66:    "EN - Mermaid": {"line2_image": "C:/ComfyUI/script/logo/en-US/havfruen-logo.png"},
+script/patch_title_tester_havfruen.py:67:    "SV - Sj\u00f6jungfru": {"line2_image": "C:/ComfyUI/script/logo/sv/sjojungfru-logo-sv.png"},
+script/patch_title_tester_havfruen.py:72:    OLD_NB_NAME: {"line2_image": "C:/ComfyUI/input/havfrue-logo.png", "font_small": "89",
+script/patch_title_tester_havfruen.py:74:                  "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"},
+script/patch_title_tester_havfruen.py:75:    "EN - Mermaid": {"line2_image": "C:/ComfyUI/input/mermaid-logo-en.png", "font_small": "71",
+script/patch_title_tester_havfruen.py:77:                     "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"},
+script/patch_title_tester_havfruen.py:78:    "SV - Sj\u00f6jungfru": {"line2_image": "C:/ComfyUI/input/sjojungfru-logo-sv.png", "font_small": "77",
+script/patch_title_tester_havfruen.py:80:                             "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"},
+script/patch_title_tester_havfruen.py:86:    "havfruen": {"line2_image": "C:/ComfyUI/script/logo/nb/havfruen-logo.png"},
+script/patch_title_tester_havfruen.py:87:    "EN - Mermaid": {"line2_image": "C:/ComfyUI/script/logo/en-US/havfruen-logo.png"},
+script/patch_title_tester_havfruen.py:89:        "line2_image": "C:/ComfyUI/script/logo/sv/sjojungfru-logo-sv.png",
+script/patch_title_tester_havfruen.py:99:                 "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"},
+script/patch_title_tester_havfruen.py:102:                     "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"},
+script/patch_title_tester_havfruen.py:105:                              "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+script/patch_title_tester_havpalasset.py:33:COVER = "C:/ComfyUI/input/forside(havpalasset).png"
+script/patch_title_tester_havpalasset.py:34:LOGO = "C:/ComfyUI/script/logo/nb/havpalasset-logo-nb.png"
+script/patch_title_tester_havpalasset.py:49:    ("font_small_path", "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf"),
+script/patch_title_tester_havpalasset.py:50:    ("font_large_path", "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"),
+script/patch_title_tester_juleprinsessen.py:34:COVER = "C:/ComfyUI/input/forside(juleprinsessen).png"
+script/patch_title_tester_juleprinsessen.py:35:LOGO = "C:/ComfyUI/script/logo/nb/juleprinsessen-logo-nb.png"
+script/patch_title_tester_juleprinsessen.py:52:    ("font_small_path", "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf"),
+script/patch_title_tester_juleprinsessen.py:53:    ("font_large_path", "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"),
+script/patch_worker_auto_merge.py:45:SCRIPT = "C:/ComfyUI/script/auto_merge_multibook.py"
+script/patch_worker_continue_fix.py:6:     C:/ComfyUI/venv/Scripts/python.exe - et miljoe uten reportlab/segno/pypdf.
+script/patch_worker_continue_qr.py:59:    const nextCfgPath = 'C:/ComfyUI/books/' + nextSlug + '/config.json';
+script/patch_worker_continue_qr.py:91:    'const PY = \'python "C:/ComfyUI/script/build_last_page.py" \'; '
+script/patch_worker_continue_qr.py:93:    "const comfy = 'C:/ComfyUI/output/' + d.config.comfyOutputPrefix + '/' + d.order_id + '/comfy'; "
+script/patch_worker_job_key.py:29:  2. Edit Fields / ef-4 "face_image" -> C:/ComfyUI/input/<key>.jpg
+script/patch_worker_job_key.py:37:peker begge jobbene paa samme C:/ComfyUI/input/1400.jpg.
+script/patch_worker_job_key.py:76:        "={{ 'C:/ComfyUI/input/' + %s.order_id + '.jpg' }}" % PJ1,
+script/patch_worker_job_key.py:77:        "={{ 'C:/ComfyUI/input/' + (%s.job_key || %s.order_id) + '.jpg' }}"
+script/patch_worker_job_key.py:83:        "={{ 'C:/ComfyUI/input/' + %s.order_id + '.jpg' }}" % PJ1,
+script/patch_worker_job_key.py:84:        "={{ 'C:/ComfyUI/input/' + (%s.job_key || %s.order_id) + '.jpg' }}"
+script/patch_worker_merge_off.py:47:const dir = 'C:/ComfyUI/state/gelato_drafts';
+script/patch_worker_merge_orders.py:58:const dir = d.orderPath || ('C:/ComfyUI/books/' + d.book_slug + '/orders/' + d.order_id);
+script/patch_worker_merge_orders.py:129:GATE_CMD = ("={{ 'python \"C:/ComfyUI/script/gelato_merge.py\" gate --request \"'"
+script/patch_worker_merge_orders.py:131:RECORD_CMD = ("={{ 'python \"C:/ComfyUI/script/gelato_merge.py\" record --request \"'"
+script/refresh_merged_draft.py:52:        pdf = f"C:/ComfyUI/books/{slug}/orders/{oid}/pdf/{name}_gelato.pdf"
+script/refresh_merged_draft.py:92:            with open(f"C:/ComfyUI/books/{b['slug']}/config.json", encoding="utf-8-sig") as fh:
+script/regen_page.py:48:OUTPUT_ROOT = r"C:\ComfyUI\output"
+script/regen_page.py:49:LOCK_PATH = r"C:\ComfyUI\.dreampage-comfy.lock"
+script/regen_page.py:292:    workflow_path = os.path.join(r"C:\ComfyUI\books", info["book_slug"], workflow_file)
+script/regen_page.py:297:    if not os.path.isfile(os.path.join(r"C:\ComfyUI\input", face)):
+script/regen_page.py:298:        raise SystemExit(f"fant ikke barnebildet C:/ComfyUI/input/{face}")
+script/regen_page.py:363:    ap.add_argument("--face", default="", help="annet barnebilde i C:/ComfyUI/input")
+script/render_next_cover.py:49:    next_config_path = os.path.join(r"C:\ComfyUI\books", next_slug, "config.json")
+script/reprint_order.py:48:DRAFT_STATE_DIR = r"C:\ComfyUI\state\gelato_drafts"
+script/reprint_order.py:49:PREPARED_DIR = r"C:\ComfyUI\state\reprint\prepared"
+script/republish_job.py:25:CRED_TOOL = "C:/ComfyUI/script/n8n_credential.py"
+script/rerun_order_comfy.py:5:C:/ComfyUI/input - der hver eneste side maa lages paa nytt, ikke bare den
+script/rerun_order_comfy.py:62:                    help="barnebilde i C:/ComfyUI/input (default: ordrens eget)")
+script/rerun_order_comfy.py:92:    face_path = os.path.join(r"C:\ComfyUI\input", face)
+script/rerun_order_comfy.py:99:    workflow_path = os.path.join(r"C:\ComfyUI\books", info["book_slug"], workflow_file)
+script/sv/den-magiske-reisen-jente-text-sv.py:291:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/sv/dyreparken-text-sv.py:324:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/sv/fotballstjernen-text-sv.py:283:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/sv/havfruen-text-sv.py:336:    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/sv/styrken-text-sv.py:504:    """Resolve Styrken cover logo from C:/ComfyUI/script/logo/<locale>."""
+script/sync_title_params.py:21:TITLES_CONFIG = "C:/ComfyUI/config/next_book_titles.json"
+script/sync_title_params.py:29:    with open(f"C:/ComfyUI/books/{slug}/config.json", encoding="utf-8-sig") as fh:
+script/sync_title_params.py:32:    with Image.open("C:/ComfyUI/input/" + front["template_image"]) as im:
+script/tune_bakside.py:12:FILES = ["C:/ComfyUI/script/%s/motet-i-hjertet-text-%s.py" % (l, l)
+script/tune_innertext_width.py:30:FILES = ["C:/ComfyUI/script/%s/motet-i-hjertet-text-%s.py" % (l, l) for l in LOCALES]
+script/upscale_2x_ultrasharp.py:22:MODEL = r"C:\ComfyUI\models\upscale_models\4x-UltraSharp.pth"
+
+### 2. *.ps1 ###
+script/ensure_dp_bot.ps1:10:$bot = 'C:\ComfyUI\script\dp_bot.py'
+script/ensure_dp_bot.ps1:11:$out = 'C:\ComfyUI\state\dp_bot.out.log'
+script/ensure_dp_bot.ps1:12:$err = 'C:\ComfyUI\state\dp_bot.err.log'
+script/ensure_dp_bot.ps1:13:$log = 'C:\ComfyUI\state\dp_bot_watchdog.log'
+script/start_dp_bot.ps1:2:#   powershell -ExecutionPolicy Bypass -File C:\ComfyUI\script\start_dp_bot.ps1
+script/start_dp_bot.ps1:5:$bot = 'C:\ComfyUI\script\dp_bot.py'
+script/start_dp_bot.ps1:6:$out = 'C:\ComfyUI\state\dp_bot.out.log'
+script/start_dp_bot.ps1:7:$err = 'C:\ComfyUI\state\dp_bot.err.log'
+
+### 3. config/*.json ###
+config/next_book_titles.json:61:      "line2_image": "C:/ComfyUI/script/logo/nb/styrken-logo-nb.png",
+config/next_book_titles.json:78:      "line2_image": "C:/ComfyUI/script/logo/en-US/styrken-logo-en.png",
+config/next_book_titles.json:95:      "line2_image": "C:/ComfyUI/script/logo/sv/styrken-logo-sv.png",
+config/next_book_titles.json:114:      "line2_image": "C:/ComfyUI/script/logo/nb/enhjorning-logo-nb.png",
+config/next_book_titles.json:123:      "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json:131:      "line2_image": "C:/ComfyUI/script/logo/en-US/enhjorning-logo-en.png",
+config/next_book_titles.json:140:      "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json:148:      "line2_image": "C:/ComfyUI/script/logo/sv/enhjorning-logo-sv.png",
+config/next_book_titles.json:157:      "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json:167:      "line2_image": "C:/ComfyUI/script/logo/nb/dyreparken-logo.png",
+config/next_book_titles.json:176:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:177:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:184:      "line2_image": "C:/ComfyUI/script/logo/en-US/dyreparken-logo.png",
+config/next_book_titles.json:193:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:194:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:201:      "line2_image": "C:/ComfyUI/script/logo/sv/djurparken-logo-sv.png",
+config/next_book_titles.json:210:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:211:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:220:      "line2_image": "C:/ComfyUI/script/logo/nb/havfruen-logo.png",
+config/next_book_titles.json:223:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:224:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:238:      "line2_image": "C:/ComfyUI/script/logo/en-US/havfruen-logo.png",
+config/next_book_titles.json:241:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:242:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:256:      "line2_image": "C:/ComfyUI/script/logo/sv/sjojungfru-logo-sv.png",
+config/next_book_titles.json:259:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:260:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:310:      "line2_image": "C:/ComfyUI/script/logo/nb/dinosaurenes-dal-logo-nb.png",
+config/next_book_titles.json:319:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:320:      "font_large_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json:332:      "line2_image": "C:/ComfyUI/script/logo/nb/motet-logo-nb.png",
+config/next_book_titles.json:341:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:342:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:359:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:360:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:377:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:378:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:388:      "line2_image": "C:/ComfyUI/script/logo/nb/fotballstjerne-logo.webp",
+config/next_book_titles.json:397:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:398:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:405:      "line2_image": "C:/ComfyUI/script/logo/en-US/fotballstjerne-logo.png",
+config/next_book_titles.json:414:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:415:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:422:      "line2_image": "C:/ComfyUI/script/logo/sv/fotbollsstjarna-logo-sv.png",
+config/next_book_titles.json:431:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:432:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:441:      "line2_image": "C:/ComfyUI/script/logo/nb/magiske-reise-logo.png",
+config/next_book_titles.json:450:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:451:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:458:      "line2_image": "C:/ComfyUI/script/logo/en-US/magiske-reise-logo.png",
+config/next_book_titles.json:467:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:468:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:475:      "line2_image": "C:/ComfyUI/script/logo/sv/magiska-resa-logo-sv.png",
+config/next_book_titles.json:484:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:485:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:494:      "line2_image": "C:/ComfyUI/script/logo/nb/magiske-reise-logo.png",
+config/next_book_titles.json:503:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:504:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:511:      "line2_image": "C:/ComfyUI/script/logo/en-US/magiske-reise-logo.png",
+config/next_book_titles.json:520:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:521:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:528:      "line2_image": "C:/ComfyUI/script/logo/sv/magiska-resa-logo-sv.png",
+config/next_book_titles.json:537:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:538:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json:547:      "line2_image": "C:/ComfyUI/script/logo/nb/dinosauregget-logo-nb.png",
+config/next_book_titles.json:563:      "line2_image": "C:/ComfyUI/script/logo/nb/dinosauregget-logo-nb.png",
+config/next_book_titles.json:580:      "line2_image": "C:/ComfyUI/script/logo/nb/dinosauregget-logo-nb.png",
+config/next_book_titles.json:600:      "line2_image": "C:/ComfyUI/script/logo/nb/superbyen-logo-nb.png",
+config/next_book_titles.json:617:      "line2_image": "C:/ComfyUI/script/logo/nb/superbyen-logo-nb.png",
+config/next_book_titles.json:634:      "line2_image": "C:/ComfyUI/script/logo/nb/superbyen-logo-nb.png",
+config/next_book_titles.json:653:      "line2_image": "C:/ComfyUI/script/logo/nb/kongeriket-logo-nb.png",
+config/next_book_titles.json:656:      "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:673:      "line2_image": "C:/ComfyUI/script/logo/nb/fotball-vm-logo-nb.png",
+config/next_book_titles.json:682:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:683:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:697:      "line2_image": "C:/ComfyUI/script/logo/nb/julenissen-logo-nb.png",
+config/next_book_titles.json:700:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:701:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:716:      "line2_image": "C:/ComfyUI/script/logo/nb/redder-julen-logo-nb.png",
+config/next_book_titles.json:719:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:720:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:738:      "line2_image": "C:/ComfyUI/script/logo/nb/verdenen-logo-nb.png",
+config/next_book_titles.json:741:      "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json:757:      "line2_image": "C:/ComfyUI/script/logo/nb/fjellet-logo-nb.png",
+config/next_book_titles.json:760:      "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json:776:      "line2_image": "C:/ComfyUI/script/logo/nb/skyggedalen-logo-nb.png",
+config/next_book_titles.json:785:      "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json:799:      "line2_image": "C:/ComfyUI/script/logo/nb/dragedalen-logo-nb.png",
+config/next_book_titles.json:823:      "line2_image": "C:/ComfyUI/script/logo/nb/havpalasset-logo-nb.png",
+config/next_book_titles.json:826:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:827:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json:846:      "line2_image": "C:/ComfyUI/script/logo/nb/juleprinsessen-logo-nb.png",
+config/next_book_titles.json:849:      "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json:850:      "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:61:   "line2_image": "C:/ComfyUI/script/logo/nb/styrken-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:78:   "line2_image": "C:/ComfyUI/script/logo/en-US/styrken-logo-en.png",
+config/next_book_titles.json.bak-2026-08-24:95:   "line2_image": "C:/ComfyUI/script/logo/sv/styrken-logo-sv.png",
+config/next_book_titles.json.bak-2026-08-24:114:   "line2_image": "C:/ComfyUI/script/logo/nb/enhjorning-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:123:   "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:131:   "line2_image": "C:/ComfyUI/script/logo/en-US/enhjorning-logo-en.png",
+config/next_book_titles.json.bak-2026-08-24:140:   "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:148:   "line2_image": "C:/ComfyUI/script/logo/sv/enhjorning-logo-sv.png",
+config/next_book_titles.json.bak-2026-08-24:157:   "font_small_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:167:   "line2_image": "C:/ComfyUI/script/logo/nb/dyreparken-logo.png",
+config/next_book_titles.json.bak-2026-08-24:176:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:177:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:184:   "line2_image": "C:/ComfyUI/script/logo/en-US/dyreparken-logo.png",
+config/next_book_titles.json.bak-2026-08-24:193:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:194:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:201:   "line2_image": "C:/ComfyUI/script/logo/sv/djurparken-logo-sv.png",
+config/next_book_titles.json.bak-2026-08-24:210:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:211:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:220:   "line2_image": "C:/ComfyUI/script/logo/nb/havfruen-logo.png",
+config/next_book_titles.json.bak-2026-08-24:229:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:230:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:237:   "line2_image": "C:/ComfyUI/script/logo/en-US/havfruen-logo.png",
+config/next_book_titles.json.bak-2026-08-24:246:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:247:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:254:   "line2_image": "C:/ComfyUI/script/logo/sv/sjojungfru-logo-sv.png",
+config/next_book_titles.json.bak-2026-08-24:263:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:264:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:307:   "line2_image": "C:/ComfyUI/script/logo/nb/dinosaurenes-dal-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:316:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:317:   "font_large_path": "C:/ComfyUI/script/pre/Fredoka-Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:329:   "line2_image": "C:/ComfyUI/script/logo/nb/motet-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:338:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:339:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:356:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:357:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:374:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:375:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:385:   "line2_image": "C:/ComfyUI/script/logo/nb/fotballstjerne-logo.webp",
+config/next_book_titles.json.bak-2026-08-24:394:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:395:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:402:   "line2_image": "C:/ComfyUI/script/logo/en-US/fotballstjerne-logo.png",
+config/next_book_titles.json.bak-2026-08-24:411:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:412:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:419:   "line2_image": "C:/ComfyUI/script/logo/sv/fotbollsstjarna-logo-sv.png",
+config/next_book_titles.json.bak-2026-08-24:428:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:429:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:438:   "line2_image": "C:/ComfyUI/script/logo/nb/magiske-reise-logo.png",
+config/next_book_titles.json.bak-2026-08-24:447:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:448:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:455:   "line2_image": "C:/ComfyUI/script/logo/en-US/magiske-reise-logo.png",
+config/next_book_titles.json.bak-2026-08-24:464:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:465:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:472:   "line2_image": "C:/ComfyUI/script/logo/sv/magiska-resa-logo-sv.png",
+config/next_book_titles.json.bak-2026-08-24:481:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:482:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:491:   "line2_image": "C:/ComfyUI/script/logo/nb/magiske-reise-logo.png",
+config/next_book_titles.json.bak-2026-08-24:500:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:501:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:508:   "line2_image": "C:/ComfyUI/script/logo/en-US/magiske-reise-logo.png",
+config/next_book_titles.json.bak-2026-08-24:517:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:518:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:525:   "line2_image": "C:/ComfyUI/script/logo/sv/magiska-resa-logo-sv.png",
+config/next_book_titles.json.bak-2026-08-24:534:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:535:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf"
+config/next_book_titles.json.bak-2026-08-24:544:   "line2_image": "C:/ComfyUI/script/logo/nb/dinosauregget-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:560:   "line2_image": "C:/ComfyUI/script/logo/nb/dinosauregget-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:577:   "line2_image": "C:/ComfyUI/script/logo/nb/dinosauregget-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:597:   "line2_image": "C:/ComfyUI/script/logo/nb/superbyen-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:614:   "line2_image": "C:/ComfyUI/script/logo/nb/superbyen-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:631:   "line2_image": "C:/ComfyUI/script/logo/nb/superbyen-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:650:   "line2_image": "C:/ComfyUI/script/logo/nb/kongeriket-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:653:   "font_small_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+config/next_book_titles.json.bak-2026-08-24:670:   "line2_image": "C:/ComfyUI/script/logo/nb/fotball-vm-logo-nb.png",
+config/next_book_titles.json.bak-2026-08-24:679:   "font_small_path": "C:/ComfyUI/script/pre/Trebuchet MS Bold.ttf",
+config/next_book_titles.json.bak-2026-08-24:680:   "font_large_path": "C:/ComfyUI/script/pre/PlayfairDisplay.ttf",
+
+### 4. books/*/config.json ###
+books/den-magiske-bursdagen-jente/config.json:4:  "textScript": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+books/den-magiske-bursdagen-jente/config.json:5:  "prepareScript": "C:/ComfyUI/books/den-magiske-bursdagen-jente/script/prepare_order_den_magiske_bursdagen_jente.py",
+books/den-magiske-bursdagen-jente/config.json:7:  "orderBasePath": "C:/ComfyUI/books/den-magiske-bursdagen-jente/orders",
+books/den-magiske-bursdagen-jente/config.json:120:    "nb": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+books/den-magiske-bursdagen-jente/config.json:121:    "no": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+books/den-magiske-bursdagen-jente/config.json:122:    "nb-no": "C:/ComfyUI/script/nb/den-magiske-bursdagen-jente-text-nb.py",
+books/den-magiske-bursdagen-jente/config.json:123:    "nn": "C:/ComfyUI/script/nn/den-magiske-bursdagen-jente-text-nn.py",
+books/den-magiske-bursdagen-jente/config.json:124:    "nn-no": "C:/ComfyUI/script/nn/den-magiske-bursdagen-jente-text-nn.py",
+books/den-magiske-bursdagen-jente/config.json:125:    "en-US": "C:/ComfyUI/script/en-US/den-magiske-bursdagen-jente-text-en-US.py",
+books/den-magiske-bursdagen-jente/config.json:126:    "en-us": "C:/ComfyUI/script/en-US/den-magiske-bursdagen-jente-text-en-US.py",
+books/den-magiske-bursdagen-jente/config.json:127:    "en": "C:/ComfyUI/script/en-US/den-magiske-bursdagen-jente-text-en-US.py",
+books/den-magiske-bursdagen-jente/config.json:128:    "en-GB": "C:/ComfyUI/script/en-GB/den-magiske-bursdagen-jente-text-en-GB.py",
+books/den-magiske-bursdagen-jente/config.json:129:    "en-gb": "C:/ComfyUI/script/en-GB/den-magiske-bursdagen-jente-text-en-GB.py",
+books/den-magiske-bursdagen-jente/config.json:130:    "sv": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+books/den-magiske-bursdagen-jente/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+books/den-magiske-bursdagen-jente/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+books/den-magiske-bursdagen-jente/config.json:133:    "se": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+books/den-magiske-bursdagen-jente/config.json:134:    "swedish": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py",
+books/den-magiske-bursdagen-jente/config.json:135:    "svensk": "C:/ComfyUI/script/sv/den-magiske-bursdagen-jente-text-sv.py"
+books/den-magiske-reisen-gutt/config.json:4:  "textScript": "C:/ComfyUI/script/nb/det-magiske-kartet-text-nb.py",
+books/den-magiske-reisen-gutt/config.json:5:  "prepareScript": "C:/ComfyUI/books/den-magiske-reisen-gutt/script/prepare_order_det_magiske_kartet.py",
+books/den-magiske-reisen-gutt/config.json:7:  "orderBasePath": "C:/ComfyUI/books/den-magiske-reisen-gutt/orders",
+books/den-magiske-reisen-gutt/config.json:120:    "nb": "C:/ComfyUI/script/nb/det-magiske-kartet-text-nb.py",
+books/den-magiske-reisen-gutt/config.json:121:    "nn": "C:/ComfyUI/script/nn/det-magiske-kartet-text-nn.py",
+books/den-magiske-reisen-gutt/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/det-magiske-kartet-text-en-US.py",
+books/den-magiske-reisen-gutt/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/det-magiske-kartet-text-en-GB.py",
+books/den-magiske-reisen-gutt/config.json:124:    "en": "C:/ComfyUI/script/en-US/det-magiske-kartet-text-en-US.py",
+books/den-magiske-reisen-gutt/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/det-magiske-kartet-text-en-US.py",
+books/den-magiske-reisen-gutt/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/det-magiske-kartet-text-en-GB.py",
+books/den-magiske-reisen-gutt/config.json:127:    "no": "C:/ComfyUI/script/nb/det-magiske-kartet-text-nb.py",
+books/den-magiske-reisen-gutt/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/det-magiske-kartet-text-nb.py",
+books/den-magiske-reisen-gutt/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/det-magiske-kartet-text-nn.py",
+books/den-magiske-reisen-gutt/config.json:130:    "sv": "C:/ComfyUI/script/sv/det-magiske-kartet-text-sv.py",
+books/den-magiske-reisen-gutt/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/det-magiske-kartet-text-sv.py",
+books/den-magiske-reisen-gutt/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/det-magiske-kartet-text-sv.py",
+books/den-magiske-reisen-gutt/config.json:133:    "se": "C:/ComfyUI/script/sv/det-magiske-kartet-text-sv.py",
+books/den-magiske-reisen-gutt/config.json:134:    "swedish": "C:/ComfyUI/script/sv/det-magiske-kartet-text-sv.py",
+books/den-magiske-reisen-gutt/config.json:135:    "svensk": "C:/ComfyUI/script/sv/det-magiske-kartet-text-sv.py"
+books/den-magiske-reisen-jente/config.json:4:  "textScript": "C:/ComfyUI/script/nb/den-magiske-reisen-jente-text-nb.py",
+books/den-magiske-reisen-jente/config.json:5:  "prepareScript": "C:/ComfyUI/books/den-magiske-reisen-jente/script/prepare_order_den_magiske_reisen_jente.py",
+books/den-magiske-reisen-jente/config.json:7:  "orderBasePath": "C:/ComfyUI/books/den-magiske-reisen-jente/orders",
+books/den-magiske-reisen-jente/config.json:120:    "nb": "C:/ComfyUI/script/nb/den-magiske-reisen-jente-text-nb.py",
+books/den-magiske-reisen-jente/config.json:121:    "nn": "C:/ComfyUI/script/nn/den-magiske-reisen-jente-text-nn.py",
+books/den-magiske-reisen-jente/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/den-magiske-reisen-jente-text-en-US.py",
+books/den-magiske-reisen-jente/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/den-magiske-reisen-jente-text-en-GB.py",
+books/den-magiske-reisen-jente/config.json:124:    "en": "C:/ComfyUI/script/en-US/den-magiske-reisen-jente-text-en-US.py",
+books/den-magiske-reisen-jente/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/den-magiske-reisen-jente-text-en-US.py",
+books/den-magiske-reisen-jente/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/den-magiske-reisen-jente-text-en-GB.py",
+books/den-magiske-reisen-jente/config.json:127:    "no": "C:/ComfyUI/script/nb/den-magiske-reisen-jente-text-nb.py",
+books/den-magiske-reisen-jente/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/den-magiske-reisen-jente-text-nb.py",
+books/den-magiske-reisen-jente/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/den-magiske-reisen-jente-text-nn.py",
+books/den-magiske-reisen-jente/config.json:130:    "sv": "C:/ComfyUI/script/sv/den-magiske-reisen-jente-text-sv.py",
+books/den-magiske-reisen-jente/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/den-magiske-reisen-jente-text-sv.py",
+books/den-magiske-reisen-jente/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/den-magiske-reisen-jente-text-sv.py",
+books/den-magiske-reisen-jente/config.json:133:    "se": "C:/ComfyUI/script/sv/den-magiske-reisen-jente-text-sv.py",
+books/den-magiske-reisen-jente/config.json:134:    "swedish": "C:/ComfyUI/script/sv/den-magiske-reisen-jente-text-sv.py",
+books/den-magiske-reisen-jente/config.json:135:    "svensk": "C:/ComfyUI/script/sv/den-magiske-reisen-jente-text-sv.py"
+books/den-skjulte-styrken/config.json:4:  "textScript": "C:/ComfyUI/script/nb/styrken-text-nb.py",
+books/den-skjulte-styrken/config.json:5:  "prepareScript": "C:/ComfyUI/books/den-skjulte-styrken/script/prepare_order_styrken.py",
+books/den-skjulte-styrken/config.json:7:  "orderBasePath": "C:/ComfyUI/books/den-skjulte-styrken/orders",
+books/den-skjulte-styrken/config.json:102:    "nb": "C:/ComfyUI/script/nb/styrken-text-nb.py",
+books/den-skjulte-styrken/config.json:103:    "nn": "C:/ComfyUI/script/nn/styrken-text-nn.py",
+books/den-skjulte-styrken/config.json:104:    "en-US": "C:/ComfyUI/script/en-US/styrken-text-en-US.py",
+books/den-skjulte-styrken/config.json:105:    "en-GB": "C:/ComfyUI/script/en-GB/styrken-text-en-GB.py",
+books/den-skjulte-styrken/config.json:106:    "en": "C:/ComfyUI/script/en-US/styrken-text-en-US.py",
+books/den-skjulte-styrken/config.json:107:    "en-us": "C:/ComfyUI/script/en-US/styrken-text-en-US.py",
+books/den-skjulte-styrken/config.json:108:    "en-gb": "C:/ComfyUI/script/en-GB/styrken-text-en-GB.py",
+books/den-skjulte-styrken/config.json:109:    "no": "C:/ComfyUI/script/nb/styrken-text-nb.py",
+books/den-skjulte-styrken/config.json:110:    "nb-no": "C:/ComfyUI/script/nb/styrken-text-nb.py",
+books/den-skjulte-styrken/config.json:111:    "nn-no": "C:/ComfyUI/script/nn/styrken-text-nn.py",
+books/den-skjulte-styrken/config.json:112:    "sv": "C:/ComfyUI/script/sv/styrken-text-sv.py",
+books/den-skjulte-styrken/config.json:113:    "sv-SE": "C:/ComfyUI/script/sv/styrken-text-sv.py",
+books/den-skjulte-styrken/config.json:114:    "sv-se": "C:/ComfyUI/script/sv/styrken-text-sv.py",
+books/den-skjulte-styrken/config.json:115:    "se": "C:/ComfyUI/script/sv/styrken-text-sv.py",
+books/den-skjulte-styrken/config.json:116:    "swedish": "C:/ComfyUI/script/sv/styrken-text-sv.py",
+books/den-skjulte-styrken/config.json:117:    "svensk": "C:/ComfyUI/script/sv/styrken-text-sv.py"
+books/den-skjulte-verdenen/config.json:4:  "textScript": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+books/den-skjulte-verdenen/config.json:5:  "prepareScript": "C:/ComfyUI/books/den-skjulte-verdenen/script/prepare_order_den_skjulte_verdenen.py",
+books/den-skjulte-verdenen/config.json:7:  "orderBasePath": "C:/ComfyUI/books/den-skjulte-verdenen/orders",
+books/den-skjulte-verdenen/config.json:120:    "nb": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+books/den-skjulte-verdenen/config.json:121:    "nn": "C:/ComfyUI/script/nn/den-skjulte-verdenen-text-nn.py",
+books/den-skjulte-verdenen/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/den-skjulte-verdenen-text-en-US.py",
+books/den-skjulte-verdenen/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/den-skjulte-verdenen-text-en-GB.py",
+books/den-skjulte-verdenen/config.json:124:    "en": "C:/ComfyUI/script/en-US/den-skjulte-verdenen-text-en-US.py",
+books/den-skjulte-verdenen/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/den-skjulte-verdenen-text-en-US.py",
+books/den-skjulte-verdenen/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/den-skjulte-verdenen-text-en-GB.py",
+books/den-skjulte-verdenen/config.json:127:    "no": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+books/den-skjulte-verdenen/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+books/den-skjulte-verdenen/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/den-skjulte-verdenen-text-nn.py",
+books/den-skjulte-verdenen/config.json:130:    "sv": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+books/den-skjulte-verdenen/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+books/den-skjulte-verdenen/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+books/den-skjulte-verdenen/config.json:133:    "se": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+books/den-skjulte-verdenen/config.json:134:    "swedish": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+books/den-skjulte-verdenen/config.json:135:    "svensk": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py"
+books/den-tapte-superbyen/config.json:6:  "orderBasePath": "C:/ComfyUI/books/den-tapte-superbyen/orders",
+books/det-forsvunne-dinosauregget/config.json:5:  "textScript": "C:/ComfyUI/script/nb/dinosauregget-text-nb.py",
+books/det-forsvunne-dinosauregget/config.json:6:  "prepareScript": "C:/ComfyUI/books/det-forsvunne-dinosauregget/script/prepare_order_dinosauregget.py",
+books/det-forsvunne-dinosauregget/config.json:7:  "orderBasePath": "C:/ComfyUI/books/det-forsvunne-dinosauregget/orders",
+books/det-forsvunne-dinosauregget/config.json:120:    "nb": "C:/ComfyUI/script/nb/dinosauregget-text-nb.py",
+books/det-forsvunne-dinosauregget/config.json:121:    "nn": "C:/ComfyUI/script/nn/dinosauregget-text-nn.py",
+books/det-forsvunne-dinosauregget/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/dinosauregget-text-en-US.py",
+books/det-forsvunne-dinosauregget/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/dinosauregget-text-en-GB.py",
+books/det-forsvunne-dinosauregget/config.json:124:    "sv": "C:/ComfyUI/script/sv/dinosauregget-text-sv.py",
+books/det-forsvunne-dinosauregget/config.json:125:    "en": "C:/ComfyUI/script/en-US/dinosauregget-text-en-US.py",
+books/det-forsvunne-dinosauregget/config.json:126:    "en-us": "C:/ComfyUI/script/en-US/dinosauregget-text-en-US.py",
+books/det-forsvunne-dinosauregget/config.json:127:    "en-gb": "C:/ComfyUI/script/en-GB/dinosauregget-text-en-GB.py",
+books/det-forsvunne-dinosauregget/config.json:128:    "no": "C:/ComfyUI/script/nb/dinosauregget-text-nb.py",
+books/det-forsvunne-dinosauregget/config.json:129:    "nb-no": "C:/ComfyUI/script/nb/dinosauregget-text-nb.py",
+books/det-forsvunne-dinosauregget/config.json:130:    "nn-no": "C:/ComfyUI/script/nn/dinosauregget-text-nn.py",
+books/det-forsvunne-dinosauregget/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/dinosauregget-text-sv.py",
+books/det-forsvunne-dinosauregget/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/dinosauregget-text-sv.py",
+books/det-forsvunne-dinosauregget/config.json:133:    "se": "C:/ComfyUI/script/sv/dinosauregget-text-sv.py",
+books/det-forsvunne-dinosauregget/config.json:134:    "swedish": "C:/ComfyUI/script/sv/dinosauregget-text-sv.py",
+books/det-forsvunne-dinosauregget/config.json:135:    "svensk": "C:/ComfyUI/script/sv/dinosauregget-text-sv.py"
+books/det-morke-fjellet/config.json:7:  "orderBasePath": "C:/ComfyUI/books/det-morke-fjellet/orders",
+books/det-mørke-fjellet/config.json:7:  "orderBasePath": "C:/ComfyUI/books/det-morke-fjellet/orders",
+books/dinosaurenes-dal/config.json:4:  "textScript": "C:/ComfyUI/script/nb/dinosaur-text-nb.py",
+books/dinosaurenes-dal/config.json:5:  "prepareScript": "C:/ComfyUI/books/dinosaurenes-dal/script/prepare_order_dinosaur.py",
+books/dinosaurenes-dal/config.json:7:  "orderBasePath": "C:/ComfyUI/books/dinosaurenes-dal/orders",
+books/dinosaurenes-dal/config.json:120:    "nb": "C:/ComfyUI/script/nb/dinosaur-text-nb.py",
+books/dinosaurenes-dal/config.json:121:    "nn": "C:/ComfyUI/script/nn/dinosaur-text-nn.py",
+books/dinosaurenes-dal/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/dinosaur-text-en-US.py",
+books/dinosaurenes-dal/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/dinosaur-text-en-GB.py",
+books/dinosaurenes-dal/config.json:124:    "en": "C:/ComfyUI/script/en-US/dinosaur-text-en-US.py",
+books/dinosaurenes-dal/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/dinosaur-text-en-US.py",
+books/dinosaurenes-dal/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/dinosaur-text-en-GB.py",
+books/dinosaurenes-dal/config.json:127:    "no": "C:/ComfyUI/script/nb/dinosaur-text-nb.py",
+books/dinosaurenes-dal/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/dinosaur-text-nb.py",
+books/dinosaurenes-dal/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/dinosaur-text-nn.py",
+books/dinosaurenes-dal/config.json:130:    "sv": "C:/ComfyUI/script/sv/dinosaur-text-sv.py",
+books/dinosaurenes-dal/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/dinosaur-text-sv.py",
+books/dinosaurenes-dal/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/dinosaur-text-sv.py",
+books/dinosaurenes-dal/config.json:133:    "se": "C:/ComfyUI/script/sv/dinosaur-text-sv.py",
+books/dinosaurenes-dal/config.json:134:    "swedish": "C:/ComfyUI/script/sv/dinosaur-text-sv.py",
+books/dinosaurenes-dal/config.json:135:    "svensk": "C:/ComfyUI/script/sv/dinosaur-text-sv.py"
+books/dragedalen/config.json:6:  "orderBasePath": "C:/ComfyUI/books/dragedalen/orders",
+books/dragejakten/config.json:6:  "textScript": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+books/dragejakten/config.json:7:  "prepareScript": "C:/ComfyUI/books/dragejakten/script/prepare_order_dragejakten.py",
+books/dragejakten/config.json:9:  "orderBasePath": "C:/ComfyUI/books/dragejakten/orders",
+books/dragejakten/config.json:122:    "nb": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+books/dragejakten/config.json:123:    "nn": "C:/ComfyUI/script/nn/dragejakten-text-nn.py",
+books/dragejakten/config.json:124:    "en-US": "C:/ComfyUI/script/en-US/dragejakten-text-en-US.py",
+books/dragejakten/config.json:125:    "en-GB": "C:/ComfyUI/script/en-GB/dragejakten-text-en-GB.py",
+books/dragejakten/config.json:126:    "en": "C:/ComfyUI/script/en-US/dragejakten-text-en-US.py",
+books/dragejakten/config.json:127:    "en-us": "C:/ComfyUI/script/en-US/dragejakten-text-en-US.py",
+books/dragejakten/config.json:128:    "en-gb": "C:/ComfyUI/script/en-GB/dragejakten-text-en-GB.py",
+books/dragejakten/config.json:129:    "no": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+books/dragejakten/config.json:130:    "nb-no": "C:/ComfyUI/script/nb/dragejakten-text-nb.py",
+books/dragejakten/config.json:131:    "nn-no": "C:/ComfyUI/script/nn/dragejakten-text-nn.py",
+books/dragejakten/config.json:132:    "sv": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+books/dragejakten/config.json:133:    "sv-SE": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+books/dragejakten/config.json:134:    "sv-se": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+books/dragejakten/config.json:135:    "se": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+books/dragejakten/config.json:136:    "swedish": "C:/ComfyUI/script/sv/dragejakten-text-sv.py",
+books/dragejakten/config.json:137:    "svensk": "C:/ComfyUI/script/sv/dragejakten-text-sv.py"
+books/dyreparken/config.json:4:  "textScript": "C:/ComfyUI/script/nb/dyreparken-text-nb.py",
+books/dyreparken/config.json:5:  "prepareScript": "C:/ComfyUI/books/dyreparken/script/prepare_order_dyreparken.py",
+books/dyreparken/config.json:7:  "orderBasePath": "C:/ComfyUI/books/dyreparken/orders",
+books/dyreparken/config.json:120:    "nb": "C:/ComfyUI/script/nb/dyreparken-text-nb.py",
+books/dyreparken/config.json:121:    "nn": "C:/ComfyUI/script/nn/dyreparken-text-nn.py",
+books/dyreparken/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/dyreparken-text-en-US.py",
+books/dyreparken/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/dyreparken-text-en-GB.py",
+books/dyreparken/config.json:124:    "en": "C:/ComfyUI/script/en-US/dyreparken-text-en-US.py",
+books/dyreparken/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/dyreparken-text-en-US.py",
+books/dyreparken/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/dyreparken-text-en-GB.py",
+books/dyreparken/config.json:127:    "no": "C:/ComfyUI/script/nb/dyreparken-text-nb.py",
+books/dyreparken/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/dyreparken-text-nb.py",
+books/dyreparken/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/dyreparken-text-nn.py",
+books/dyreparken/config.json:130:    "sv": "C:/ComfyUI/script/sv/dyreparken-text-sv.py",
+books/dyreparken/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/dyreparken-text-sv.py",
+books/dyreparken/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/dyreparken-text-sv.py",
+books/dyreparken/config.json:133:    "se": "C:/ComfyUI/script/sv/dyreparken-text-sv.py",
+books/dyreparken/config.json:134:    "swedish": "C:/ComfyUI/script/sv/dyreparken-text-sv.py",
+books/dyreparken/config.json:135:    "svensk": "C:/ComfyUI/script/sv/dyreparken-text-sv.py"
+books/enhjorning/config.json:4:  "textScript": "C:/ComfyUI/script/nb/Enhjorning-text-nb.py",
+books/enhjorning/config.json:5:  "prepareScript": "C:/ComfyUI/books/enhjorning/script/prepare_order_enhjorning.py",
+books/enhjorning/config.json:7:  "orderBasePath": "C:/ComfyUI/books/enhjorning/orders",
+books/enhjorning/config.json:120:    "nb": "C:/ComfyUI/script/nb/Enhjorning-text-nb.py",
+books/enhjorning/config.json:121:    "nn": "C:/ComfyUI/script/nn/Enhjorning-text-nn.py",
+books/enhjorning/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/Enhjorning-text-en-US.py",
+books/enhjorning/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/Enhjorning-text-en-GB.py",
+books/enhjorning/config.json:124:    "en": "C:/ComfyUI/script/en-US/Enhjorning-text-en-US.py",
+books/enhjorning/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/Enhjorning-text-en-US.py",
+books/enhjorning/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/Enhjorning-text-en-GB.py",
+books/enhjorning/config.json:127:    "no": "C:/ComfyUI/script/nb/Enhjorning-text-nb.py",
+books/enhjorning/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/Enhjorning-text-nb.py",
+books/enhjorning/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/Enhjorning-text-nn.py",
+books/enhjorning/config.json:130:    "sv": "C:/ComfyUI/script/sv/Enhjorning-text-sv.py",
+books/enhjorning/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/Enhjorning-text-sv.py",
+books/enhjorning/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/Enhjorning-text-sv.py",
+books/enhjorning/config.json:133:    "se": "C:/ComfyUI/script/sv/Enhjorning-text-sv.py",
+books/enhjorning/config.json:134:    "swedish": "C:/ComfyUI/script/sv/Enhjorning-text-sv.py",
+books/enhjorning/config.json:135:    "svensk": "C:/ComfyUI/script/sv/Enhjorning-text-sv.py"
+books/eventyr-med-julenissen/config.json:5:  "orderBasePath": "C:/ComfyUI/books/eventyr-med-julenissen/orders",
+books/fotball-vm/config.json:5:  "orderBasePath": "C:/ComfyUI/books/fotball-vm/orders",
+books/fotball-vm/config.json:111:  "textScript": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+books/fotball-vm/config.json:112:  "prepareScript": "C:/ComfyUI/books/fotball-vm/script/prepare_order_fotball_vm.py",
+books/fotball-vm/config.json:120:    "nb": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+books/fotball-vm/config.json:121:    "nn": "C:/ComfyUI/script/nn/fotball-vm-text-nn.py",
+books/fotball-vm/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
+books/fotball-vm/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/fotball-vm-text-en-GB.py",
+books/fotball-vm/config.json:124:    "en": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
+books/fotball-vm/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
+books/fotball-vm/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/fotball-vm-text-en-GB.py",
+books/fotball-vm/config.json:127:    "no": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+books/fotball-vm/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+books/fotball-vm/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/fotball-vm-text-nn.py",
+books/fotball-vm/config.json:130:    "sv": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+books/fotball-vm/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+books/fotball-vm/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+books/fotball-vm/config.json:133:    "se": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+books/fotball-vm/config.json:134:    "swedish": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+books/fotball-vm/config.json:135:    "svensk": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py"
+books/fotballstjernen/config.json:4:  "textScript": "C:/ComfyUI/script/nb/fotballstjernen-text-nb.py",
+books/fotballstjernen/config.json:5:  "prepareScript": "C:/ComfyUI/books/fotballstjernen/script/prepare_order_fotballstjernen.py",
+books/fotballstjernen/config.json:7:  "orderBasePath": "C:/ComfyUI/books/fotballstjernen/orders",
+books/fotballstjernen/config.json:126:    "nb": "C:/ComfyUI/script/nb/fotballstjernen-text-nb.py",
+books/fotballstjernen/config.json:127:    "nn": "C:/ComfyUI/script/nn/fotballstjernen-text-nn.py",
+books/fotballstjernen/config.json:128:    "en-US": "C:/ComfyUI/script/en-US/fotballstjernen-text-en-US.py",
+books/fotballstjernen/config.json:129:    "en-GB": "C:/ComfyUI/script/en-GB/fotballstjernen-text-en-GB.py",
+books/fotballstjernen/config.json:130:    "en": "C:/ComfyUI/script/en-US/fotballstjernen-text-en-US.py",
+books/fotballstjernen/config.json:131:    "en-us": "C:/ComfyUI/script/en-US/fotballstjernen-text-en-US.py",
+books/fotballstjernen/config.json:132:    "en-gb": "C:/ComfyUI/script/en-GB/fotballstjernen-text-en-GB.py",
+books/fotballstjernen/config.json:133:    "no": "C:/ComfyUI/script/nb/fotballstjernen-text-nb.py",
+books/fotballstjernen/config.json:134:    "nb-no": "C:/ComfyUI/script/nb/fotballstjernen-text-nb.py",
+books/fotballstjernen/config.json:135:    "nn-no": "C:/ComfyUI/script/nn/fotballstjernen-text-nn.py",
+books/fotballstjernen/config.json:136:    "sv": "C:/ComfyUI/script/sv/fotballstjernen-text-sv.py",
+books/fotballstjernen/config.json:137:    "sv-SE": "C:/ComfyUI/script/sv/fotballstjernen-text-sv.py",
+books/fotballstjernen/config.json:138:    "sv-se": "C:/ComfyUI/script/sv/fotballstjernen-text-sv.py",
+books/fotballstjernen/config.json:139:    "se": "C:/ComfyUI/script/sv/fotballstjernen-text-sv.py",
+books/fotballstjernen/config.json:140:    "swedish": "C:/ComfyUI/script/sv/fotballstjernen-text-sv.py",
+books/fotballstjernen/config.json:141:    "svensk": "C:/ComfyUI/script/sv/fotballstjernen-text-sv.py"
+books/havfruen/config.json:6:  "textScript": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+books/havfruen/config.json:7:  "prepareScript": "C:/ComfyUI/books/havfruen/script/prepare_order_havfruen.py",
+books/havfruen/config.json:9:  "orderBasePath": "C:/ComfyUI/books/havfruen/orders",
+books/havfruen/config.json:122:    "nb": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+books/havfruen/config.json:123:    "nn": "C:/ComfyUI/script/nn/havfruen-text-nn.py",
+books/havfruen/config.json:124:    "en-US": "C:/ComfyUI/script/en-US/havfruen-text-en-US.py",
+books/havfruen/config.json:125:    "en-GB": "C:/ComfyUI/script/en-GB/havfruen-text-en-GB.py",
+books/havfruen/config.json:126:    "en": "C:/ComfyUI/script/en-US/havfruen-text-en-US.py",
+books/havfruen/config.json:127:    "en-us": "C:/ComfyUI/script/en-US/havfruen-text-en-US.py",
+books/havfruen/config.json:128:    "en-gb": "C:/ComfyUI/script/en-GB/havfruen-text-en-GB.py",
+books/havfruen/config.json:129:    "no": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+books/havfruen/config.json:130:    "nb-no": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+books/havfruen/config.json:131:    "nn-no": "C:/ComfyUI/script/nn/havfruen-text-nn.py",
+books/havfruen/config.json:132:    "sv": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+books/havfruen/config.json:133:    "sv-SE": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+books/havfruen/config.json:134:    "sv-se": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+books/havfruen/config.json:135:    "se": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+books/havfruen/config.json:136:    "swedish": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+books/havfruen/config.json:137:    "svensk": "C:/ComfyUI/script/sv/havfruen-text-sv.py"
+books/havpalasset/config.json:6:  "orderBasePath": "C:/ComfyUI/books/havpalasset/orders",
+books/juleprinsessen/config.json:5:  "textScript": "C:/ComfyUI/script/nb/juleprinsessen-text-nb.py",
+books/juleprinsessen/config.json:7:    "nb": "C:/ComfyUI/script/nb/juleprinsessen-text-nb.py",
+books/juleprinsessen/config.json:8:    "no": "C:/ComfyUI/script/nb/juleprinsessen-text-nb.py",
+books/juleprinsessen/config.json:9:    "nb-no": "C:/ComfyUI/script/nb/juleprinsessen-text-nb.py",
+books/juleprinsessen/config.json:10:    "nn": "C:/ComfyUI/script/nn/juleprinsessen-text-nn.py",
+books/juleprinsessen/config.json:11:    "nn-no": "C:/ComfyUI/script/nn/juleprinsessen-text-nn.py",
+books/juleprinsessen/config.json:12:    "en": "C:/ComfyUI/script/en-US/juleprinsessen-text-en-US.py",
+books/juleprinsessen/config.json:13:    "en-US": "C:/ComfyUI/script/en-US/juleprinsessen-text-en-US.py",
+books/juleprinsessen/config.json:14:    "en-GB": "C:/ComfyUI/script/en-GB/juleprinsessen-text-en-GB.py",
+books/juleprinsessen/config.json:15:    "sv": "C:/ComfyUI/script/sv/juleprinsessen-text-sv.py",
+books/juleprinsessen/config.json:16:    "sv-se": "C:/ComfyUI/script/sv/juleprinsessen-text-sv.py"
+books/juleprinsessen/config.json:18:  "prepareScript": "C:/ComfyUI/books/juleprinsessen/script/prepare_order_juleprinsessen.py",
+books/juleprinsessen/config.json:20:  "orderBasePath": "C:/ComfyUI/books/juleprinsessen/orders",
+books/kongerikets-hemmelighet/config.json:5:  "orderBasePath": "C:/ComfyUI/books/kongerikets-hemmelighet/orders",
+books/kongerikets-hemmelighet/config.json:111:  "textScript": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+books/kongerikets-hemmelighet/config.json:112:  "prepareScript": "C:/ComfyUI/books/kongerikets-hemmelighet/script/prepare_order_kongeriket.py",
+books/kongerikets-hemmelighet/config.json:120:    "nb": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+books/kongerikets-hemmelighet/config.json:121:    "nn": "C:/ComfyUI/script/nn/kongeriket-text-nn.py",
+books/kongerikets-hemmelighet/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/kongeriket-text-en-US.py",
+books/kongerikets-hemmelighet/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/kongeriket-text-en-GB.py",
+books/kongerikets-hemmelighet/config.json:124:    "sv": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+books/kongerikets-hemmelighet/config.json:125:    "en": "C:/ComfyUI/script/en-US/kongeriket-text-en-US.py",
+books/kongerikets-hemmelighet/config.json:126:    "en-us": "C:/ComfyUI/script/en-US/kongeriket-text-en-US.py",
+books/kongerikets-hemmelighet/config.json:127:    "en-gb": "C:/ComfyUI/script/en-GB/kongeriket-text-en-GB.py",
+books/kongerikets-hemmelighet/config.json:128:    "no": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+books/kongerikets-hemmelighet/config.json:129:    "nb-no": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+books/kongerikets-hemmelighet/config.json:130:    "nn-no": "C:/ComfyUI/script/nn/kongeriket-text-nn.py",
+books/kongerikets-hemmelighet/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+books/kongerikets-hemmelighet/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+books/kongerikets-hemmelighet/config.json:133:    "se": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+books/kongerikets-hemmelighet/config.json:134:    "swedish": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+books/kongerikets-hemmelighet/config.json:135:    "svensk": "C:/ComfyUI/script/sv/kongeriket-text-sv.py"
+books/motet-i-hjertet/config.json:4:  "textScript": "C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+books/motet-i-hjertet/config.json:5:  "prepareScript": "C:/ComfyUI/books/motet-i-hjertet/script/prepare_order_motet_i_hjertet.py",
+books/motet-i-hjertet/config.json:7:  "orderBasePath": "C:/ComfyUI/books/motet-i-hjertet/orders",
+books/motet-i-hjertet/config.json:120:    "nb": "C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+books/motet-i-hjertet/config.json:121:    "nn": "C:/ComfyUI/script/nn/motet-i-hjertet-text-nn.py",
+books/motet-i-hjertet/config.json:122:    "en-US": "C:/ComfyUI/script/en-US/motet-i-hjertet-text-en-US.py",
+books/motet-i-hjertet/config.json:123:    "en-GB": "C:/ComfyUI/script/en-GB/motet-i-hjertet-text-en-GB.py",
+books/motet-i-hjertet/config.json:124:    "en": "C:/ComfyUI/script/en-US/motet-i-hjertet-text-en-US.py",
+books/motet-i-hjertet/config.json:125:    "en-us": "C:/ComfyUI/script/en-US/motet-i-hjertet-text-en-US.py",
+books/motet-i-hjertet/config.json:126:    "en-gb": "C:/ComfyUI/script/en-GB/motet-i-hjertet-text-en-GB.py",
+books/motet-i-hjertet/config.json:127:    "no": "C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+books/motet-i-hjertet/config.json:128:    "nb-no": "C:/ComfyUI/script/nb/motet-i-hjertet-text-nb.py",
+books/motet-i-hjertet/config.json:129:    "nn-no": "C:/ComfyUI/script/nn/motet-i-hjertet-text-nn.py",
+books/motet-i-hjertet/config.json:130:    "sv": "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+books/motet-i-hjertet/config.json:131:    "sv-SE": "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+books/motet-i-hjertet/config.json:132:    "sv-se": "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+books/motet-i-hjertet/config.json:133:    "se": "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+books/motet-i-hjertet/config.json:134:    "swedish": "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py",
+books/motet-i-hjertet/config.json:135:    "svensk": "C:/ComfyUI/script/sv/motet-i-hjertet-text-sv.py"
+books/redder-julen/config.json:5:  "orderBasePath": "C:/ComfyUI/books/redder-julen/orders",
+books/skyggedalen/config.json:6:  "orderBasePath": "C:/ComfyUI/books/skyggedalen/orders",
+
+### 5. books/*/script/*.py ###
+books/den-magiske-bursdagen-jente/script/prepare_order_den_magiske_bursdagen_jente.py:7:BOOK_ROOT = Path(r"C:\ComfyUI\books\den-magiske-bursdagen-jente")
+books/den-magiske-bursdagen-jente/script/prepare_order_den_magiske_bursdagen_jente.py:10:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "den-magiske-bursdagen-jente" / "orders"
+books/den-magiske-bursdagen-jente/script/prepare_order_den_magiske_bursdagen_jente.py:11:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/den-magiske-reisen-gutt/script/prepare_order_det_magiske_kartet.py:6:BOOK_ROOT = Path(r"C:\ComfyUI\books\den-magiske-reisen-gutt")
+books/den-magiske-reisen-gutt/script/prepare_order_det_magiske_kartet.py:9:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "den-magiske-reisen-gutt" / "orders"
+books/den-magiske-reisen-gutt/script/prepare_order_det_magiske_kartet.py:10:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/den-magiske-reisen-jente/script/patch_dpfirst_linespacing.py:26:SCRIPT_ROOT = r"C:\ComfyUI\script"
+books/den-magiske-reisen-jente/script/prepare_order_den_magiske_reisen_jente.py:6:BOOK_ROOT = Path(r"C:\ComfyUI\books\den-magiske-reisen-jente")
+books/den-magiske-reisen-jente/script/prepare_order_den_magiske_reisen_jente.py:9:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "den-magiske-reisen-jente" / "orders"
+books/den-magiske-reisen-jente/script/prepare_order_den_magiske_reisen_jente.py:10:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/den-skjulte-styrken/script/prepare_order_styrken.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\den-skjulte-styrken")
+books/den-skjulte-styrken/script/prepare_order_styrken.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "den-skjulte-styrken" / "orders"
+books/den-skjulte-styrken/script/prepare_order_styrken.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/den-skjulte-verdenen/script/build_verdenen.py:11:  python build_verdenen.py --apply    # skriver til C:/ComfyUI/script/<locale>/
+books/den-skjulte-verdenen/script/build_verdenen.py:23:SCRIPT_ROOT = r"C:\ComfyUI\script"
+books/den-skjulte-verdenen/script/prepare_order_den_skjulte_verdenen.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\den-skjulte-verdenen")
+books/den-skjulte-verdenen/script/prepare_order_den_skjulte_verdenen.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "den-skjulte-verdenen" / "orders"
+books/den-skjulte-verdenen/script/prepare_order_den_skjulte_verdenen.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/det-forsvunne-dinosauregget/script/prepare_order_dinosauregget.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\det-forsvunne-dinosauregget")
+books/det-forsvunne-dinosauregget/script/prepare_order_dinosauregget.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "det-forsvunne-dinosauregget" / "orders"
+books/det-forsvunne-dinosauregget/script/prepare_order_dinosauregget.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/dinosaurenes-dal/script/prepare_order_dinosaur.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\dinosaurenes-dal")
+books/dinosaurenes-dal/script/prepare_order_dinosaur.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "dinosaurenes-dal" / "orders"
+books/dinosaurenes-dal/script/prepare_order_dinosaur.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/dragejakten/script/build_dragejakten.py:29:SCRIPT_ROOT = r"C:\ComfyUI\script"
+books/dragejakten/script/patch_dragejakten_cover_intro.py:20:SCRIPT_ROOT = r"C:\ComfyUI\script"
+books/dragejakten/script/prepare_order_dragejakten.py:7:BOOK_ROOT = Path(r"C:\ComfyUI\books\dragejakten")
+books/dragejakten/script/prepare_order_dragejakten.py:10:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "dragejakten" / "orders"
+books/dragejakten/script/prepare_order_dragejakten.py:11:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/dyreparken/script/prepare_order_dyreparken.py:9:BOOK_ROOT = Path(r"C:\ComfyUI\books\dyreparken")
+books/dyreparken/script/prepare_order_dyreparken.py:12:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "dyreparken" / "orders"
+books/dyreparken/script/prepare_order_dyreparken.py:13:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/enhjorning/script/prepare_order_enhjorning.py:9:BOOK_ROOT = Path(r"C:\ComfyUI\books\enhjorning")
+books/enhjorning/script/prepare_order_enhjorning.py:12:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "enhjorning" / "orders"
+books/enhjorning/script/prepare_order_enhjorning.py:13:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/enhjorning/script/rebuild_existing_for_gelato_test.py:11:COMFY_ROOT = Path(r"C:\ComfyUI")
+books/fotball-vm/script/build_fotball_vm.py:11:  python build_fotball_vm.py --apply    # skriver til C:/ComfyUI/script/<locale>/
+books/fotball-vm/script/build_fotball_vm.py:23:SCRIPT_ROOT = r"C:\ComfyUI\script"
+books/fotball-vm/script/prepare_order_fotball_vm.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\fotball-vm")
+books/fotball-vm/script/prepare_order_fotball_vm.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "fotball-vm" / "orders"
+books/fotball-vm/script/prepare_order_fotball_vm.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/havfruen/script/prepare_order_havfruen.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\havfruen")
+books/havfruen/script/prepare_order_havfruen.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "havfruen" / "orders"
+books/havfruen/script/prepare_order_havfruen.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/juleprinsessen/script/build_juleprinsessen.py:14:  python build_juleprinsessen.py --apply    # skriver til C:/ComfyUI/script/<locale>/
+books/juleprinsessen/script/build_juleprinsessen.py:26:SCRIPT_ROOT = r"C:\ComfyUI\script"
+books/juleprinsessen/script/prepare_order_juleprinsessen.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\juleprinsessen")
+books/juleprinsessen/script/prepare_order_juleprinsessen.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "juleprinsessen" / "orders"
+books/juleprinsessen/script/prepare_order_juleprinsessen.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/kongerikets-hemmelighet/script/build_kongeriket.py:13:SCRIPT_ROOT = r"C:\ComfyUI\script"
+books/kongerikets-hemmelighet/script/prepare_order_kongeriket.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\kongerikets-hemmelighet")
+books/kongerikets-hemmelighet/script/prepare_order_kongeriket.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "kongerikets-hemmelighet" / "orders"
+books/kongerikets-hemmelighet/script/prepare_order_kongeriket.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+books/motet-i-hjertet/script/prepare_order_motet_i_hjertet.py:8:BOOK_ROOT = Path(r"C:\ComfyUI\books\motet-i-hjertet")
+books/motet-i-hjertet/script/prepare_order_motet_i_hjertet.py:11:COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "motet-i-hjertet" / "orders"
+books/motet-i-hjertet/script/prepare_order_motet_i_hjertet.py:12:SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+
+### 6. server/ + dreampage-headswap/ ###
+server/dp-mockup-server/data/templates.json:9:    "mapsDir": "C:\\ComfyUI\\server\\dp-mockup-server\\data\\calib\\book-square",
+server/dp-mockup-server/data/templates.json:20:    "psdPath": "C:\\ComfyUI\\server\\dp-mockup-server\\data\\psd\\1c8e5a0dfdc188d1.psd",
+server/dp-mockup-server/data/templates.json:30:    "mapsDir": "C:/ComfyUI/server/dp-mockup-server/data/calib/psd_1c8e5a0dfdc188d1_layer-1",
+dreampage-headswap/.venv-flux-test/Lib/site-packages/comfyui_readonly_dependencies.pth:1:C:\ComfyUI\venv\Lib\site-packages
+dreampage-headswap/.venv-flux-test/Scripts/activate:41:VIRTUAL_ENV="C:\ComfyUI\dreampage-headswap\.venv-flux-test"
+dreampage-headswap/.venv-flux-test/Scripts/activate.bat:11:set VIRTUAL_ENV=C:\ComfyUI\dreampage-headswap\.venv-flux-test
+Binary file dreampage-headswap/.venv-flux-test/Scripts/diffusers-cli.exe matches
+Binary file dreampage-headswap/.venv-flux-test/Scripts/pip.exe matches
+Binary file dreampage-headswap/.venv-flux-test/Scripts/pip3.10.exe matches
+Binary file dreampage-headswap/.venv-flux-test/Scripts/pip3.exe matches
+dreampage-headswap/docs/COMFYUI.md:14:C:\ComfyUI\venv\Scripts\python.exe -m pip install -e C:\ComfyUI\dreampage-headswap
+dreampage-headswap/docs/COMFYUI.md:15:New-Item -ItemType Junction -Path C:\ComfyUI\custom_nodes\dreampage_headswap -Target C:\ComfyUI\dreampage-headswap\comfyui_dreampage_headswap
+dreampage-headswap/docs/COMFYUI_KLEIN_STUDIO.md:72:C:\ComfyUI\venv\Scripts\python.exe scripts/build_klein_workflow.py
+dreampage-headswap/docs/CURRENT_WORKFLOW.md:3:Inspected 2026-09-11, read-only. No customer images were opened, executed, copied, or admitted to training. The representative graph is `C:/ComfyUI/books/fotballstjernen/workflow_api.json`; a loader/settings scan of all 23 `books/*/workflow_api.json` files found the same Klein 9B, Qwen GGUF, four-step LanPaint, and crop-mask settings. This records wiring, not a quality benchmark.
+dreampage-headswap/docs/REFINEMENT.md:74:From `C:\ComfyUI\dreampage-headswap`, with `$env:PYTHONPATH = "src;."`:
+dreampage-headswap/README.md:50:cd C:\ComfyUI\dreampage-headswap
+
+### 7. ComfyUI egne configfiler ###
+--- user/default/ComfyUI-Manager/config.ini ---
+5:channel_url = https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main
+10:update_policy = stable-comfyui
+--- extra_model_paths.yaml.example ---
+1:#Rename this to extra_model_paths.yaml and ComfyUI will load it
+3:#config for comfyui
+6:#comfyui:
+7:#     base_path: path/to/comfyui/
+
+### 8. custom_nodes med hardkodede stier ###
+custom_nodes/comfyui-custom-scripts/pysssss.example.json:5:		"directory": "C:\\ComfyUI-Workflows"
+custom_nodes/comfyui-impact-pack/impact-pack.ini:4:custom_wildcards = C:\ComfyUI\custom_nodes\comfyui-impact-pack\custom_wildcards
+custom_nodes/was-ns/README.md:291:  - Additionally, if you want to use H264 codec need to [download OpenH264 1.8.0](https://github.com/cisco/openh264/releases/tag/v1.8.0) and place it in the root of ComfyUI (Example: `C:\ComfyUI_windows_portable`).
+custom_nodes/was-ns/was_suite_config.json:19:    "wildcards_path": "C:\\ComfyUI\\custom_nodes\\was-ns\\wildcards",

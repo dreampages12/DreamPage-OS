@@ -1,0 +1,139 @@
+{
+  "slug": "havfruen",
+  "displayName": "Havfruen",
+  "nextBookSlug": "havpalasset",
+  "nextBookTitle": "Havpalasset",
+  "textScript": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+  "prepareScript": "C:/ComfyUI/books/havfruen/script/prepare_order_havfruen.py",
+  "driveFolderId": "1-8VQBCZefRgQG5dXWLmnhtc5c1Fa08kv",
+  "orderBasePath": "C:/ComfyUI/books/havfruen/orders",
+  "comfyOutputPrefix": "havfruen/orders",
+  "patchNodes": {
+    "template": "151",
+    "face": "121",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(havfrue).png",
+      "mask_image": "forside-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page01",
+      "template_image": "01(havfrue).png",
+      "mask_image": "01-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page02",
+      "template_image": "02(havfrue).png",
+      "mask_image": "02-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page03",
+      "template_image": "03(havfrue).png",
+      "mask_image": "03-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page04",
+      "template_image": "04(havfrue).png",
+      "mask_image": "04-headmask(havfrue).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page05",
+      "template_image": "05(havfrue).png",
+      "mask_image": "05-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page06",
+      "template_image": "06(havfrue).png",
+      "mask_image": "06-headmask(havfrue).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page07",
+      "template_image": "07(havfrue).png",
+      "mask_image": "07-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page08",
+      "template_image": "08(havfrue).png",
+      "mask_image": "08-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page09",
+      "template_image": "09(havfrue).png",
+      "mask_image": "09-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page10",
+      "template_image": "10(havfrue).png",
+      "mask_image": "10-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page11",
+      "template_image": "11(havfrue).png",
+      "mask_image": "11-headmask(havfrue).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page12",
+      "template_image": "12(havfrue).png",
+      "mask_image": "12-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page13",
+      "template_image": "13(havfrue).png",
+      "mask_image": "13-headmask(havfrue).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page14",
+      "template_image": "14(havfrue).png",
+      "mask_image": "14-headmask(havfrue).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "innerPatchNodes": {
+    "template": "151",
+    "face": "121",
+    "output": "9",
+    "mask": "165"
+  },
+  "workflowApi": "workflow_api.json",
+  "textScripts": {
+    "nb": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+    "nn": "C:/ComfyUI/script/nn/havfruen-text-nn.py",
+    "en-US": "C:/ComfyUI/script/en-US/havfruen-text-en-US.py",
+    "en-GB": "C:/ComfyUI/script/en-GB/havfruen-text-en-GB.py",
+    "en": "C:/ComfyUI/script/en-US/havfruen-text-en-US.py",
+    "en-us": "C:/ComfyUI/script/en-US/havfruen-text-en-US.py",
+    "en-gb": "C:/ComfyUI/script/en-GB/havfruen-text-en-GB.py",
+    "no": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+    "nb-no": "C:/ComfyUI/script/nb/havfruen-text-nb.py",
+    "nn-no": "C:/ComfyUI/script/nn/havfruen-text-nn.py",
+    "sv": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+    "sv-SE": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+    "sv-se": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+    "se": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+    "swedish": "C:/ComfyUI/script/sv/havfruen-text-sv.py",
+    "svensk": "C:/ComfyUI/script/sv/havfruen-text-sv.py"
+  }
+}

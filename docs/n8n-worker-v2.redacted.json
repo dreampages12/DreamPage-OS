@@ -1,0 +1,2640 @@
+{
+ "nodes": [
+  {
+   "parameters": {
+    "queue": "dreampage-jobs",
+    "options": {
+     "acknowledge": "laterMessageNode",
+     "parallelMessages": 1
+    }
+   },
+   "name": "MQ Trigger",
+   "type": "n8n-nodes-base.rabbitmqTrigger",
+   "typeVersion": 1,
+   "position": [
+    -1296,
+    576
+   ],
+   "id": "bf31f5fc-bc20-4f77-a812-dde5b236104a",
+   "credentials": {
+    "rabbitmq": {
+     "id": "paSMyl2k9MRFBE0P",
+     "name": "RabbitMQ account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const raw = $json.content;\nif (!raw) throw new Error('No content field: ' + JSON.stringify($json));\nconst data = JSON.parse(raw);\nreturn { json: data };"
+   },
+   "name": "Parse Job",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -1136,
+    576
+   ],
+   "id": "5f7e4ca3-6a44-4a25-b3bf-33e2ff170eee"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "ef-1",
+       "name": "order_id",
+       "value": "={{ $node[\"Parse Job\"].json.job_key || $node[\"Parse Job\"].json.order_id }}",
+       "type": "string"
+      },
+      {
+       "id": "ef-2",
+       "name": "book_slug",
+       "value": "={{ $node[\"Parse Job\"].json.book_slug || \"\" }}",
+       "type": "string"
+      },
+      {
+       "id": "ef-3",
+       "name": "child_name",
+       "value": "={{ $node[\"Parse Job\"].json.child_name }}",
+       "type": "string"
+      },
+      {
+       "id": "ef-4",
+       "name": "face_image",
+       "value": "={{ 'C:/ComfyUI/input/' + ($node['Parse Job'].json.job_key || $node['Parse Job'].json.order_id) + '.jpg' }}",
+       "type": "string"
+      },
+      {
+       "id": "ef-5",
+       "name": "cover_type",
+       "value": "={{ $node[\"Parse Job\"].json.cover_type || \"hardcover\" }}",
+       "type": "string"
+      },
+      {
+       "id": "ef-6",
+       "name": "shipping",
+       "value": "={{ $node[\"Parse Job\"].json.shipping }}",
+       "type": "object"
+      },
+      {
+       "id": "ef-7",
+       "name": "customer",
+       "value": "={{ $node[\"Parse Job\"].json.customer }}",
+       "type": "object"
+      },
+      {
+       "id": "ef-8",
+       "name": "book_title",
+       "value": "={{ $node[\"Parse Job\"].json.book_title || $node[\"Parse Job\"].json.book_tilte }}",
+       "type": "string"
+      },
+      {
+       "id": "426e82f6-fbc2-4385-9c20-d4849694b334",
+       "name": "language",
+       "value": "={{ $node[\"Parse Job\"].json.language || \"nb\" }}",
+       "type": "string"
+      },
+      {
+       "id": "4c650e13-e407-427a-80ec-e96504f40394",
+       "name": "site_language",
+       "value": "={{ $node[\"Parse Job\"].json.site_language || \"no\" }}",
+       "type": "string"
+      },
+      {
+       "id": "8a8ecf44-531f-4b41-a202-c5cb14f894cd",
+       "name": "market",
+       "value": "={{ $node[\"Parse Job\"].json.market || \"no\" }}",
+       "type": "string"
+      },
+      {
+       "id": "cont-continue_code",
+       "name": "continue_code",
+       "value": "={{ $node[\"Parse Job\"].json.continue_code || \"\" }}",
+       "type": "string"
+      },
+      {
+       "id": "cont-continue_url",
+       "name": "continue_url",
+       "value": "={{ $node[\"Parse Job\"].json.continue_url || \"\" }}",
+       "type": "string"
+      },
+      {
+       "id": "cont-continue_coupon",
+       "name": "continue_coupon",
+       "value": "={{ $node[\"Parse Job\"].json.continue_coupon || \"\" }}",
+       "type": "string"
+      },
+      {
+       "id": "cont-continue_callback",
+       "name": "continue_callback",
+       "value": "={{ $node[\"Parse Job\"].json.continue_callback || \"\" }}",
+       "type": "string"
+      },
+      {
+       "id": "cont-next_book_id",
+       "name": "next_book_id",
+       "value": "={{ $node[\"Parse Job\"].json.next_book_id || ($node[\"Parse Job\"].json.next_book || {}).id || \"\" }}",
+       "type": "string"
+      },
+      {
+       "id": "cont-next_book_slug",
+       "name": "next_book_slug",
+       "value": "={{ $node[\"Parse Job\"].json.next_book_slug || ($node[\"Parse Job\"].json.next_book || {}).slug || \"\" }}",
+       "type": "string"
+      },
+      {
+       "id": "cont-next_book_title",
+       "name": "next_book_title",
+       "value": "={{ $node[\"Parse Job\"].json.next_book_title || ($node[\"Parse Job\"].json.next_book || {}).title || \"\" }}",
+       "type": "string"
+      }
+     ]
+    },
+    "options": {}
+   },
+   "name": "Edit Fields",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    -688,
+    576
+   ],
+   "id": "e1b96104-56b4-4f55-8e5d-c2181e8d15a9"
+  },
+  {
+   "parameters": {
+    "command": "=powershell -Command \"New-Item -ItemType Directory -Path 'C:/ComfyUI/books/{{$json.book_slug}}/orders/{{$json.order_id}}/input','C:/ComfyUI/books/{{$json.book_slug}}/orders/{{$json.order_id}}/pdf' -Force\""
+   },
+   "name": "Setup Order Dirs",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    -400,
+    576
+   ],
+   "id": "d3af161a-dc56-4cb4-b6a3-72947162898b"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const ef = $node[\"Edit Fields\"].json;\nconst job = $node[\"Parse Job\"].json;\n\nconst language = String(ef.language || job.language || 'nb').trim();\nconst siteLanguage = String(ef.site_language || job.site_language || 'no').trim();\nconst market = String(ef.market || job.market || 'no').trim();\n\nfunction chooseScriptLanguage(languageValue, siteValue, marketValue) {\n  const lang = String(languageValue || '').trim().toLowerCase().replace('_', '-');\n  const site = String(siteValue || '').trim().toLowerCase().replace('_', '-');\n  const market = String(marketValue || '').trim().toLowerCase();\n\n  if (lang === 'nn' || lang === 'nynorsk' || site === 'nn' || site === 'nn-no') return 'nn';\n  if (lang === 'sv' || lang === 'se' || lang === 'sv-se' || lang === 'swedish' || lang === 'svensk' || lang === 'svenska' || site === 'sv' || site === 'sv-se' || site === 'se' || ['se', 'swe', 'sweden', 'sverige'].includes(market)) return 'sv';\n  if (lang === 'nb' || lang === 'no' || lang === 'bokmal' || lang === 'bokm?l' || lang === 'bokm?l' || site === 'nb-no' || site === 'no') return 'nb';\n  if (lang === 'en-gb' || lang === 'en-uk' || site === 'en-gb' || site === 'en-uk' || ['gb', 'uk'].includes(market)) return 'en-GB';\n  if (lang === 'en-us' || site === 'en-us' || ['us', 'usa'].includes(market)) return 'en-US';\n  if (lang === 'en') return ['gb', 'uk'].includes(market) || site === 'en-gb' ? 'en-GB' : 'en-US';\n  return 'nb';\n}\n\nconst scriptLanguage = chooseScriptLanguage(language, siteLanguage, market);\n\n// Title -> base folder slug. Lookup is case-insensitive on the title.\n// Includes Norwegian titles and English printed titles. Language variants now\n// share the same book folder/assets/Qwen headswap workflow; only textScript\n// changes per language.\nconst TITLE_TO_SLUG = {\n  // Norwegian titles\n  \"dinosaurenes dal\":     \"dinosaurenes-dal\",\n  \"fotball vm\": \"fotball-vm\",\n  \"fotball-vm\": \"fotball-vm\",\n  \"fotballvm\": \"fotball-vm\",\n  \"vm i fotball\": \"fotball-vm\",\n  \"the world cup\": \"fotball-vm\",\n  \"world cup\": \"fotball-vm\",\n  \"football world cup\": \"fotball-vm\",\n  \"soccer world cup\": \"fotball-vm\",\n  \"wins the world cup\": \"fotball-vm\",\n  \"fotbolls vm\": \"fotball-vm\",\n  \"fotbolls-vm\": \"fotball-vm\",\n  \"fotbollsvm\": \"fotball-vm\",\n  \"kongerikets hemmelighet\": \"kongerikets-hemmelighet\",\n  \"kongerikets hemmlighet\": \"kongerikets-hemmelighet\",\n  \"the secret of the kingdom\": \"kongerikets-hemmelighet\",\n  \"the kingdom's secret\": \"kongerikets-hemmelighet\",\n  \"kungarikets hemlighet\": \"kongerikets-hemmelighet\",\n  \"den tapte superbyen\": \"den-tapte-superbyen\",\n  \"tapte superbyen\": \"den-tapte-superbyen\",\n  \"the lost super city\": \"den-tapte-superbyen\",\n  \"lost super city\": \"den-tapte-superbyen\",\n  \"den forlorade superstaden\": \"den-tapte-superbyen\",\n  \"den forsvunna superstaden\": \"den-tapte-superbyen\",\n  \"det forsvunne dinosauregget\": \"det-forsvunne-dinosauregget\",\n  \"forsvunne dinosauregget\": \"det-forsvunne-dinosauregget\",\n  \"det forsvunne dinosaur egget\": \"det-forsvunne-dinosauregget\",\n  \"the lost dinosaur egg\": \"det-forsvunne-dinosauregget\",\n  \"lost dinosaur egg\": \"det-forsvunne-dinosauregget\",\n  \"det forsvunna dinosaurieagget\": \"det-forsvunne-dinosauregget\",\n  \"den forsvunna dinosaurieagget\": \"det-forsvunne-dinosauregget\",\n  \"det forlorade dinosaurieagget\": \"det-forsvunne-dinosauregget\",\n  \"den skjulte styrken\":  \"den-skjulte-styrken\",\n  \"motet i hjertet\":      \"motet-i-hjertet\",\n  \"paskejakten\":          \"paskejakten\",\n  \"p?skejakten\":          \"paskejakten\",\n  \"p?skejakten\":          \"paskejakten\",\n  \"paaskejakten\":         \"paskejakten\",\n  \"dragejakten\":          \"dragejakten\",\n  \"enhjorning\":           \"enhjorning\",\n  \"enhj?rning\":           \"enhjorning\",\n  \"enhj?rning\":           \"enhjorning\",\n  \"enh?rning\":            \"enhjorning\",\n  \"enh?rning\":            \"enhjorning\",\n  \"enhjorningsdalen\":     \"enhjorning\",\n  \"enhj?rningsdalen\":     \"enhjorning\",\n  \"enhj?rningsdalen\":     \"enhjorning\",\n  \"enh?rningsdalen\":      \"enhjorning\",\n  \"enh?rningsdalen\":      \"enhjorning\",\n  \"den skjulte verdenen\": \"den-skjulte-verdenen\",\n  \"dyreparken\":           \"dyreparken\",\n  \"fotballstjernen\":      \"fotballstjernen\",\n  \"hestestjernen\":        \"hestestjernen\",\n  \"havfruen\":             \"havfruen\",\n  // English printed titles\n  \"the dragon quest\":     \"dragejakten\",\n  \"the brave heart\":      \"motet-i-hjertet\",\n  \"the dinosaur valley\":  \"dinosaurenes-dal\",\n  \"the unicorn valley\":   \"enhjorning\",\n  \"the hidden power\":     \"den-skjulte-styrken\",\n  \"the hidden world\":     \"den-skjulte-verdenen\",\n  \"soccer star\":          \"fotballstjernen\",\n  \"football star\":        \"fotballstjernen\",\n  \"animal park\":          \"dyreparken\",\n  \"riding star\":          \"hestestjernen\",\n  \"the mermaid\":          \"havfruen\",\n  \"mermaid\":              \"havfruen\",\n  \"the easter egg hunt\":  \"paskejakten\",\n  \"easter valley\":        \"paskedalen\",\n  // Swedish printed titles\n  \"den dolda varlden\":   \"den-skjulte-verdenen\",\n  \"den dolda v?rlden\":   \"den-skjulte-verdenen\",\n  \"drakjakten\":          \"dragejakten\",\n  \"den dolda kraften\":   \"den-skjulte-styrken\",\n  \"modet i hjartat\":     \"motet-i-hjertet\",\n  \"modet i hj?rtat\":     \"motet-i-hjertet\",\n  \"dinosauriernas dal\":  \"dinosaurenes-dal\",\n  \"enhorningsdalen\":     \"enhjorning\",\n  \"enh?rningsdalen\":     \"enhjorning\",\n  \"fotbollsstjarna\":     \"fotballstjernen\",\n  \"fotbollsstj?rna\":     \"fotballstjernen\",\n  \"djurparken\":          \"dyreparken\",\n  \"sjojungfru\":          \"havfruen\",\n  \"sj?jungfru\":          \"havfruen\",\n  \"sjojungfrun\":         \"havfruen\",\n  \"sj?jungfrun\":         \"havfruen\"\n};\n\nconst HANDLE_TO_SLUG = {\n  \"enhjorningsdalen\":         \"enhjorning\",\n  \"fotball-vm\": \"fotball-vm\",\n  \"fotballvm\": \"fotball-vm\",\n  \"vm-i-fotball\": \"fotball-vm\",\n  \"world-cup\": \"fotball-vm\",\n  \"the-world-cup\": \"fotball-vm\",\n  \"football-world-cup\": \"fotball-vm\",\n  \"soccer-world-cup\": \"fotball-vm\",\n  \"fotbolls-vm\": \"fotball-vm\",\n  \"the-secret-of-the-kingdom\": \"kongerikets-hemmelighet\",\n  \"kungarikets-hemlighet\": \"kongerikets-hemmelighet\",\n  \"tapte-superbyen\": \"den-tapte-superbyen\",\n  \"the-lost-super-city\": \"den-tapte-superbyen\",\n  \"forsvunne-dinosauregget\": \"det-forsvunne-dinosauregget\",\n  \"the-lost-dinosaur-egg\": \"det-forsvunne-dinosauregget\",\n  \"den-magiske-reisen\":       \"den-magiske-reisen-gutt\",\n  \"den-magiske-reisen-jente\": \"den-magiske-reisen-jente\"\n};\n\nconst GENDERED_TITLES = new Set([\"den magiske reisen\", \"magic journey\", \"the magic journey\", \"magiska resan\", \"den magiska resan\"]);\n\nconst titleKey = String(ef.book_title || '').trim().toLowerCase();\nconst genderKey = String(job.gender || '').trim().toLowerCase();\n\nfunction resolveGendered() {\n  if (genderKey === 'girl' || genderKey === 'jente' || genderKey === 'flicka' || genderKey === 'tjej') return 'den-magiske-reisen-jente';\n  if (genderKey === 'boy' || genderKey === 'gutt' || genderKey === 'pojke' || genderKey === 'kille') return 'den-magiske-reisen-gutt';\n  throw new Error('Cannot resolve den-magiske-reisen variant - missing or unknown gender: ' + JSON.stringify(job.gender));\n}\n\nlet slug;\nconst handle = String(ef.book_slug || '').trim().toLowerCase();\nif (handle) {\n  if (handle === 'den-magiske-reisen' || handle === 'den-magiske-reisen-jente') {\n    slug = resolveGendered();\n  } else {\n    slug = HANDLE_TO_SLUG[handle] || handle;\n  }\n}\n\nif (!slug && GENDERED_TITLES.has(titleKey)) slug = resolveGendered();\nif (!slug) slug = TITLE_TO_SLUG[titleKey];\n\nif (!slug && titleKey) {\n  slug = titleKey\n    .replace(/\\s+/g, '-')\n    .replace(/[^a-z0-9-]/g, '')\n    .replace(/-+/g, '-')\n    .replace(/^-|-$/g, '');\n}\n\nif (!slug) throw new Error('Cannot resolve slug. book_title=' + ef.book_title + ' book_slug=' + ef.book_slug);\n\nreturn { json: {\n  order_id:        ef.order_id,\n  book_slug:       slug,\n  child_name:      ef.child_name,\n  face_image:      ef.face_image,\n  cover_type:      ef.cover_type,\n  shipping:        ef.shipping,\n  customer:        ef.customer,\n  book_title:      ef.book_title,\n  language:        language || 'nb',\n  site_language:   siteLanguage || 'no',\n  market:          market || 'no',\n  script_language: scriptLanguage,\n  continue_code: ef.continue_code || '',\n  continue_url: ef.continue_url || '',\n  continue_coupon: ef.continue_coupon || '',\n  continue_callback: ef.continue_callback || '',\n  next_book_id: ef.next_book_id || '',\n  next_book_slug: ef.next_book_slug || '',\n  next_book_title: ef.next_book_title || '',\n} };"
+   },
+   "name": "Load Book Config",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -544,
+    576
+   ],
+   "id": "caab6f74-3054-48e8-901a-8973b1e65653"
+  },
+  {
+   "parameters": {
+    "jsCode": "const inp = $input.first().json;\nconst config = inp.config;\nif (!config) throw new Error('Pages Config did not receive config');\n\nconst workflowFile = config.workflowApi ||\n  (config.workflowApis && (config.workflowApis.default || config.workflowApis.innerpages || config.workflowApis.frontpage)) ||\n  'workflow_api.json';\nconst patchNodes = config.patchNodes || config.innerPatchNodes || { template: '95', face: '10', output: '81' };\n\nif (!patchNodes || !patchNodes.template || !patchNodes.face || !patchNodes.output) {\n  throw new Error('Missing Qwen headswap patchNodes in config for book ' + (inp.book_slug || 'unknown'));\n}\n\n// --- Uttrykksvarianter av barnebildet ----------------------------------------\n// build_face_variants.py har lagt <order_id>-<uttrykk>.jpg i C:/ComfyUI/input.\n// Mangler filen (scriptet feilet, eller en gammel ordre kjores om), brukes\n// originalbildet - en side skal aldri feile fordi et uttrykk mangler.\nconst fsExpr = require('fs');\nconst FACE_EXPRESSIONS = ['noytral', 'smil', 'trist'];\nconst faceBase = String(inp.faceFilename || '');\nconst faceStem = faceBase.replace(/\\.[^.]+$/, '');\nfunction faceFor(expression) {\n  const expr = String(expression || 'noytral');\n  if (!faceStem || FACE_EXPRESSIONS.indexOf(expr) === -1) return faceBase;\n  const candidate = faceStem + '-' + expr + '.jpg';\n  try {\n    if (fsExpr.existsSync('C:/ComfyUI/input/' + candidate)) return candidate;\n  } catch (error) {}\n  console.warn('[FACE] mangler ' + candidate + ' - bruker ' + faceBase);\n  return faceBase;\n}\n\nconst items = config.pages.map(function(p) {\n  return { json: {\n    page_key:          p.page_key,\n    template_image:    p.template_image,\n    mask_image:        p.mask_image,\n    face_image:        faceFor(p.face_expression),\n    output_dir:        inp.outputDir,\n    order_id:          inp.order_id,\n    book_slug:         inp.book_slug,\n    child_name:        inp.child_name,\n    cover_type:        inp.cover_type,\n    shipping:          inp.shipping,\n    customer:          inp.customer,\n    book_title:        inp.book_title,\n    language:          inp.language || 'nb',\n    site_language:     inp.site_language || 'no',\n    market:            inp.market || 'no',\n    script_language:   inp.script_language || 'nb',\n    config:            config,\n    orderPath:         inp.orderPath,\n    workflow_role:     'page',\n    workflow_api_file: workflowFile,\n    patchNodes:        patchNodes,\n  }};\n});\n\n// --- Fortsett eventyret: ekstra render av neste bok sin forside ---------------\n// Ett ekstra element i Pages Config arver hele Page Loop-maskineriet\n// (dispatch, polling, timeout, retry). Uten continue_code skjer ingenting.\nconst contCode = String(inp.continue_code || '').trim();\nconst nextSlug = String(inp.next_book_slug || '').trim();\nif (contCode && nextSlug && nextSlug !== String(inp.book_slug || '')) {\n  try {\n    const fs = require('fs');\n    const nextCfgPath = 'C:/ComfyUI/books/' + nextSlug + '/config.json';\n    const nextCfg = JSON.parse(fs.readFileSync(nextCfgPath, 'utf8').replace(/^\\uFEFF/, ''));\n    const front = (nextCfg.pages || []).find(function (p) { return p.page_key === 'page00'; });\n    if (!front) throw new Error('next book config mangler page00');\n    const base = items[0] ? items[0].json : {};\n    items.push({ json: Object.assign({}, base, {\n      page_key:          'page99_next',\n      template_image:    front.template_image,\n      mask_image:        front.mask_image,\n      workflow_role:     'frontpage',\n      workflow_api_file: (nextCfg.workflowApis && nextCfg.workflowApis.frontpage) ||\n                         nextCfg.workflowApi || workflowFile,\n      face_image:        faceFor(front.face_expression),\n      patchNodes:        nextCfg.patchNodes || nextCfg.innerPatchNodes || patchNodes,\n    })});\n    console.log('[CONTINUE] page99_next lagt til fra ' + nextSlug + ' (' + front.template_image + ')');\n  } catch (error) {\n    // Et oppsalg skal aldri blokkere en betalt ordre.\n    console.warn('[CONTINUE] hopper over neste-forside for ' + nextSlug + ': ' + error.message);\n  }\n}\n\nreturn items;\n"
+   },
+   "name": "Pages Config",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    48,
+    576
+   ],
+   "id": "296b4b4e-2488-468b-bf58-8dfc2dca0aff"
+  },
+  {
+   "parameters": {
+    "options": {}
+   },
+   "name": "Page Loop",
+   "type": "n8n-nodes-base.splitInBatches",
+   "typeVersion": 3,
+   "position": [
+    288,
+    32
+   ],
+   "id": "78ba06b3-c2da-49ed-8178-210d09e25fe2"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const cfg = ($json && $json.config)\n  ? $json\n  : (($node['Page Loop'] && $node['Page Loop'].json)\n      ? $node['Page Loop'].json\n      : $json);\n\nconst config = cfg.config || (($node['Parse Config'] && $node['Parse Config'].json) ? $node['Parse Config'].json.config : undefined);\nif (!config) throw new Error('No page config received for book ' + (cfg.book_slug || 'unknown'));\n\nlet raw = '';\nif ($binary && $binary.data && typeof $binary.data.data === 'string') {\n  raw = Buffer.from($binary.data.data, 'base64').toString('utf8');\n} else if ($binary && $binary.data) {\n  raw = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8');\n} else if (typeof $json.data === 'string') {\n  raw = $json.data;\n}\n\nif (!raw) {\n  throw new Error('No Qwen headswap workflow data received for book ' + (cfg.book_slug || 'unknown') +\n    ' workflow=' + (cfg.workflow_api_file || 'workflow_api.json'));\n}\n\nraw = raw.replace(/^\\uFEFF/, '');\n\nconst prompt = JSON.parse(raw);\nconst configuredPatchNodes = cfg.patchNodes || config.patchNodes || config.innerPatchNodes || {};\nconst pn = Object.assign({}, configuredPatchNodes);\n\nfunction hasInputs(nodeId) {\n  return !!(nodeId && prompt[nodeId] && prompt[nodeId].inputs);\n}\n\nfunction hasInput(nodeId, inputName) {\n  return hasInputs(nodeId) && Object.prototype.hasOwnProperty.call(prompt[nodeId].inputs, inputName);\n}\n\nfunction classType(nodeId) {\n  return String((prompt[nodeId] && prompt[nodeId].class_type) || '');\n}\n\nfunction isRef(value, nodeId) {\n  return Array.isArray(value) && String(value[0]) === String(nodeId);\n}\n\nfunction referenceScore(nodeId, classMatcher) {\n  let score = 0;\n  for (const node of Object.values(prompt)) {\n    if (!node || !node.inputs) continue;\n    if (classMatcher && !classMatcher(String(node.class_type || ''))) continue;\n    for (const value of Object.values(node.inputs)) {\n      if (isRef(value, nodeId)) score += 1;\n    }\n  }\n  return score;\n}\n\nfunction loadImageCandidates() {\n  return Object.entries(prompt)\n    .filter(function(entry) {\n      const nodeId = entry[0];\n      const node = entry[1];\n      return node && node.inputs && node.class_type === 'LoadImage' && hasInput(nodeId, 'image');\n    })\n    .map(function(entry) { return entry[0]; });\n}\n\nfunction detectOutputNode() {\n  if (hasInput(pn.output, 'filename_prefix')) return pn.output;\n  const candidates = Object.entries(prompt)\n    .filter(function(entry) {\n      const node = entry[1];\n      return node && node.inputs && Object.prototype.hasOwnProperty.call(node.inputs, 'filename_prefix');\n    })\n    .map(function(entry) { return entry[0]; });\n  const saveImage = candidates.find(function(nodeId) { return classType(nodeId) === 'SaveImage'; });\n  return saveImage || candidates[0] || '';\n}\n\nfunction detectTemplateNode(excludeNodeId) {\n  if (hasInput(pn.template, 'image')) return pn.template;\n  const loaders = loadImageCandidates().filter(function(nodeId) { return String(nodeId) !== String(excludeNodeId || ''); });\n  loaders.sort(function(a, b) {\n    const templateConsumers = function(type) {\n      return type === 'InpaintCropImproved' ||\n        type === 'ImpactSimpleDetectorSEGS' ||\n        type === 'SAMDetectorCombined' ||\n        type.indexOf('GroundingDino') !== -1 ||\n        type.indexOf('Segment') !== -1;\n    };\n    const aScore = referenceScore(a, templateConsumers) * 100 + referenceScore(a);\n    const bScore = referenceScore(b, templateConsumers) * 100 + referenceScore(b);\n    return bScore - aScore;\n  });\n  return loaders[0] || '';\n}\n\nfunction detectFaceNode(excludeNodeId) {\n  if (hasInput(pn.face, 'image')) return pn.face;\n  const loaders = loadImageCandidates().filter(function(nodeId) { return String(nodeId) !== String(excludeNodeId || ''); });\n  const fluxFace = loaders.find(function(nodeId) {\n    return referenceScore(nodeId, function(type) { return type === 'FluxKontextImageScale' || type.indexOf('FluxKontext') !== -1; }) > 0;\n  });\n  if (fluxFace) return fluxFace;\n  loaders.sort(function(a, b) { return referenceScore(a) - referenceScore(b); });\n  return loaders[0] || '';\n}\n\npn.output = detectOutputNode();\npn.template = detectTemplateNode(pn.face);\npn.face = detectFaceNode(pn.template);\n\nconst requiredInputs = { template: 'image', face: 'image', output: 'filename_prefix' };\nfor (const key of Object.keys(requiredInputs)) {\n  const nodeId = pn[key];\n  const inputName = requiredInputs[key];\n  if (!hasInput(nodeId, inputName)) {\n    throw new Error((cfg.workflow_api_file || 'workflow_api.json') +\n      ' could not auto-detect ' + key + ' patch node with input ' + inputName +\n      ' for book ' + (cfg.book_slug || 'unknown') +\n      '. Configured value was ' + (configuredPatchNodes[key] || 'missing'));\n  }\n  if (configuredPatchNodes[key] && String(configuredPatchNodes[key]) !== String(nodeId)) {\n    console.log('Patch node auto-corrected for ' + (cfg.book_slug || 'unknown') +\n      ': ' + key + ' ' + configuredPatchNodes[key] + ' -> ' + nodeId);\n  }\n}\n\nprompt[pn.template].inputs.image = cfg.template_image;\nprompt[pn.face].inputs.image = cfg.face_image;\nprompt[pn.output].inputs.filename_prefix = cfg.output_dir + '/' + cfg.page_key;\n\n// --- HEADMASK PATCH (safe & conditional) ---\n// Only patches if the workflow has a dedicated mask loader. With the current\n// auto-mask (SAM) workflow no such node exists, so this is a no-op.\nfunction classTypeOf(id) { return String((prompt[id] && prompt[id].class_type) || ''); }\nfunction detectMaskNode() {\n  if (pn.mask && hasInput(pn.mask, 'image')) return pn.mask;\n  for (const entry of Object.entries(prompt)) {\n    const id = entry[0], node = entry[1];\n    if (node && node.class_type === 'LoadImageMask' && hasInput(id, 'image')) return id;\n  }\n  for (const entry of Object.entries(prompt)) {\n    const id = entry[0], node = entry[1];\n    if (!node || node.class_type !== 'LoadImage' || !hasInput(id, 'image')) continue;\n    if (String(id) === String(pn.template) || String(id) === String(pn.face)) continue;\n    let refs = 0, maskRefs = 0;\n    for (const other of Object.values(prompt)) {\n      if (!other || !other.inputs) continue;\n      for (const kv of Object.entries(other.inputs)) {\n        if (Array.isArray(kv[1]) && String(kv[1][0]) === String(id)) { refs++; if (kv[0] === 'mask') maskRefs++; }\n      }\n    }\n    if (refs > 0 && refs === maskRefs) return id;\n  }\n  return '';\n}\npn.mask = detectMaskNode();\nif (pn.mask && cfg.mask_image && prompt[pn.mask] && prompt[pn.mask].inputs) {\n  prompt[pn.mask].inputs.image = cfg.mask_image;\n}\n\nfor (const node of Object.values(prompt)) {\n  if (node && node.inputs && Object.prototype.hasOwnProperty.call(node.inputs, 'scheduler') && node.inputs.scheduler === 'bong_tangent') {\n    node.inputs.scheduler = 'ddim_uniform';\n  }\n}\n\nconst promptText = cfg.prompt_text || cfg.prompt || config.innerPrompt || '';\nif (pn.prompt && promptText) {\n  if (!prompt[pn.prompt] || !prompt[pn.prompt].inputs) {\n    throw new Error((cfg.workflow_api_file || 'workflow_api.json') +\n      ' is missing prompt patch node ' + pn.prompt +\n      ' for book ' + (cfg.book_slug || 'unknown'));\n  }\n  if (Object.prototype.hasOwnProperty.call(prompt[pn.prompt].inputs, 'text')) {\n    prompt[pn.prompt].inputs.text = promptText;\n  } else if (Object.prototype.hasOwnProperty.call(prompt[pn.prompt].inputs, 'prompt')) {\n    prompt[pn.prompt].inputs.prompt = promptText;\n  }\n}\n\nreturn { json: {\n  prompt: prompt,\n  page_key: cfg.page_key,\n  order_id: cfg.order_id,\n  book_slug: cfg.book_slug,\n  child_name: cfg.child_name,\n  cover_type: cfg.cover_type,\n  shipping: cfg.shipping,\n  customer: cfg.customer,\n  book_title: cfg.book_title,\n  language: cfg.language || 'nb',\n  site_language: cfg.site_language || 'no',\n  market: cfg.market || 'no',\n  script_language: cfg.script_language || 'nb',\n  config: config,\n  orderPath: cfg.orderPath,\n  workflow_role: cfg.workflow_role || 'page',\n  workflow_api_file: cfg.workflow_api_file || 'workflow_api.json',\n  patchNodes: pn,\n  mask_image: cfg.mask_image || '',\n  output_dir: cfg.output_dir || '',\n  pageOutputDir: cfg.pageOutputDir || '',\n  comfyLock: cfg.comfyLock || null,\n} };"
+   },
+   "name": "Build Page Prompt",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    576,
+    32
+   ],
+   "id": "1c333757-ec9b-46fa-92f1-e841df11d2f1"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const http = require('http');\n\nif (!$json.prompt || typeof $json.prompt !== 'object') {\n  throw new Error('HTTP Request ComfyUI missing prompt object');\n}\n\nconst payload = JSON.stringify({ prompt: $json.prompt });\nconst timeoutMs = 180000;\n\nconst response = await new Promise((resolve, reject) => {\n  const req = http.request({\n    hostname: '127.0.0.1',\n    port: 8188,\n    path: '/prompt',\n    method: 'POST',\n    headers: {\n      'Content-Type': 'application/json',\n      'Content-Length': Buffer.byteLength(payload),\n      'Connection': 'close',\n    },\n    timeout: timeoutMs,\n  }, (res) => {\n    let body = '';\n    res.setEncoding('utf8');\n    res.on('data', chunk => { body += chunk; });\n    res.on('end', () => {\n      let parsed = {};\n      if (body && body.trim()) {\n        try { parsed = JSON.parse(body); }\n        catch (error) { return reject(new Error('Invalid ComfyUI /prompt JSON: ' + error.message + ' body=' + body.slice(0, 500))); }\n      }\n      if (res.statusCode < 200 || res.statusCode >= 300) {\n        return reject(new Error('ComfyUI /prompt HTTP ' + res.statusCode + ': ' + body.slice(0, 1500)));\n      }\n      resolve(parsed);\n    });\n  });\n  req.on('timeout', () => req.destroy(new Error('ComfyUI /prompt timed out after ' + timeoutMs + 'ms')));\n  req.on('error', reject);\n  req.write(payload);\n  req.end();\n});\n\nconst promptId = response.prompt_id || response.promptId || '';\nif (!promptId) {\n  throw new Error('ComfyUI /prompt response missing prompt_id: ' + JSON.stringify(response).slice(0, 1000));\n}\n\nreturn {\n  json: Object.assign({}, $json, response, {\n    prompt_id: promptId,\n    promptId,\n    comfyPromptResponse: response,\n  }),\n};"
+   },
+   "name": "HTTP Request ComfyUI",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    144,
+    160
+   ],
+   "id": "80673682-58fe-47f7-b3f7-9a81df0d4852",
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 15000,
+   "onError": "continueErrorOutput"
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "ip-1",
+       "name": "poll.promptId",
+       "value": "={{ $node[\"HTTP Request ComfyUI\"].json[\"prompt_id\"] }}",
+       "type": "string"
+      },
+      {
+       "id": "ip-2",
+       "name": "poll.tries",
+       "value": "0",
+       "type": "number"
+      },
+      {
+       "id": "ip-3",
+       "name": "poll.maxTries",
+       "value": "3240",
+       "type": "number"
+      },
+      {
+       "id": "ip-4",
+       "name": "poll.intervalMs",
+       "value": "10000",
+       "type": "number"
+      }
+     ]
+    },
+    "includeOtherFields": true,
+    "options": {}
+   },
+   "name": "Init Poll",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    288,
+    160
+   ],
+   "id": "f483ea25-2ae3-4eda-8ef1-bcecdb489724"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const fs = require('fs');\nconst path = require('path');\n\nconst poll = Object.assign({}, $json.poll || {});\nconst promptId = poll.promptId || $json.prompt_id || $json.promptId || '';\nconst pageKey = String($json.page_key || '').trim();\nconst outputRoot = 'C:/ComfyUI/output';\n\nfunction normalizeDir(value) {\n  const raw = String(value || '').trim();\n  if (!raw) return '';\n  if (path.isAbsolute(raw)) return raw;\n  return path.join(outputRoot, ...raw.replace(/^[/\\\\]+/, '').split(/[\\\\/]+/).filter(Boolean));\n}\n\nfunction relativeSubfolder(fullDir) {\n  const root = path.resolve(outputRoot);\n  const resolved = path.resolve(fullDir);\n  if (!resolved.toLowerCase().startsWith(root.toLowerCase())) return '';\n  return path.relative(root, resolved).replace(/[\\\\/]+/g, '\\\\');\n}\n\nconst candidateDirs = [\n  normalizeDir($json.pageOutputDir),\n  normalizeDir($json.output_dir),\n  normalizeDir($json.comfyLock && $json.comfyLock.pageOutputDir),\n].filter(Boolean);\n\nconst seen = new Set();\nconst diskImages = [];\nfor (const dir of candidateDirs) {\n  const key = dir.toLowerCase();\n  if (seen.has(key)) continue;\n  seen.add(key);\n  if (!pageKey || !fs.existsSync(dir)) continue;\n  for (const name of fs.readdirSync(dir)) {\n    if (!name.startsWith(pageKey + '_') || !/\\.(png|jpg|jpeg|webp)$/i.test(name)) continue;\n    const fullPath = path.join(dir, name);\n    let st;\n    try { st = fs.statSync(fullPath); } catch (error) { continue; }\n    if (!st.isFile() || st.size <= 0) continue;\n    diskImages.push({\n      filename: name,\n      subfolder: relativeSubfolder(dir),\n      type: 'output',\n      fullPath,\n      size: st.size,\n      mtimeMs: st.mtimeMs,\n    });\n  }\n}\n\ndiskImages.sort((a, b) => b.mtimeMs - a.mtimeMs);\nif (diskImages.length) {\n  const id = promptId || ('disk-' + ($json.order_id || 'order') + '-' + pageKey);\n  return {\n    json: Object.assign({}, $json, {\n      body: {\n        [id]: {\n          outputs: { disk: { images: diskImages } },\n          status: { status_str: 'success', completed: true },\n        },\n      },\n      historyRequestOk: true,\n      transientHistoryError: false,\n      historyErrorMessage: '',\n      diskOutputDetected: true,\n      poll: Object.assign({}, poll, { promptId: id, historyErrors: 0 }),\n    }),\n  };\n}\n\nif (!promptId) {\n  throw new Error('Missing ComfyUI prompt id while polling history');\n}\n\nconst url = 'http://127.0.0.1:8188/history/' + encodeURIComponent(promptId);\nconst timeoutMs = 15000;\n\ntry {\n  const body = await this.helpers.httpRequest({\n    method: 'GET',\n    url,\n    json: true,\n    timeout: timeoutMs,\n  });\n\n  return {\n    json: Object.assign({}, $json, {\n      body: body || {},\n      historyRequestOk: true,\n      transientHistoryError: false,\n      historyErrorMessage: '',\n      diskOutputDetected: false,\n      poll: Object.assign({}, poll, { historyErrors: 0 }),\n    }),\n  };\n} catch (error) {\n  const historyErrors = Number.isFinite(poll.historyErrors) ? poll.historyErrors + 1 : 1;\n  return {\n    json: Object.assign({}, $json, {\n      body: {},\n      historyRequestOk: false,\n      transientHistoryError: true,\n      historyErrorMessage: error && error.message ? error.message : String(error),\n      diskOutputDetected: false,\n      poll: Object.assign({}, poll, { historyErrors }),\n    }),\n  };\n}"
+   },
+   "name": "Get History",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    432,
+    160
+   ],
+   "id": "994d7769-0b7a-4f47-84dc-e4231ccf14ce",
+   "retryOnFail": true,
+   "maxTries": 5,
+   "waitBetweenTries": 10000
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "let raw = '';\nif ($binary && $binary.data) {\n  raw = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8');\n} else if (typeof $json.body === 'string') {\n  raw = $json.body;\n} else if ($json.body && typeof $json.body === 'object') {\n  raw = JSON.stringify($json.body);\n} else if ($json.history && typeof $json.history === 'object') {\n  raw = JSON.stringify($json.history);\n} else if (!$json.poll) {\n  raw = JSON.stringify($json);\n}\n\nlet body = {};\nif (raw && raw.trim()) {\n  try {\n    body = JSON.parse(raw);\n  } catch (error) {\n    throw new Error('Invalid history JSON returned from ComfyUI: ' + error.message);\n  }\n}\n\nconst pollIn = $json.poll || {};\nconst promptId = pollIn.promptId || $json.prompt_id || $json.promptId || Object.keys(body)[0] || '';\nconst entry = promptId && body[promptId] ? body[promptId] : (Object.keys(body)[0] ? body[Object.keys(body)[0]] : {});\nconst outputsMap = entry && entry.outputs ? entry.outputs : (entry && entry.output ? entry.output : {});\nlet images = [];\nfor (const v of Object.values(outputsMap)) {\n  if (!v) continue;\n  if (Array.isArray(v && v.images)) {\n    images.push.apply(images, v.images);\n    continue;\n  }\n  if (Array.isArray(v)) {\n    for (const it of v) {\n      if (Array.isArray(it && it.images)) images.push.apply(images, it.images);\n      if (it && (it.type === 'image' || it.image || it.filename)) images.push(it);\n    }\n    continue;\n  }\n  if (v && Array.isArray(v.images)) images.push.apply(images, v.images);\n}\n\nconst statusObj = entry && entry.status ? entry.status : {};\nconst statusStr = statusObj.status || statusObj.status_str || statusObj;\nconst completed = statusObj.completed === true || statusStr === 'completed' || statusStr === 'success';\nconst nodeErrors = (entry && entry.node_errors) ? entry.node_errors : ((entry && entry.errors) ? entry.errors : ($json.node_errors || {}));\nconst hasError = Object.values(nodeErrors).some(function(val) {\n  return Array.isArray(val) ? val.length > 0 : !!val;\n});\nconst tries = Number.isFinite(pollIn.tries) ? pollIn.tries : 0;\nconst maxTries = Number.isFinite(pollIn.maxTries) ? pollIn.maxTries : 120;\nconst intervalMs = Number.isFinite(pollIn.intervalMs) ? pollIn.intervalMs : 2000;\nconst intervalSec = Math.max(1, Math.round(intervalMs / 1000));\n\nreturn {\n  json: {\n    page_key: $json.page_key || '',\n    order_id: $json.order_id || '',\n    book_slug: $json.book_slug || '',\n    child_name: $json.child_name || '',\n    cover_type: $json.cover_type || 'hardcover',\n    shipping: $json.shipping || {},\n    customer: $json.customer || {},\n    book_title: $json.book_title || '',\n    language: $json.language || 'nb',\n    site_language: $json.site_language || 'no',\n    market: $json.market || 'no',\n    script_language: $json.script_language || 'nb',\n    output_dir: $json.output_dir || '',\n    pageOutputDir: $json.pageOutputDir || '',\n    comfyLock: $json.comfyLock || null,\n    poll: {\n      promptId: promptId,\n      tries: tries,\n      maxTries: maxTries,\n      intervalMs: intervalMs,\n      intervalSec: intervalSec,\n    },\n    done: completed || images.length > 0,\n    images: images,\n    hasError: hasError,\n    errors: nodeErrors,\n    raw: entry,\n  },\n};"
+   },
+   "name": "Parse History",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    560,
+    160
+   ],
+   "id": "7581707e-2fc3-4004-9008-c6ba27a52def"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "ie-1",
+       "leftValue": "={{$json.hasError}}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "If Error",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    704,
+    32
+   ],
+   "id": "cc475f7c-74f9-4fb8-85ea-dd2c35033b89"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "dc-1",
+       "leftValue": "={{$json.done}}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Done Check",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    848,
+    48
+   ],
+   "id": "659672ba-8f8d-4cfa-a4db-02a2a89b07ec"
+  },
+  {
+   "parameters": {},
+   "name": "Page Done",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    160,
+    32
+   ],
+   "id": "5aef03f3-b4c7-401a-ad57-71cd149a62e2"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const poll = $json.poll || {};\nconst tries = (poll.tries || 0) + 1;\nreturn { json: Object.assign({}, $json, { poll: Object.assign({}, poll, { tries: tries }) }) };"
+   },
+   "name": "Inc Tries",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    704,
+    160
+   ],
+   "id": "096c23d2-decf-46ad-bc27-2db20a368d9a"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "ito-1",
+       "leftValue": "={{$json.poll.tries}}",
+       "rightValue": "={{$json.poll.maxTries}}",
+       "operator": {
+        "type": "number",
+        "operation": "gte"
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "If Timed Out",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    832,
+    160
+   ],
+   "id": "5ebe5fa1-15ee-456b-9c0f-072cbb61d03b"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const intervalSec = Number($json.poll?.intervalSec ?? 10);\nconst boundedSec = Math.max(1, Math.min(intervalSec, 60));\nawait new Promise(resolve => setTimeout(resolve, boundedSec * 1000));\nreturn { json: $json };"
+   },
+   "name": "Poll Wait",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    976,
+    112
+   ],
+   "webhookId": "poll-wait-dp-v2",
+   "id": "d48f6b9b-b102-4639-9533-e877ad3fe38d"
+  },
+  {
+   "parameters": {
+    "jsCode": "const src = $node['Parse Config'].json || {};\nreturn [{ json: {\n  allDone: true,\n  order_id: src.order_id || '',\n  book_slug: src.book_slug || '',\n  child_name: src.child_name || '',\n  cover_type: src.cover_type || 'hardcover',\n  shipping: src.shipping || {},\n  customer: src.customer || {},\n  book_title: src.book_title || '',\n  language: src.language || 'nb',\n  site_language: src.site_language || 'no',\n  market: src.market || 'no',\n  script_language: src.script_language || 'nb',\n  config: src.config || {},\n  orderPath: src.orderPath || '',\n  continue_code: src.continue_code || '',\n  continue_url: src.continue_url || '',\n  continue_coupon: src.continue_coupon || '',\n  continue_callback: src.continue_callback || '',\n  next_book_id: src.next_book_id || '',\n  next_book_slug: src.next_book_slug || '',\n  next_book_title: src.next_book_title || '',\n} }];"
+   },
+   "name": "All Pages Done",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    368,
+    544
+   ],
+   "id": "00350416-4fc6-4aab-af29-ced81004a7e8"
+  },
+  {
+   "parameters": {
+    "command": "=C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"{{$node[\"All Pages Done\"].json.config.textScript}}\" --base \"{{$node[\"All Pages Done\"].json.orderPath}}/input\" --out \"{{$node[\"All Pages Done\"].json.orderPath}}/pdf\" --name \"{{$node[\"All Pages Done\"].json.child_name}}\" --cover-type \"{{$node[\"All Pages Done\"].json.cover_type}}\" --gelato-api-key \"<GELATO_API_KEY>\""
+   },
+   "name": "Run Text Script",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    864,
+    496
+   ],
+   "id": "de2bb518-6a0f-4f9c-a157-94e0a4d96d0f"
+  },
+  {
+   "parameters": {
+    "command": "=C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"{{$node[\"All Pages Done\"].json.config.prepareScript}}\" \"{{$node[\"All Pages Done\"].json.order_id}}\""
+   },
+   "name": "Prepare Pages",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    656,
+    496
+   ],
+   "id": "c7e18abe-d167-4b2b-adfb-287f4afd65e1"
+  },
+  {
+   "parameters": {
+    "fileSelector": "=C:/ComfyUI/books/{{$node[\"All Pages Done\"].json.book_slug}}/orders/{{$node[\"All Pages Done\"].json.order_id}}/pdf/{{$node[\"All Pages Done\"].json.child_name}}_cover.pdf",
+    "options": {}
+   },
+   "name": "Read Cover PDF",
+   "type": "n8n-nodes-base.readWriteFile",
+   "typeVersion": 1,
+   "position": [
+    1168,
+    496
+   ],
+   "id": "076f2ff0-8237-4ca6-a564-6d6fcf38c774"
+  },
+  {
+   "parameters": {
+    "fileSelector": "=C:/ComfyUI/books/{{$node[\"All Pages Done\"].json.book_slug}}/orders/{{$node[\"All Pages Done\"].json.order_id}}/pdf/{{$node[\"All Pages Done\"].json.child_name}}_innersider.pdf",
+    "options": {}
+   },
+   "name": "Read Innersider PDF",
+   "type": "n8n-nodes-base.readWriteFile",
+   "typeVersion": 1,
+   "position": [
+    1168,
+    672
+   ],
+   "id": "63876943-5fc0-4d38-b6ca-1cac89a32b6f"
+  },
+  {
+   "parameters": {
+    "resource": "folder",
+    "name": "={{$node[\"All Pages Done\"].json.order_id}}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "value": "={{$node[\"All Pages Done\"].json.config.driveFolderId}}",
+     "mode": "id"
+    },
+    "options": {}
+   },
+   "name": "Create Drive Folder",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1024,
+    496
+   ],
+   "id": "21ee706f-60ac-45df-909c-935b53a78047",
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "8Udm8DTuztrnxpuv",
+     "name": "Google Drive account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "name": "={{$binary.data.fileName}}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "value": "={{$node[\"Create Drive Folder\"].json[\"id\"]}}",
+     "mode": "id"
+    },
+    "options": {}
+   },
+   "name": "Upload Cover",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1312,
+    496
+   ],
+   "id": "162687b0-f06c-4c38-b7ab-fa7992f275be",
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "8Udm8DTuztrnxpuv",
+     "name": "Google Drive account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "name": "={{$binary.data.fileName}}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "value": "={{$node[\"Create Drive Folder\"].json[\"id\"]}}",
+     "mode": "id"
+    },
+    "options": {}
+   },
+   "name": "Upload Innersider",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1312,
+    672
+   ],
+   "id": "05e50049-d6d8-4879-98d4-10f576f57649",
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "8Udm8DTuztrnxpuv",
+     "name": "Google Drive account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "operation": "share",
+    "fileId": {
+     "__rl": true,
+     "value": "={{$node[\"Upload Cover\"].json[\"id\"]}}",
+     "mode": "id"
+    },
+    "permissionsUi": {
+     "permissionsValues": {
+      "role": "reader",
+      "type": "anyone"
+     }
+    },
+    "options": {}
+   },
+   "name": "Make Cover Public",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1456,
+    496
+   ],
+   "id": "1a1b32e2-4bea-445d-9369-63b250371ef2",
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "8Udm8DTuztrnxpuv",
+     "name": "Google Drive account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "operation": "share",
+    "fileId": {
+     "__rl": true,
+     "value": "={{$node[\"Upload Innersider\"].json[\"id\"]}}",
+     "mode": "id"
+    },
+    "permissionsUi": {
+     "permissionsValues": {
+      "role": "reader",
+      "type": "anyone"
+     }
+    },
+    "options": {}
+   },
+   "name": "Make Innersider Public",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1456,
+    672
+   ],
+   "id": "38061ad2-220e-4cc4-bf8e-e627c5b5348e",
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "8Udm8DTuztrnxpuv",
+     "name": "Google Drive account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://order.gelatoapis.com/v4/orders",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-API-KEY",
+       "value": "=<GELATO_API_KEY>"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({\n  orderType: \"draft\",\n  orderReferenceId: $node[\"Parse Job\"].json.gelato_reference || $node[\"All Pages Done\"].json.order_id,\n  customerReferenceId: $node[\"All Pages Done\"].json.customer.email || (\"customer-\" + $node[\"All Pages Done\"].json.order_id),\n  currency: \"NOK\",\n  shippingAddress: {\n    firstName:    $node[\"All Pages Done\"].json.shipping.first_name,\n    lastName:     $node[\"All Pages Done\"].json.shipping.last_name,\n    addressLine1: $node[\"All Pages Done\"].json.shipping.address_1,\n    addressLine2: $node[\"All Pages Done\"].json.shipping.address_2 || \"\",\n    city:         $node[\"All Pages Done\"].json.shipping.city,\n    postCode:     $node[\"All Pages Done\"].json.shipping.postcode,\n    country:      $node[\"All Pages Done\"].json.shipping.country,\n    email:        $node[\"All Pages Done\"].json.customer.email,\n    phone:        $node[\"All Pages Done\"].json.shipping.phone || $node[\"All Pages Done\"].json.customer.phone\n  },\n  items: [{\n    itemReferenceId: \"item-\" + $node[\"All Pages Done\"].json.order_id,\n    productUid: $node[\"All Pages Done\"].json.cover_type === \"hardcover\"\n      ? \"photobooks-hardcover_pf_200x200-mm-8x8-inch_pt_170-gsm-65lb-coated-silk_cl_4-4_ccl_4-4_bt_glued-left_ct_matt-lamination_prt_1-0_cpt_130-gsm-65-lb-cover-coated-silk_ver\"\n      : \"photobooks-softcover_pf_200x200-mm-8x8-inch_pt_170-gsm-65lb-coated-silk_cl_4-4_ccl_4-4_bt_glued-left_ct_matt-lamination_prt_1-0_cpt_250-gsm-100-lb-cover-coated-silk_ver\",\n    pageCount: 30,\n    files: [\n      {\n        type: \"default\",\n        url: \"https://drive.usercontent.google.com/download?id=\" + $node[\"Upload Gelato PDF\"].json.id + \"&export=download&confirm=t\"\n      }\n    ],\n    quantity: 1\n  }]\n}) }}",
+    "options": {
+     "timeout": 60000
+    }
+   },
+   "name": "Create Gelato Draft",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    1968,
+    608
+   ],
+   "id": "942833ed-6c63-4e83-8c07-5efbcddf15f9"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/sendMessage",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ chat_id: -5054483911, text: `New DreamPage Gelato draft ready.\\n\\nOrder ID: ${$node[\"All Pages Done\"].json.order_id}\\nChild: ${$node[\"All Pages Done\"].json.child_name}\\nBook: ${$node[\"All Pages Done\"].json.book_title}\\nLanguage: ${($node[\"All Pages Done\"].json.language || \"nb\").toUpperCase()}\\nMarket: ${($node[\"All Pages Done\"].json.market || \"no\").toUpperCase()}\\n\\nGelato draft:\\nhttps://dashboard.gelato.com/orders/${$node[\"Create Gelato Draft\"].json[\"id\"]}\\n\\nReview/order manually in Gelato. n8n will now close this execution after sending this notification.`, disable_web_page_preview: true }) }}",
+    "options": {
+     "timeout": 30000
+    }
+   },
+   "name": "Send Telegram Approval",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2096,
+    608
+   ],
+   "id": "edd0c5f9-d3aa-46b1-b011-2571df699289"
+  },
+  {
+   "parameters": {
+    "amount": 10
+   },
+   "name": "Approval Poll Wait",
+   "type": "n8n-nodes-base.wait",
+   "typeVersion": 1.1,
+   "position": [
+    2384,
+    544
+   ],
+   "id": "4f84e163-6e5e-4400-bc55-922474a798df",
+   "webhookId": "d14c2e44-128b-4a1c-98ed-137250c75d00"
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://order.gelatoapis.com/v4/orders/{{$node[\"Create Gelato Draft\"].json[\"id\"]}}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-API-KEY",
+       "value": "=<GELATO_API_KEY>"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ orderType: \"order\" }) }}",
+    "options": {}
+   },
+   "name": "Confirm Gelato Order",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    3376,
+    528
+   ],
+   "id": "8d3154f6-1eda-4ebb-866d-c9bc69086e0d",
+   "disabled": true
+  },
+  {
+   "parameters": {
+    "chatId": "-5054483911",
+    "text": "=*** TEST MODE — Gelato order stays as DRAFT (no purchase) ***\n\nOrder ID: {{$node[\"All Pages Done\"].json.order_id}}\nBook: {{$node[\"All Pages Done\"].json.book_title}}\nChild: {{$node[\"All Pages Done\"].json.child_name}}\nCover: {{$node[\"All Pages Done\"].json.cover_type}}\nInner pages rendered: {{$node[\"Parse Innersider Count\"].json.innerPageCount}}\nInner pages submitted: {{$node[\"Validate Gelato Files\"].json.innerPaddedTo}}\nCombined PDF pages: {{$node[\"Validate Gelato Files\"].json.combinedPageCount}}\nGelato page indexes: {{$node[\"Validate Gelato Files\"].json.gelatoPageIndexRange}}\nGelato product pageCount sent: 30\n31-page compat mode: {{$node[\"Validate Gelato Files\"].json.compatMode31}}\nLegacy 30-page mode: {{$node[\"Validate Gelato Files\"].json.legacyMode30}}\nWarnings: {{($node[\"Validate Gelato Files\"].json.warnings || []).join(' | ') || 'none'}}\n\nDraft (review before confirming):\nhttps://dashboard.gelato.com/orders/{{$node[\"Create Gelato Draft\"].json[\"id\"]}}\n\nShipping:\n{{$node[\"All Pages Done\"].json.shipping.first_name}} {{$node[\"All Pages Done\"].json.shipping.last_name}}\n{{$node[\"All Pages Done\"].json.shipping.address_1}} {{$node[\"All Pages Done\"].json.shipping.address_2 || \"\"}}\n{{$node[\"All Pages Done\"].json.shipping.postcode}} {{$node[\"All Pages Done\"].json.shipping.city}}\n{{$node[\"All Pages Done\"].json.shipping.country}}\nEmail: {{$node[\"All Pages Done\"].json.customer.email}}\nPhone: {{$node[\"All Pages Done\"].json.shipping.phone || $node[\"All Pages Done\"].json.customer.phone || \"\"}}",
+    "additionalFields": {
+     "appendAttribution": false
+    }
+   },
+   "name": "Send Telegram Confirmation",
+   "type": "n8n-nodes-base.telegram",
+   "typeVersion": 1.2,
+   "position": [
+    2704,
+    352
+   ],
+   "id": "e75f762e-acae-4606-b985-cc842dd4e374",
+   "webhookId": "fb223d56-574a-4a35-be3b-50fd65464e2f",
+   "credentials": {
+    "telegramApi": {
+     "id": "Wv9zWvNpPccDKTQL",
+     "name": "Telegram account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "fileSelector": "={{ 'C:/ComfyUI/books/' + $json.book_slug + '/' + ($json.workflow_api_file || 'workflow_api.json') }}",
+    "options": {}
+   },
+   "name": "Read Template",
+   "type": "n8n-nodes-base.readWriteFile",
+   "typeVersion": 1,
+   "position": [
+    432,
+    32
+   ],
+   "id": "c523277c-030e-4808-89f7-3ff97dd03df1"
+  },
+  {
+   "parameters": {
+    "fileSelector": "={{ 'C:/ComfyUI/books/' + $json.book_slug + '/config.json' }}",
+    "options": {}
+   },
+   "name": "Read Config File",
+   "type": "n8n-nodes-base.readWriteFile",
+   "typeVersion": 1,
+   "position": [
+    -240,
+    576
+   ],
+   "id": "316cdda0-ee9b-4832-b30c-e46125431da9"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "var raw = '';\nif ($binary && $binary.data && typeof $binary.data.data === 'string') {\n  raw = Buffer.from($binary.data.data, 'base64').toString('utf8');\n} else if ($binary && $binary.data) {\n  raw = (await this.helpers.getBinaryDataBuffer(0, 'data')).toString('utf8');\n} else if ($json && typeof $json.data === 'string') {\n  raw = $json.data;\n} else {\n  throw new Error('No config file data received from Read Config File node');\n}\n\nraw = raw.replace(/^\\uFEFF/, '');\n\nvar config = JSON.parse(raw);\nvar ef = $node['Load Book Config'].json;\nvar orderId = ef.order_id;\nvar faceImage = ef.face_image || '';\nvar faceFilename = faceImage.split('/').pop().split('\\\\').pop();\nvar scriptLanguage = ef.script_language || 'nb';\n\nif (config.textScripts) {\n  var selectedTextScript = config.textScripts[scriptLanguage] ||\n    config.textScripts[String(scriptLanguage).toLowerCase()] ||\n    (scriptLanguage === 'en-GB' ? config.textScripts['en-gb'] : undefined) ||\n    (scriptLanguage === 'en-US' ? config.textScripts['en-us'] : undefined) ||\n    (String(scriptLanguage).startsWith('en') ? config.textScripts.en : undefined) ||\n    config.textScripts.nb ||\n    config.textScript;\n  if (selectedTextScript) config.textScript = selectedTextScript;\n}\n\nreturn { json: {\n  order_id:        orderId,\n  book_slug:       ef.book_slug,\n  child_name:      ef.child_name,\n  face_image:      faceImage,\n  cover_type:      ef.cover_type,\n  shipping:        ef.shipping,\n  customer:        ef.customer,\n  book_title:      ef.book_title,\n  language:        ef.language || 'nb',\n  site_language:   ef.site_language || 'no',\n  market:          ef.market || 'no',\n  script_language: scriptLanguage,\n  continue_code: ef.continue_code || '',\n  continue_url: ef.continue_url || '',\n  continue_coupon: ef.continue_coupon || '',\n  continue_callback: ef.continue_callback || '',\n  next_book_id: ef.next_book_id || '',\n  next_book_slug: ef.next_book_slug || '',\n  next_book_title: ef.next_book_title || '',\n  config:          config,\n  faceFilename:    faceFilename,\n  outputDir:       config.comfyOutputPrefix + '/' + orderId + '/comfy',\n  orderPath:       config.orderBasePath + '/' + orderId,\n} };"
+   },
+   "name": "Parse Config",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -112,
+    576
+   ],
+   "id": "6d5a0078-5543-4411-889a-c2fdd83c9b11"
+  },
+  {
+   "parameters": {
+    "content": "## Sort",
+    "height": 240,
+    "width": 1504
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    -1328,
+    512
+   ],
+   "id": "9ce3460f-6e0f-4033-98ba-8d87a127f2f2",
+   "name": "Sticky Note"
+  },
+  {
+   "parameters": {
+    "content": "## LOOP",
+    "height": 336,
+    "width": 1184,
+    "color": 6
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    0,
+    0
+   ],
+   "id": "8bedbdfb-f6d5-4435-9961-bb9ae52baa51",
+   "name": "Sticky Note1"
+  },
+  {
+   "parameters": {
+    "content": "## Prossesing\n",
+    "height": 368,
+    "width": 1264,
+    "color": 4
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    320,
+    464
+   ],
+   "id": "f8565611-fdde-4fd7-a732-a00ef86f7f38",
+   "name": "Sticky Note2"
+  },
+  {
+   "parameters": {
+    "content": "## Gelato",
+    "height": 384,
+    "width": 1632,
+    "color": 7
+   },
+   "type": "n8n-nodes-base.stickyNote",
+   "typeVersion": 1,
+   "position": [
+    1680,
+    464
+   ],
+   "id": "bab085ba-154e-49bc-a8c9-19a5cd55fda3",
+   "name": "Sticky Note3"
+  },
+  {
+   "parameters": {
+    "url": "={{ $json.image_url }}",
+    "options": {
+     "response": {
+      "response": {
+       "responseFormat": "file"
+      }
+     }
+    }
+   },
+   "name": "Download Child Image",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    -976,
+    576
+   ],
+   "id": "c53568d2-0bdb-4a01-99da-f9b4572e962e"
+  },
+  {
+   "parameters": {
+    "operation": "write",
+    "fileName": "={{ 'C:/ComfyUI/input/' + ($node['Parse Job'].json.job_key || $node['Parse Job'].json.order_id) + '.jpg' }}",
+    "options": {}
+   },
+   "name": "Save Child Image",
+   "type": "n8n-nodes-base.readWriteFile",
+   "typeVersion": 1,
+   "position": [
+    -832,
+    576
+   ],
+   "id": "a52a4c2d-a5f1-4afd-bd51-5a254f439773"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "approval-gate-1",
+       "leftValue": "={{$json.approved !== false}}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Approval Continue?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2928,
+    688
+   ],
+   "id": "69d5faa6-2897-4d58-a4dd-041942f475e7"
+  },
+  {
+   "parameters": {
+    "command": "=C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"C:/ComfyUI/script/build_gelato_pdf.py\" --cover \"{{$node[\"All Pages Done\"].json.orderPath}}/pdf/{{$node[\"All Pages Done\"].json.child_name}}_cover.pdf\" --inner \"{{$node[\"All Pages Done\"].json.orderPath}}/pdf/{{$node[\"All Pages Done\"].json.child_name}}_innersider.pdf\" --out \"{{$node[\"All Pages Done\"].json.orderPath}}/pdf/{{$node[\"All Pages Done\"].json.child_name}}_gelato.pdf\" --expected-inner {{$node[\"All Pages Done\"].json.config.expectedInnerPages || 31}} --book-slug \"{{$node[\"All Pages Done\"].json.book_slug}}\" --order-id \"{{$node[\"All Pages Done\"].json.order_id}}\""
+   },
+   "name": "Build Gelato PDF",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    1008,
+    880
+   ],
+   "id": "e149c915-e757-4b43-85f5-436344a77864"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const raw = ($json.stdout || '').trim();\nif (!raw) throw new Error('Build Gelato PDF returned no stdout');\nconst lines = raw.split(/\\r?\\n/).filter(Boolean);\nlet payload;\ntry { payload = JSON.parse(lines[lines.length - 1]); } catch (e) { throw new Error('Could not parse Build Gelato PDF output: ' + raw); }\nif (!payload.gelato_pdf || !payload.pageCount) throw new Error('Build Gelato PDF did not return gelato_pdf/pageCount');\nreturn { json: payload };"
+   },
+   "name": "Parse Gelato PDF",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1136,
+    880
+   ],
+   "id": "ccb393a9-4122-4ba2-8eb1-ada36503e2ea"
+  },
+  {
+   "parameters": {
+    "fileSelector": "={{$node[\"Parse Gelato PDF\"].json.gelato_pdf}}",
+    "options": {}
+   },
+   "name": "Read Gelato PDF",
+   "type": "n8n-nodes-base.readWriteFile",
+   "typeVersion": 1,
+   "position": [
+    1024,
+    672
+   ],
+   "id": "c1f1ae94-6eb0-4a29-a31a-646e6915fb73"
+  },
+  {
+   "parameters": {
+    "name": "={{$binary.data.fileName}}",
+    "driveId": {
+     "__rl": true,
+     "mode": "list",
+     "value": "My Drive"
+    },
+    "folderId": {
+     "__rl": true,
+     "value": "={{$node[\"Create Drive Folder\"].json[\"id\"]}}",
+     "mode": "id"
+    },
+    "options": {}
+   },
+   "name": "Upload Gelato PDF",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1712,
+    608
+   ],
+   "id": "7652ee15-d999-40fc-a5f5-04c6fdd82e1d",
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "8Udm8DTuztrnxpuv",
+     "name": "Google Drive account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "operation": "share",
+    "fileId": {
+     "__rl": true,
+     "value": "={{$node[\"Upload Gelato PDF\"].json[\"id\"]}}",
+     "mode": "id"
+    },
+    "permissionsUi": {
+     "permissionsValues": {
+      "role": "reader",
+      "type": "anyone"
+     }
+    },
+    "options": {}
+   },
+   "name": "Make Gelato PDF Public",
+   "type": "n8n-nodes-base.googleDrive",
+   "typeVersion": 3,
+   "position": [
+    1840,
+    608
+   ],
+   "id": "3280a56c-b126-4c35-9c0b-cd547420c8ce",
+   "credentials": {
+    "googleDriveOAuth2Api": {
+     "id": "8Udm8DTuztrnxpuv",
+     "name": "Google Drive account"
+    }
+   }
+  },
+  {
+   "parameters": {
+    "assignments": {
+     "assignments": [
+      {
+       "id": "ap-1",
+       "name": "approval.orderId",
+       "value": "={{$node[\"All Pages Done\"].json.order_id}}",
+       "type": "string"
+      },
+      {
+       "id": "ap-2",
+       "name": "approval.chatId",
+       "value": "=-5054483911",
+       "type": "string"
+      },
+      {
+       "id": "ap-3",
+       "name": "approval.messageId",
+       "value": "={{String($json.result?.message_id || $json.message_id || \"\")}}",
+       "type": "string"
+      },
+      {
+       "id": "ap-4",
+       "name": "approval.sentAt",
+       "value": "={{Number($json.result?.date || $json.date || Math.floor(Date.now()/1000))}}",
+       "type": "number"
+      },
+      {
+       "id": "ap-5",
+       "name": "approval.tries",
+       "value": "0",
+       "type": "number"
+      },
+      {
+       "id": "ap-6",
+       "name": "approval.maxTries",
+       "value": "90",
+       "type": "number"
+      },
+      {
+       "id": "ap-7",
+       "name": "approval.offset",
+       "value": "0",
+       "type": "number"
+      }
+     ]
+    },
+    "includeOtherFields": true,
+    "options": {}
+   },
+   "name": "Init Approval Poll",
+   "type": "n8n-nodes-base.set",
+   "typeVersion": 3.4,
+   "position": [
+    2224,
+    544
+   ],
+   "id": "61572c04-e138-499b-9a6e-427494b9ea15"
+  },
+  {
+   "parameters": {
+    "url": "={{\"https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/getUpdates?limit=100&timeout=0\" + ($json.approval?.offset ? \"&offset=\" + $json.approval.offset : \"\")}}",
+    "options": {}
+   },
+   "name": "Get Telegram Updates",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2384,
+    688
+   ],
+   "id": "cfa990a8-5ec3-4ec8-95d8-6e069d7743fc"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const approval = ($json.approval) || ($node['Approval Poll Wait'] && $node['Approval Poll Wait'].json ? $node['Approval Poll Wait'].json.approval : undefined) || ($node['Init Approval Poll'] && $node['Init Approval Poll'].json ? $node['Init Approval Poll'].json.approval : undefined);\nif (!approval) throw new Error('Missing approval state');\nconst result = Array.isArray($json.result) ? $json.result : [];\nlet nextOffset = Number(approval.offset || 0);\nfor (const upd of result) {\n  if (typeof upd.update_id === 'number' && upd.update_id + 1 > nextOffset) nextOffset = upd.update_id + 1;\n}\nfunction decisionFromText(text) {\n  const t = String(text || '').trim().toLowerCase();\n  if (!t) return null;\n  const compact = t.replace(/\\s+/g, ' ');\n  const yes = new Set(['yes','y','ja']);\n  const no = new Set(['no','n','nei']);\n  if (yes.has(compact)) return true;\n  if (no.has(compact)) return false;\n  if (compact.startsWith('yes ') || compact.startsWith('ja ')) return true;\n  if (compact.startsWith('no ') || compact.startsWith('nei ')) return false;\n  return null;\n}\nlet approved = null;\nlet matchedText = null;\nfor (const upd of result) {\n  const msg = upd.message || upd.edited_message;\n  if (!msg) continue;\n  if (String(msg.chat && msg.chat.id) !== String(approval.chatId)) continue;\n  if (Number(msg.date || 0) < Number(approval.sentAt || 0)) continue;\n  const text = msg.text || msg.caption || '';\n  const isReply = String(msg.reply_to_message && msg.reply_to_message.message_id) === String(approval.messageId);\n  const mentionsOrder = String(text).includes(String(approval.orderId));\n  if (!isReply && !mentionsOrder) continue;\n  const d = decisionFromText(text);\n  if (d === null) continue;\n  approved = d;\n  matchedText = text;\n}\nconst tries = Number(approval.tries || 0) + 1;\nconst maxTries = Number(approval.maxTries || 90);\nconst timedOut = approved === null && tries >= maxTries;\nconst done = approved !== null || timedOut;\nreturn { json: { approval: { ...approval, tries, offset: nextOffset }, approved: approved === null ? (timedOut ? false : null) : approved, done, timedOut, matchedText } };"
+   },
+   "name": "Parse Approval Reply",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2560,
+    688
+   ],
+   "id": "4fe896b5-2d00-4ac2-b7fe-3b5b1eb0fd05"
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "approval-done-1",
+       "leftValue": "={{$json.done === true}}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Approval Done?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2736,
+    688
+   ],
+   "id": "53e66799-7826-4135-83e3-ba4bf010065c"
+  },
+  {
+   "parameters": {
+    "command": "=C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe -c \"from pypdf import PdfReader; import json; path=r'''{{$node[\"All Pages Done\"].json.orderPath}}/pdf/{{$node[\"All Pages Done\"].json.child_name}}_innersider.pdf'''; r=PdfReader(path); print(json.dumps({'innerPageCount': len(r.pages)}))\""
+   },
+   "name": "Count Innersider Pages",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    864,
+    656
+   ],
+   "id": "454df5b1-bd11-4e90-9a9e-9c3fce161373"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const raw = ($json.stdout || '').trim();\nif (!raw) throw new Error('Count Innersider Pages returned no stdout');\nconst lines = raw.split(/\\r?\\n/).filter(Boolean);\nlet payload;\ntry { payload = JSON.parse(lines[lines.length - 1]); } catch (e) { throw new Error('Could not parse Count Innersider Pages output: ' + raw); }\nif (!Number.isFinite(payload.innerPageCount)) throw new Error('Missing innerPageCount');\nreturn { json: payload };"
+   },
+   "name": "Parse Innersider Count",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    864,
+    880
+   ],
+   "id": "ff70346f-2c58-4b0d-8bd4-e999332203dc"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "// Pre-Gelato audit and gate for the 30-page Gelato photobook product.\n//\n// Gelato requires 33 PDF pages for this product variant:\n//   1 cover spread + 1 blank front endpaper + inner pages + final blank endpaper(s).\n// The Gelato API pageCount parameter is a product-variant identifier and\n// stays 30 regardless.\n\nconst ACCEPTED_INNER_COUNTS = [30, 31];\nconst PREFERRED_INNER_COUNT = 31;\nconst REQUIRED_TOTAL_PAGES = 33;\nconst GELATO_PRODUCT_PAGE_COUNT = 30;\n\nconst src = $node['All Pages Done'].json || {};\nconst cfg = src.config || {};\nconst innerCount = $node['Parse Innersider Count'].json.innerPageCount;\nconst built = $node['Parse Gelato PDF'].json || {};\nconst gelatoPdf = built.gelato_pdf;\n\nconst bookSlug = src.book_slug || cfg.slug || '';\nconst orderId = src.order_id || '';\nconst childName = src.child_name || '';\nconst cfgPreferred = cfg.expectedInnerPages;\nconst frontPad = Number(built.frontPad || 0);\nconst finalBlankCount = Number(built.finalBlankPageCount || built.backPad || 0);\n\nconst errors = [];\nconst warnings = [];\n\nif (!gelatoPdf) {\n  errors.push('combined Gelato PDF path missing from Parse Gelato PDF output');\n}\nif (!ACCEPTED_INNER_COUNTS.includes(innerCount)) {\n  errors.push('inner PDF has ' + innerCount + ' pages; expected one of [' +\n              ACCEPTED_INNER_COUNTS.join(', ') + '] for the 30-page Gelato photobook');\n}\nif (built.pageCount !== REQUIRED_TOTAL_PAGES) {\n  errors.push('submitted combined PDF has ' + built.pageCount + ' pages, expected ' +\n              REQUIRED_TOTAL_PAGES + ' for Gelato product pageCount=' + GELATO_PRODUCT_PAGE_COUNT);\n}\nif (!built.frontEndpaperAdded || frontPad !== 1) {\n  errors.push('Build Gelato PDF must report exactly one blank front endpaper page; got frontPad=' + frontPad);\n}\nif (!built.finalBlankPageAdded || !built.endpapersAdded || finalBlankCount < 1) {\n  errors.push('Build Gelato PDF did not report final blank Gelato endpaper pages');\n}\nif (cfgPreferred !== undefined && cfgPreferred !== innerCount) {\n  warnings.push('config.expectedInnerPages=' + cfgPreferred + ' but generated inner PDF has ' + innerCount + ' pages');\n}\nif (innerCount === 30) {\n  warnings.push('Legacy 30-inner-page layout: builder should add one final blank page to reach 33 total.');\n}\nif (built.legacy30PageWarning) {\n  warnings.push('build_gelato_pdf: ' + built.legacy30PageWarning);\n}\nif (built.layoutWarning) {\n  warnings.push('build_gelato_pdf: ' + built.layoutWarning);\n}\n\nconsole.log('[GELATO PRE-DRAFT AUDIT]');\nconsole.log('  book_slug:                ' + bookSlug);\nconsole.log('  order_id:                 ' + orderId);\nconsole.log('  child_name:               ' + childName);\nconsole.log('  inner pages:              ' + innerCount + ' (accepted ' + ACCEPTED_INNER_COUNTS.join('/') + ', preferred ' + PREFERRED_INNER_COUNT + ')');\nconsole.log('  combined PDF pages:       ' + built.pageCount + ' (required ' + REQUIRED_TOTAL_PAGES + ')');\nconsole.log('  front endpaper pages:     ' + frontPad);\nconsole.log('  final blank pages:        ' + finalBlankCount);\nconsole.log('  gelato product pageCount: ' + GELATO_PRODUCT_PAGE_COUNT + ' (unchanged)');\nconsole.log('  config.expectedInnerPages: ' + (cfgPreferred === undefined ? '<unset>' : cfgPreferred));\nconsole.log('  combined PDF path:        ' + gelatoPdf);\nif (warnings.length) {\n  warnings.forEach(function (w) { console.warn('[GELATO PRE-DRAFT WARNING] ' + w); });\n}\n\nif (errors.length) {\n  throw new Error('Gelato validation failed: ' + errors.join(' | '));\n}\n\nreturn { json: {\n  ok: true,\n  gelato_pdf: gelatoPdf,\n  combinedPageCount: built.pageCount,\n  requiredTotalPageCount: REQUIRED_TOTAL_PAGES,\n  innerPageCount: innerCount,\n  innerPaddedTo: built.innerPaddedTo,\n  frontPad: frontPad,\n  frontEndpaperAdded: !!built.frontEndpaperAdded,\n  finalBlankPageAdded: !!built.finalBlankPageAdded,\n  finalBlankPageCount: finalBlankCount,\n  backPad: built.backPad || 0,\n  endpapersAdded: !!built.endpapersAdded,\n  expectedPageCount: REQUIRED_TOTAL_PAGES,\n  preferredInnerPages: PREFERRED_INNER_COUNT,\n  acceptedInnerCounts: ACCEPTED_INNER_COUNTS,\n  gelatoProductPageCount: GELATO_PRODUCT_PAGE_COUNT,\n  bookSlug: bookSlug,\n  orderId: orderId,\n  childName: childName,\n  warnings: warnings,\n} };"
+   },
+   "id": "ec999aae-9d87-4aa1-84f1-dadf2759c337",
+   "name": "Validate Gelato Files",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1296,
+    880
+   ]
+  },
+  {
+   "parameters": {
+    "method": "PATCH",
+    "url": "=https://order.gelatoapis.com/v4/orders/{{$node[\"Create Gelato Draft\"].json[\"id\"]}}",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-API-KEY",
+       "value": "=<GELATO_API_KEY>"
+      },
+      {
+       "name": "Content-Type",
+       "value": "application/json"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={{ JSON.stringify({ orderType: \"draft\" }) }}",
+    "options": {}
+   },
+   "name": "Confirm Gelato Draft (TEST)",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2560,
+    544
+   ],
+   "id": "25e1faa0-1c04-4ad0-a4f7-2b048fc8750a"
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://dreampage.store/wp-json/dreampage/v1/order-progress",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-DreamPage-Secret",
+       "value": "<CONTINUE_CALLBACK_SECRET>"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n\"order_id\": {{ Number($('Parse Job').first().json.woo_order_id || $('Parse Job').first().json.order_id) || 0 }},\n\"status\": \"book_creating\"\n}",
+    "options": {
+     "timeout": 10000
+    }
+   },
+   "id": "a7e035de-b155-4a83-83f8-f23ff016d345",
+   "name": "WP Progress: Book Creating",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    656,
+    672
+   ],
+   "onError": "continueRegularOutput",
+   "notes": "DreamPage book progress -> WordPress account dashboard. Safe to fail."
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://dreampage.store/wp-json/dreampage/v1/order-progress",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-DreamPage-Secret",
+       "value": "<CONTINUE_CALLBACK_SECRET>"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n\"order_id\": {{ Number($('Parse Job').first().json.woo_order_id || $('Parse Job').first().json.order_id) || 0 }},\n\"status\": \"quality_check\"\n}",
+    "options": {
+     "timeout": 10000
+    }
+   },
+   "id": "fb1e8e17-06f8-4402-8001-832ba3e8a01d",
+   "name": "WP Progress: Quality Check",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2224,
+    672
+   ],
+   "onError": "continueRegularOutput",
+   "notes": "DreamPage book progress -> WordPress account dashboard. Safe to fail."
+  },
+  {
+   "parameters": {
+    "method": "POST",
+    "url": "https://dreampage.store/wp-json/dreampage/v1/order-progress",
+    "sendHeaders": true,
+    "headerParameters": {
+     "parameters": [
+      {
+       "name": "X-DreamPage-Secret",
+       "value": "<CONTINUE_CALLBACK_SECRET>"
+      }
+     ]
+    },
+    "sendBody": true,
+    "specifyBody": "json",
+    "jsonBody": "={\n\"order_id\": {{ Number($('Parse Job').first().json.woo_order_id || $('Parse Job').first().json.order_id) || 0 }},\n\"status\": \"sent_to_print\"\n}",
+    "options": {
+     "timeout": 10000
+    }
+   },
+   "id": "62252b4b-4bd4-4310-986d-825ea8a06c24",
+   "name": "WP Progress: Sent To Print",
+   "type": "n8n-nodes-base.httpRequest",
+   "typeVersion": 4.2,
+   "position": [
+    2736,
+    544
+   ],
+   "onError": "continueRegularOutput",
+   "notes": "DreamPage book progress -> WordPress account dashboard. Safe to fail."
+  },
+  {
+   "parameters": {
+    "command": "=powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference = 'Stop'; $root = [System.IO.Path]::GetFullPath('C:/ComfyUI/output'); $targetRaw = 'C:/ComfyUI/output/{{$node[\"All Pages Done\"].json.config.comfyOutputPrefix}}/{{$node[\"All Pages Done\"].json.order_id}}/comfy'; $target = [System.IO.Path]::GetFullPath($targetRaw); if (-not $target.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'Refusing to delete outside output root: ' + $target }; if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force; Write-Output ('Deleted comfy folder: ' + $target) } else { Write-Output ('No comfy folder found: ' + $target) }\""
+   },
+   "id": "d62c9af0-df36-4b7c-b4d1-196dd6e672f0",
+   "name": "Cleanup Comfy Folder",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    2928,
+    544
+   ]
+  },
+  {
+   "parameters": {
+    "command": "=powershell -NoProfile -ExecutionPolicy Bypass -Command \"$ErrorActionPreference = 'Stop'; $root = [System.IO.Path]::GetFullPath('C:/ComfyUI/books'); $targetRaw = '{{$node[\"All Pages Done\"].json.orderPath}}/input'; $target = [System.IO.Path]::GetFullPath($targetRaw); if (-not $target.StartsWith($root, [System.StringComparison]::OrdinalIgnoreCase)) { throw 'Refusing to delete outside books root: ' + $target }; if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Recurse -Force; Write-Output ('Deleted book input folder: ' + $target) } else { Write-Output ('No book input folder found: ' + $target) }\""
+   },
+   "id": "f4ca7844-c88c-4c6a-beb0-f7309b8a21f7",
+   "name": "Cleanup Book Input Folder (READY)",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    3376,
+    704
+   ],
+   "disabled": true,
+   "notes": "Ready for later: deletes books/<slug>/orders/<order_id>/input with a C:/ComfyUI/books path guard. Currently disabled and not connected."
+  },
+  {
+   "parameters": {
+    "operation": "deleteMessage"
+   },
+   "name": "Release RabbitMQ Job",
+   "type": "n8n-nodes-base.rabbitmq",
+   "typeVersion": 1.1,
+   "position": [
+    512,
+    544
+   ],
+   "id": "65f24406-eb46-478f-be9c-25fb7ff7230d",
+   "credentials": {
+    "rabbitmq": {
+     "id": "paSMyl2k9MRFBE0P",
+     "name": "RabbitMQ account"
+    }
+   },
+   "notes": "Acknowledges the RabbitMQ job only after all pages are generated, releasing this PC for the next job."
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const fs = require('fs');\nconst path = require('path');\n\nconst outputRoot = 'C:/ComfyUI/output';\nconst pageKey = String($json.page_key || '').trim();\nif (!pageKey) throw new Error('Check Page Output missing page_key');\n\nfunction normalizeDir(value) {\n  const raw = String(value || '').trim();\n  if (!raw) return '';\n  if (path.isAbsolute(raw)) return raw;\n  return path.join(outputRoot, ...raw.replace(/^[/\\\\]+/, '').split(/[\\\\/]+/).filter(Boolean));\n}\n\n// KUN ordrens egen mappe. Sidenoeklene (page00..page14) er like i alle\n// boeker, saa en fremmed mappe her faar en annen ordres side til aa se\n// ferdig ut - og siden blir aldri laget for denne ordren.\nconst candidates = [\n  normalizeDir($json.output_dir),\n  normalizeDir($json.pageOutputDir),\n].filter(Boolean);\n\nconst seen = new Set();\nlet matches = [];\nfor (const outputDir of candidates) {\n  const key = outputDir.toLowerCase();\n  if (seen.has(key)) continue;\n  seen.add(key);\n  if (!fs.existsSync(outputDir)) continue;\n  const found = fs.readdirSync(outputDir)\n    .filter(name => name.startsWith(pageKey + '_') && /\\.(png|jpg|jpeg|webp)$/i.test(name))\n    .map(name => {\n      const fullPath = path.join(outputDir, name);\n      const st = fs.statSync(fullPath);\n      return { name, fullPath, outputDir, mtimeMs: st.mtimeMs, size: st.size };\n    })\n    .filter(f => f.size > 0);\n  matches.push(...found);\n}\n\nmatches.sort((a, b) => b.mtimeMs - a.mtimeMs);\nconst latest = matches[0] || null;\nconst primaryOutputDir = candidates[0] || candidates[1] || candidates[2] || '';\n\nreturn {\n  json: Object.assign({}, $json, {\n    pageAlreadyDone: !!latest,\n    existingPageFile: latest ? latest.fullPath : '',\n    existingPageCount: matches.length,\n    pageOutputDir: latest ? latest.outputDir : primaryOutputDir,\n    checkedOutputDirs: Array.from(seen),\n  }),\n};"
+   },
+   "id": "1045d711-0c4e-4707-bca2-06c14428b614",
+   "name": "Check Page Output",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    416,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "007b7dfd-abd4-4d7d-a475-ad4b5604e080",
+       "leftValue": "={{$json.pageAlreadyDone}}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "8971e526-4103-42c0-b294-a0609a092d80",
+   "name": "Page Already Done?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    576,
+    160
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const fs = require('fs');\nconst path = require('path');\n\nconst lockPath = 'C:/ComfyUI/.dreampage-comfy.lock';\nconst ttlMs = 30 * 60 * 1000;\nconst now = Date.now();\nconst executionId = (typeof $execution !== 'undefined' && $execution.id) ? String($execution.id) : 'unknown';\nconst token = [executionId, $json.order_id || '', $json.book_slug || '', $json.page_key || '', now].join(':');\n\nfunction readLock() {\n  try { return JSON.parse(fs.readFileSync(lockPath, 'utf8')); }\n  catch (error) { return null; }\n}\n\nfunction lockIsStale(lock) {\n  const createdAt = lock && Number(lock.createdAt || 0);\n  return !createdAt || (now - createdAt) > ttlMs;\n}\n\nfunction pageExists(dir, pageKey) {\n  if (!dir || !pageKey || !fs.existsSync(dir)) return false;\n  return fs.readdirSync(dir).some(name => {\n    if (!name.startsWith(pageKey + '_') || !/\\.(png|jpg|jpeg|webp)$/i.test(name)) return false;\n    try { return fs.statSync(path.join(dir, name)).size > 0; }\n    catch (error) { return false; }\n  });\n}\n\nfunction tryCreate() {\n  const lock = {\n    token,\n    createdAt: now,\n    executionId,\n    order_id: $json.order_id || '',\n    book_slug: $json.book_slug || '',\n    page_key: $json.page_key || '',\n    pageOutputDir: $json.pageOutputDir || '',\n  };\n  const fd = fs.openSync(lockPath, 'wx');\n  try { fs.writeFileSync(fd, JSON.stringify(lock, null, 2), 'utf8'); }\n  finally { fs.closeSync(fd); }\n  return lock;\n}\n\ntry {\n  const lock = tryCreate();\n  return { json: Object.assign({}, $json, { lockAcquired: true, lockWaitReason: '', comfyLock: Object.assign({ path: lockPath }, lock) }) };\n} catch (error) {\n  if (error && error.code !== 'EEXIST') throw error;\n}\n\nconst existing = readLock();\nconst samePage = existing &&\n  String(existing.order_id || '') === String($json.order_id || '') &&\n  String(existing.book_slug || '') === String($json.book_slug || '') &&\n  String(existing.page_key || '') === String($json.page_key || '');\nif (samePage && pageExists($json.pageOutputDir || existing.pageOutputDir, $json.page_key || existing.page_key)) {\n  try { fs.unlinkSync(lockPath); } catch (error) {}\n  return {\n    json: Object.assign({}, $json, {\n      lockAcquired: false,\n      lockWaitReason: 'released matching completed page lock; rechecking output',\n      comfyLock: existing ? Object.assign({ path: lockPath }, existing) : { path: lockPath },\n    }),\n  };\n}\n\nif (lockIsStale(existing)) {\n  try { fs.unlinkSync(lockPath); } catch (error) {}\n  try {\n    const lock = tryCreate();\n    return { json: Object.assign({}, $json, { lockAcquired: true, lockWaitReason: 'replaced stale lock', comfyLock: Object.assign({ path: lockPath }, lock) }) };\n  } catch (error) {\n    if (error && error.code !== 'EEXIST') throw error;\n  }\n}\n\n// Laasen tilhoerer en annen kjoering. Send ALDRI dens felter videre i\n// comfyLock: pageOutputDir ville sendt Check Page Output inn i den andre\n// ordrens mappe, og tokenen ville latt Release Comfy Lock slette en laas\n// vi ikke eier. Kun diagnostikk herfra.\nreturn {\n  json: Object.assign({}, $json, {\n    lockAcquired: false,\n    lockWaitReason: existing\n      ? ('Comfy busy with order ' + (existing.order_id || '?') + ' ' + (existing.page_key || '?'))\n      : 'Comfy lock exists',\n    lockOwner: existing\n      ? { order_id: existing.order_id || '', book_slug: existing.book_slug || '',\n          page_key: existing.page_key || '', executionId: existing.executionId || '' }\n      : null,\n    comfyLock: { path: lockPath },\n  }),\n};"
+   },
+   "id": "ae87c7e8-9c49-438d-987f-2d1367075e39",
+   "name": "Acquire Comfy Lock",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    736,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "37db7028-8d5d-4f81-9fad-aabab90e06fb",
+       "leftValue": "={{$json.lockAcquired}}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "958265b3-2f13-4a73-8435-242656c28424",
+   "name": "Lock Acquired?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    896,
+    208
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const intervalSec = Number($json.lockWaitIntervalSec ?? 10);\nconst boundedSec = Math.max(1, Math.min(intervalSec, 60));\nawait new Promise(resolve => setTimeout(resolve, boundedSec * 1000));\nreturn { json: Object.assign({}, $json, { lockWaitIntervalSec: boundedSec }) };"
+   },
+   "id": "fe6d6700-7633-46db-a79c-3bf1f6cdede1",
+   "name": "Wait Comfy Lock",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    896,
+    352
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst lock = $json.comfyLock || {};\nconst lockPath = lock.path || 'C:/ComfyUI/.dreampage-comfy.lock';\nlet released = false;\nlet lockReleaseNote = '';\n\nfunction pageExists(dir, pageKey) {\n  if (!dir || !pageKey || !fs.existsSync(dir)) return false;\n  return fs.readdirSync(dir).some(name => {\n    if (!name.startsWith(pageKey + '_') || !/\\.(png|jpg|jpeg|webp)$/i.test(name)) return false;\n    try { return fs.statSync(path.join(dir, name)).size > 0; }\n    catch (error) { return false; }\n  });\n}\n\nif (fs.existsSync(lockPath)) {\n  try {\n    const current = JSON.parse(fs.readFileSync(lockPath, 'utf8'));\n    const selfId = (typeof $execution !== 'undefined' && $execution.id) ? String($execution.id) : 'unknown';\n    const ownedByUs = current && String(current.executionId || '') === selfId;\n    const tokenMatches = ownedByUs && lock.token && current.token === lock.token;\n    const samePage = current &&\n      String(current.order_id || '') === String($json.order_id || '') &&\n      String(current.book_slug || '') === String($json.book_slug || '') &&\n      String(current.page_key || '') === String($json.page_key || '');\n    const completedPageExists = pageExists($json.pageOutputDir || current.pageOutputDir || lock.pageOutputDir, $json.page_key || current.page_key);\n\n    // ownedByUs alene holder: paa feilgrenen fra HTTP Request ComfyUI er\n    // det ikke garantert at $json.comfyLock (og dermed tokenen) overlever,\n    // men en laas VI har laget er alltid trygg aa fjerne.\n    if (tokenMatches || ownedByUs || (samePage && completedPageExists)) {\n      fs.unlinkSync(lockPath);\n      released = true;\n      if (!tokenMatches) lockReleaseNote = 'released matching completed page lock without token match';\n    } else {\n      lockReleaseNote = 'lock token did not match current owner';\n    }\n  } catch (error) {\n    lockReleaseNote = error && error.message ? error.message : String(error);\n  }\n}\n\nreturn { json: Object.assign({}, $json, { lockReleased: released, lockReleaseNote }) };"
+   },
+   "id": "f5a57f7f-47d3-48bf-b214-e7bb79d8da25",
+   "name": "Release Comfy Lock",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1040,
+    16
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const fs = require('fs');\nconst path = require('path');\nconst lock = $json.comfyLock || {};\nconst lockPath = lock.path || 'C:/ComfyUI/.dreampage-comfy.lock';\nlet released = false;\nlet lockReleaseNote = '';\n\nfunction pageExists(dir, pageKey) {\n  if (!dir || !pageKey || !fs.existsSync(dir)) return false;\n  return fs.readdirSync(dir).some(name => {\n    if (!name.startsWith(pageKey + '_') || !/\\.(png|jpg|jpeg|webp)$/i.test(name)) return false;\n    try { return fs.statSync(path.join(dir, name)).size > 0; }\n    catch (error) { return false; }\n  });\n}\n\nif (fs.existsSync(lockPath)) {\n  try {\n    const current = JSON.parse(fs.readFileSync(lockPath, 'utf8'));\n    const selfId = (typeof $execution !== 'undefined' && $execution.id) ? String($execution.id) : 'unknown';\n    const ownedByUs = current && String(current.executionId || '') === selfId;\n    const tokenMatches = ownedByUs && lock.token && current.token === lock.token;\n    const samePage = current &&\n      String(current.order_id || '') === String($json.order_id || '') &&\n      String(current.book_slug || '') === String($json.book_slug || '') &&\n      String(current.page_key || '') === String($json.page_key || '');\n    const completedPageExists = pageExists($json.pageOutputDir || current.pageOutputDir || lock.pageOutputDir, $json.page_key || current.page_key);\n\n    // ownedByUs alene holder: paa feilgrenen fra HTTP Request ComfyUI er\n    // det ikke garantert at $json.comfyLock (og dermed tokenen) overlever,\n    // men en laas VI har laget er alltid trygg aa fjerne.\n    if (tokenMatches || ownedByUs || (samePage && completedPageExists)) {\n      fs.unlinkSync(lockPath);\n      released = true;\n      if (!tokenMatches) lockReleaseNote = 'released matching completed page lock without token match';\n    } else {\n      lockReleaseNote = 'lock token did not match current owner';\n    }\n  } catch (error) {\n    lockReleaseNote = error && error.message ? error.message : String(error);\n  }\n}\n\nreturn { json: Object.assign({}, $json, { lockReleased: released, lockReleaseNote }) };"
+   },
+   "id": "1f60fa49-ace9-48b9-8654-c41d081fec33",
+   "name": "Release Comfy Lock (Error)",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1040,
+    176
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const page = $json.page_key || '?';\nconst order = $json.order_id || '?';\nconst details = $json.errors || $json.raw || $json.historyErrorMessage || {};\nthrow new Error('ComfyUI page failed for order ' + order + ' ' + page + ': ' + JSON.stringify(details).slice(0, 1500));"
+   },
+   "id": "097b8db4-7765-4beb-b990-a8c8046dd709",
+   "name": "Fail Comfy Page",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    1200,
+    176
+   ]
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "const fs = require('fs');\nconst path = require('path');\n\nconst orderId = String($json.order_id || '').trim();\nconst bookSlug = String($json.book_slug || '').trim();\nif (!orderId || !bookSlug) throw new Error('Claim Post-Comfy Order missing order_id/book_slug');\n\nconst orderDir = path.join('C:/ComfyUI/books', bookSlug, 'orders', orderId);\nfs.mkdirSync(orderDir, { recursive: true });\nconst claimPath = path.join(orderDir, '.post_comfy_claim.json');\nconst executionId = (typeof $execution !== 'undefined' && $execution.id) ? String($execution.id) : 'unknown';\nconst claim = {\n  order_id: orderId,\n  book_slug: bookSlug,\n  executionId,\n  createdAt: new Date().toISOString(),\n};\n\ntry {\n  const fd = fs.openSync(claimPath, 'wx');\n  try { fs.writeFileSync(fd, JSON.stringify(claim, null, 2), 'utf8'); }\n  finally { fs.closeSync(fd); }\n  return { json: Object.assign({}, $json, { postComfyClaimed: true, postComfyDuplicate: false, postComfyClaimPath: claimPath }) };\n} catch (error) {\n  if (!error || error.code !== 'EEXIST') throw error;\n}\n\nlet existing = {};\ntry { existing = JSON.parse(fs.readFileSync(claimPath, 'utf8')); } catch (error) {}\nreturn {\n  json: Object.assign({}, $json, {\n    postComfyClaimed: false,\n    postComfyDuplicate: true,\n    postComfyClaimPath: claimPath,\n    postComfyExistingClaim: existing,\n  }),\n};"
+   },
+   "id": "e87be935-9724-4b26-861e-5ed154a06a2d",
+   "name": "Claim Post-Comfy Order",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    368,
+    560
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "6e577348-a615-4c4e-8842-1af66cf10ed7",
+       "leftValue": "={{$json.postComfyClaimed}}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "id": "d0e51d57-e0f6-4d08-99b6-9f10189eb92e",
+   "name": "Post-Comfy Claimed?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    528,
+    560
+   ]
+  },
+  {
+   "parameters": {},
+   "id": "ca86f7d9-dc97-45e1-9b75-5f698a224bf2",
+   "name": "Duplicate Order Stop",
+   "type": "n8n-nodes-base.noOp",
+   "typeVersion": 1,
+   "position": [
+    688,
+    672
+   ]
+  },
+  {
+   "parameters": {
+    "conditions": {
+     "options": {
+      "caseSensitive": true,
+      "leftValue": "",
+      "typeValidation": "strict",
+      "version": 2
+     },
+     "conditions": [
+      {
+       "id": "8add1b36-bb42-4d22-bf91-5995c134cf3c",
+       "leftValue": "={{ $node['Parse Job'].json.suppress_telegram === true }}",
+       "rightValue": "",
+       "operator": {
+        "type": "boolean",
+        "operation": "true",
+        "singleValue": true
+       }
+      }
+     ],
+     "combinator": "and"
+    },
+    "options": {}
+   },
+   "name": "Suppress Telegram?",
+   "type": "n8n-nodes-base.if",
+   "typeVersion": 2.2,
+   "position": [
+    2188,
+    608
+   ],
+   "id": "b2d7b102-8be2-469c-a441-56486b50f4c9"
+  },
+  {
+   "parameters": {
+    "command": "={{ (() => { const d = $node[\"All Pages Done\"].json; if (!d.continue_code) return 'cmd /c echo continue-av: ingen continue_code - siste side som i dag'; const PY = 'C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"C:/ComfyUI/script/build_last_page.py\" '; const titled = d.orderPath + '/next/page99_next.png'; const mockup = d.orderPath + '/next/page99_next_mockup.png'; const comfy = 'C:/ComfyUI/output/' + d.config.comfyOutputPrefix + '/' + d.order_id + '/comfy'; return PY + 'cover --raw \"' + comfy + '\" --next-slug \"' + d.next_book_slug + '\" --child-name \"' + d.child_name + '\" --lang \"' + (d.script_language || 'nb') + '\" --mockup-template \"psd_1c8e5a0dfdc188d1_layer-1\" --out \"' + titled + '\" --mockup-out \"' + mockup + '\"'; })() }}"
+   },
+   "id": "continue-qr-0",
+   "name": "Build Next Cover Title",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    -1180,
+    1180
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "command": "={{ (() => { const d = $node[\"All Pages Done\"].json; if (!d.continue_code) return 'cmd /c echo continue-av: ingen continue_code - siste side som i dag'; const PY = 'C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"C:/ComfyUI/script/build_last_page.py\" '; const titled = d.orderPath + '/next/page99_next.png'; const mockup = d.orderPath + '/next/page99_next_mockup.png'; const comfy = 'C:/ComfyUI/output/' + d.config.comfyOutputPrefix + '/' + d.order_id + '/comfy'; if (!d.continue_callback) return 'cmd /c echo continue-av: ingen continue_code - siste side som i dag'; return PY + 'upload --file \"' + mockup + '\" --fallback \"' + titled + '\" --callback \"' + d.continue_callback + '\" --secret \"<CONTINUE_CALLBACK_SECRET>\"'; })() }}"
+   },
+   "id": "continue-qr-1",
+   "name": "Upload Continue Cover",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    -960,
+    1180
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "command": "={{ (() => { const d = $node[\"All Pages Done\"].json; if (!d.continue_code) return 'cmd /c echo continue-av: ingen continue_code - siste side som i dag'; const PY = 'C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"C:/ComfyUI/script/build_last_page.py\" '; const titled = d.orderPath + '/next/page99_next.png'; const comfy = 'C:/ComfyUI/output/' + d.config.comfyOutputPrefix + '/' + d.order_id + '/comfy'; return PY + 'image --next-cover \"' + titled + '\" --child-name \"' + d.child_name + '\" --next-title \"' + (d.next_book_title || '') + '\" --qr-url \"' + d.continue_url + '\" --coupon \"' + (d.continue_coupon || '') + '\" --lang \"' + (d.script_language || 'nb') + '\" --book-slug \"' + d.book_slug + '\" --mockup-template \"psd_1c8e5a0dfdc188d1_layer-1\" --out \"' + d.orderPath + '/input/blank-back.png\"'; })() }}"
+   },
+   "id": "continue-qr-2",
+   "name": "Build Last Page",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    -740,
+    1180
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "command": "={{ (() => { const d = $node[\"All Pages Done\"].json; if (!d.continue_code) return 'cmd /c echo continue-av: ingen continue_code - siste side som i dag'; const PY = 'C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"C:/ComfyUI/script/build_last_page.py\" '; const titled = d.orderPath + '/next/page99_next.png'; const comfy = 'C:/ComfyUI/output/' + d.config.comfyOutputPrefix + '/' + d.order_id + '/comfy'; return PY + 'stamp --pdf \"' + d.orderPath + '/pdf/' + d.child_name + '_innersider.pdf\" --qr-url \"' + d.continue_url + '\"'; })() }}"
+   },
+   "id": "continue-qr-3",
+   "name": "Stamp QR On Innersider",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    -520,
+    1180
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForEachItem",
+    "jsCode": "// Skriver kvittering for utkastet. Ingen Telegram, ingen kandidatsok, ingen\n// venting - bare en fil paa disk som boten kan slaa opp i senere.\nconst fs = require('fs');\nconst d = $node['All Pages Done'].json || {};\nconst draftId = ($json && $json.id) || '';\nconst dir = 'C:/ComfyUI/state/gelato_drafts';\n\ntry {\n  if (draftId) {\n    fs.mkdirSync(dir, { recursive: true });\n    fs.writeFileSync(dir + '/' + String(d.order_id) + '.json', JSON.stringify({\n      order_id:   String(d.order_id || ''),\n      draft_id:   draftId,\n      status:     'open',\n      email:      String((d.customer || {}).email || '').trim().toLowerCase(),\n      book_slug:  d.book_slug || '',\n      child_name: d.child_name || '',\n      cover_type: d.cover_type || 'hardcover',\n      created_at: new Date().toISOString(),\n      merged_orders: [String(d.order_id || '')],\n      source: 'n8n Record Gelato Draft'\n    }, null, 1), 'utf8');\n  }\n} catch (e) {\n  // En kvittering som ikke lot seg skrive skal aldri stoppe en betalt ordre.\n  console.warn('Record Gelato Draft: ' + e.message);\n}\n\nreturn { json: $json };"
+   },
+   "id": "merge-record",
+   "name": "Record Gelato Draft",
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    2080,
+    470
+   ],
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "command": "=C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"C:/ComfyUI/script/face_variants/build_trist_variant.py\" {{ $node[\"Parse Job\"].json.job_key || $node[\"Parse Job\"].json.order_id }} --book {{ $node[\"Parse Job\"].json.book_slug || \"\" }}"
+   },
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    -760,
+    736
+   ],
+   "id": "face-variants-node-0001",
+   "name": "Build Face Variants",
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "mode": "runOnceForAllItems",
+    "jsCode": "// Varsler paa Telegram hvis barnebildet er flagget som lite egnet.\n// Rent sidespor - hovedflyten gaar videre via Edit Fields uansett hva som\n// skjer her, derfor er alt pakket i try/catch.\nconst https = require('https');\nconst out = String(($json && $json.stdout) || '');\nconst hits = out.split('\\n').filter(l => l.indexOf('ADVARSEL') !== -1 || l.indexOf('MERK:') !== -1);\nif (!hits.length) return { json: { warned: false } };\n\nconst orderId = $node['Parse Job'].json.order_id;\nconst name = $node['Parse Job'].json.child_name || '';\nconst text = 'Barnebildet for ordre ' + orderId + ' (' + name + ') ser problematisk ut:\\n\\n'\n  + hits.join('\\n')\n  + '\\n\\nBoka lages likevel. Vil du ha et nytt bilde, gjor det for godkjenning.';\n\ntry {\n  await new Promise((resolve) => {\n    const body = JSON.stringify({ chat_id: -5054483911, text: text });\n    const req = https.request({\n      hostname: 'api.telegram.org', path: '/bot<TELEGRAM_BOT_TOKEN>/sendMessage',\n      method: 'POST',\n      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },\n      timeout: 15000,\n    }, (res) => { res.on('data', () => {}); res.on('end', resolve); });\n    req.on('error', resolve);\n    req.on('timeout', () => { req.destroy(); resolve(); });\n    req.write(body); req.end();\n  });\n} catch (error) {}\nreturn { json: { warned: true, problems: hits } };\n"
+   },
+   "type": "n8n-nodes-base.code",
+   "typeVersion": 2,
+   "position": [
+    -760,
+    900
+   ],
+   "id": "face-variants-warn-0001",
+   "name": "Photo Warning",
+   "onError": "continueRegularOutput"
+  },
+  {
+   "parameters": {
+    "command": "={{ (() => { const j = $node[\"Parse Job\"].json || {}; const count = Number(j.book_count || 1); if (!(count > 1)) return 'cmd /c echo {\"merged\":false,\"reason\":\"enkeltbok - hopper over\"}'; const order = String(j.order_id || \"\").trim(); if (!order) return 'cmd /c echo {\"merged\":false,\"reason\":\"mangler order_id\"}'; return 'C:/Users/tobia/AppData/Local/Programs/Python/Python310/python.exe \"C:/ComfyUI/script/auto_merge_multibook.py\" --order-id \"' + order + '\" --book-count ' + count; })() }}"
+   },
+   "name": "Auto Merge Multibook",
+   "type": "n8n-nodes-base.executeCommand",
+   "typeVersion": 1,
+   "position": [
+    2260,
+    610
+   ],
+   "onError": "continueRegularOutput",
+   "id": "a17ee0c3-9b52-4d21-8f0a-6ab21c4d0e77"
+  }
+ ],
+ "connections": {
+  "MQ Trigger": {
+   "main": [
+    [
+     {
+      "node": "Parse Job",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Job": {
+   "main": [
+    [
+     {
+      "node": "Download Child Image",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Edit Fields": {
+   "main": [
+    [
+     {
+      "node": "Load Book Config",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Setup Order Dirs": {
+   "main": [
+    [
+     {
+      "node": "Read Config File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Load Book Config": {
+   "main": [
+    [
+     {
+      "node": "Setup Order Dirs",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Read Config File",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Pages Config": {
+   "main": [
+    [
+     {
+      "node": "Page Loop",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Page Loop": {
+   "main": [
+    [
+     {
+      "node": "All Pages Done",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Check Page Output",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Page Prompt": {
+   "main": [
+    [
+     {
+      "node": "HTTP Request ComfyUI",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "HTTP Request ComfyUI": {
+   "main": [
+    [
+     {
+      "node": "Init Poll",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Release Comfy Lock (Error)",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Init Poll": {
+   "main": [
+    [
+     {
+      "node": "Get History",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get History": {
+   "main": [
+    [
+     {
+      "node": "Parse History",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse History": {
+   "main": [
+    [
+     {
+      "node": "If Error",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If Error": {
+   "main": [
+    [
+     {
+      "node": "Release Comfy Lock (Error)",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Done Check",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Done Check": {
+   "main": [
+    [
+     {
+      "node": "Release Comfy Lock",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Inc Tries",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Page Done": {
+   "main": [
+    [
+     {
+      "node": "Page Loop",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Inc Tries": {
+   "main": [
+    [
+     {
+      "node": "If Timed Out",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "If Timed Out": {
+   "main": [
+    [
+     {
+      "node": "Release Comfy Lock (Error)",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Poll Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Poll Wait": {
+   "main": [
+    [
+     {
+      "node": "Get History",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "All Pages Done": {
+   "main": [
+    [
+     {
+      "node": "Release RabbitMQ Job",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Run Text Script": {
+   "main": [
+    [
+     {
+      "node": "Stamp QR On Innersider",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Prepare Pages": {
+   "main": [
+    [
+     {
+      "node": "Build Next Cover Title",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Cover PDF": {
+   "main": [
+    [
+     {
+      "node": "Upload Cover",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Innersider PDF": {
+   "main": [
+    [
+     {
+      "node": "Upload Innersider",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Drive Folder": {
+   "main": [
+    [
+     {
+      "node": "Read Cover PDF",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Read Innersider PDF",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Read Gelato PDF",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload Cover": {
+   "main": [
+    [
+     {
+      "node": "Make Cover Public",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload Innersider": {
+   "main": [
+    [
+     {
+      "node": "Make Innersider Public",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Create Gelato Draft": {
+   "main": [
+    [
+     {
+      "node": "Record Gelato Draft",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Send Telegram Approval": {
+   "main": [
+    [
+     {
+      "node": "WP Progress: Quality Check",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Template": {
+   "main": [
+    [
+     {
+      "node": "Build Page Prompt",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Config File": {
+   "main": [
+    [
+     {
+      "node": "Parse Config",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Config": {
+   "main": [
+    [
+     {
+      "node": "Pages Config",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Download Child Image": {
+   "main": [
+    [
+     {
+      "node": "Save Child Image",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Save Child Image": {
+   "main": [
+    [
+     {
+      "node": "Build Face Variants",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Approval Continue?": {
+   "main": [
+    [
+     {
+      "node": "Confirm Gelato Draft (TEST)",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Init Approval Poll": {
+   "main": [
+    [
+     {
+      "node": "Approval Poll Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Approval Poll Wait": {
+   "main": [
+    [
+     {
+      "node": "Get Telegram Updates",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Get Telegram Updates": {
+   "main": [
+    [
+     {
+      "node": "Parse Approval Reply",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Approval Reply": {
+   "main": [
+    [
+     {
+      "node": "Approval Done?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Approval Done?": {
+   "main": [
+    [
+     {
+      "node": "Approval Continue?",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Approval Poll Wait",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Count Innersider Pages": {
+   "main": [
+    [
+     {
+      "node": "Parse Innersider Count",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Innersider Count": {
+   "main": [
+    [
+     {
+      "node": "Build Gelato PDF",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Gelato PDF": {
+   "main": [
+    [
+     {
+      "node": "Parse Gelato PDF",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Parse Gelato PDF": {
+   "main": [
+    [
+     {
+      "node": "Validate Gelato Files",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Validate Gelato Files": {
+   "main": [
+    [
+     {
+      "node": "Create Drive Folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Read Gelato PDF": {
+   "main": [
+    [
+     {
+      "node": "Upload Gelato PDF",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload Gelato PDF": {
+   "main": [
+    [
+     {
+      "node": "Make Gelato PDF Public",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Make Gelato PDF Public": {
+   "main": [
+    [
+     {
+      "node": "Create Gelato Draft",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Confirm Gelato Draft (TEST)": {
+   "main": [
+    [
+     {
+      "node": "WP Progress: Sent To Print",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "WP Progress: Sent To Print": {
+   "main": [
+    [
+     {
+      "node": "Cleanup Comfy Folder",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Release RabbitMQ Job": {
+   "main": [
+    [
+     {
+      "node": "Claim Post-Comfy Order",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    []
+   ]
+  },
+  "Cleanup Comfy Folder": {
+   "main": [
+    [],
+    []
+   ]
+  },
+  "Check Page Output": {
+   "main": [
+    [
+     {
+      "node": "Page Already Done?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Page Already Done?": {
+   "main": [
+    [
+     {
+      "node": "Release Comfy Lock",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Acquire Comfy Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Acquire Comfy Lock": {
+   "main": [
+    [
+     {
+      "node": "Lock Acquired?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Lock Acquired?": {
+   "main": [
+    [
+     {
+      "node": "Read Template",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Wait Comfy Lock",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Wait Comfy Lock": {
+   "main": [
+    [
+     {
+      "node": "Check Page Output",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Release Comfy Lock": {
+   "main": [
+    [
+     {
+      "node": "Page Done",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Release Comfy Lock (Error)": {
+   "main": [
+    [
+     {
+      "node": "Fail Comfy Page",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Fail Comfy Page": {
+   "main": [
+    []
+   ]
+  },
+  "Claim Post-Comfy Order": {
+   "main": [
+    [
+     {
+      "node": "Post-Comfy Claimed?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Post-Comfy Claimed?": {
+   "main": [
+    [
+     {
+      "node": "Prepare Pages",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "WP Progress: Book Creating",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Duplicate Order Stop",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Duplicate Order Stop": {
+   "main": [
+    []
+   ]
+  },
+  "Suppress Telegram?": {
+   "main": [
+    [
+     {
+      "node": "WP Progress: Quality Check",
+      "type": "main",
+      "index": 0
+     }
+    ],
+    [
+     {
+      "node": "Send Telegram Approval",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Next Cover Title": {
+   "main": [
+    [
+     {
+      "node": "Upload Continue Cover",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Upload Continue Cover": {
+   "main": [
+    [
+     {
+      "node": "Build Last Page",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Last Page": {
+   "main": [
+    [
+     {
+      "node": "Run Text Script",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Stamp QR On Innersider": {
+   "main": [
+    [
+     {
+      "node": "Count Innersider Pages",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Record Gelato Draft": {
+   "main": [
+    [
+     {
+      "node": "Auto Merge Multibook",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Build Face Variants": {
+   "main": [
+    [
+     {
+      "node": "Edit Fields",
+      "type": "main",
+      "index": 0
+     },
+     {
+      "node": "Photo Warning",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  },
+  "Auto Merge Multibook": {
+   "main": [
+    [
+     {
+      "node": "Suppress Telegram?",
+      "type": "main",
+      "index": 0
+     }
+    ]
+   ]
+  }
+ }
+}

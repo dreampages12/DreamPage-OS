@@ -1,0 +1,6 @@
+model:
+  backbone: tiny
+  identity_dim: 64
+  structure_dim: 16
+  width: 32
+# Random initialized CPU infrastructure baseline, not trained identity weights.

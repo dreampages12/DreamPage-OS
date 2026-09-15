@@ -1,0 +1,21 @@
+{
+  "purpose": "Candidate images for user review only; not an approved training dataset",
+  "model_path": "local_data/models/flux-klein-base-4b",
+  "output_dir": "local_data/photoreal-candidates-v1",
+  "resolution": 768,
+  "steps": 50,
+  "guidance_scale": 4.0,
+  "max_sequence_length": 256,
+  "seed": 19347,
+  "identities": [
+    {"id": "candidate_001", "intended_age": 8, "description": "an eight-year-old fictional boy with light freckled skin, short sandy brown hair, a slightly broad nose, brown eyes and a navy cotton T-shirt"},
+    {"id": "candidate_002", "intended_age": 9, "description": "a nine-year-old fictional girl with dark brown skin, tightly curled black hair tied back loosely, dark brown eyes, a round face and a green cotton T-shirt"},
+    {"id": "candidate_003", "intended_age": 6, "description": "a six-year-old fictional boy with medium brown skin, straight dark hair falling slightly over his forehead, dark brown eyes, softly rounded cheeks and a red cotton T-shirt"},
+    {"id": "candidate_004", "intended_age": 11, "description": "an eleven-year-old fictional girl with light olive skin, shoulder-length wavy dark brown hair, hazel eyes, a slightly narrow face and a grey cotton T-shirt"}
+  ],
+  "views": [
+    {"id": "front", "instruction": "The head faces the camera, eyes looking toward the lens, relaxed neutral expression with lips closed. Soft daylight from a window, a softly blurred ordinary interior behind the child."},
+    {"id": "three_quarter", "instruction": "Photograph the exact same child from a three-quarter angle, head turned about thirty degrees to the child's left, gaze toward the camera, lips closed with a slight smile. Soft outdoor daylight and a distant blurred garden background. Preserve the child's facial identity, age, hairstyle and clothing."},
+    {"id": "other_side", "instruction": "Photograph the exact same child with the head turned about twenty degrees to the child's right, a natural small open-mouth smile, eyes toward the camera. Warm afternoon light from the side, a distant softly blurred plain brick wall. Preserve the child's facial identity, age, hairstyle and clothing."}
+  ]
+}

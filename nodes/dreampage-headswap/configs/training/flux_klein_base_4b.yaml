@@ -1,0 +1,64 @@
+model:
+  backbone: flux_klein
+  identity_dim: 64
+  structure_dim: 16
+  weights_path: null
+  dtype: bf16
+  train_transformer: false
+  gradient_checkpointing: true
+dataset:
+  manifest: data/pairs.jsonl
+  peer_manifests: []
+  resolution: 512
+  reference_count: 2
+  allow_synthetic: false
+  degradation: neutral # internal requires an explicit internal-face mask; never infer it.
+optimizer:
+  name: adamw
+  lr: 0.0001
+  betas: [0.9, 0.999]
+  weight_decay: 0.01
+scheduler:
+  name: constant
+  warmup_steps: 100
+training:
+  device: cuda
+  precision: bf16
+  seed: 1234
+  batch_size: 1
+  accumulation_steps: 4
+  max_steps: 10000
+  gradient_clip: 1.0
+  checkpoint_every: 500
+  log_every: 10
+  cpu_threads: 4
+  tracker: jsonl
+  output_dir: runs/flux-klein-base-4b
+validation:
+  # Held-out pairs, audited against the training manifest. `every: 0` validates only at the
+  # final step. Selection is on a flow loss, which measures optimization, never identity.
+  manifest: data/pairs.validation.jsonl
+  split: validation
+  every: 100
+  seed: 4321
+  batch_size: 1
+  max_batches: 8
+  sampling_steps: 8
+  samples: false
+  metric: validation/total
+losses:
+  flow_matching: 1.0
+  # Decoder gradients for image objectives increase VRAM significantly; benchmark first.
+  reconstruction: 0.0
+  outside_mask: 0.0
+  boundary: 0.0
+  lighting: 0.0
+  local_texture: 0.0
+  global_identity: 0.0
+  local_identity: 0.0
+  facial_perceptual: 0.0
+  pose: 0.0
+  landmark: 0.0
+  gaze: 0.0
+  expression: 0.0
+  age_consistency: 0.0

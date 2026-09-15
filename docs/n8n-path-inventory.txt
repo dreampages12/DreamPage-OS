@@ -1,0 +1,181 @@
+
+########## xy8qiRUzcBpH52CI  Dreampage Worker v2 (med fremdrift)  (82 noder) ##########
+
+-- [set] Edit Fields
+     C:/ComfyUI/input/
+
+-- [executeCommand] Setup Order Dirs
+     C:/ComfyUI/books/{{$json.book_slug}}/orders/{{$json.order_id}}/input
+     C:/ComfyUI/books/{{$json.book_slug}}/orders/{{$json.order_id}}/pdf
+
+-- [code] Pages Config
+     C:/ComfyUI/books/
+     C:/ComfyUI/input.\n//
+     C:/ComfyUI/input/
+
+-- [code] Get History
+     C:/ComfyUI/output
+
+-- [readWriteFile] Read Cover PDF
+     C:/ComfyUI/books/{{$node[\
+
+-- [readWriteFile] Read Innersider PDF
+     C:/ComfyUI/books/{{$node[\
+
+-- [readWriteFile] Read Template
+     C:/ComfyUI/books/
+
+-- [readWriteFile] Read Config File
+     C:/ComfyUI/books/
+
+-- [readWriteFile] Save Child Image
+     C:/ComfyUI/input/
+
+-- [executeCommand] Build Gelato PDF
+     C:/ComfyUI/script/build_gelato_pdf.py\
+
+-- [executeCommand] Cleanup Comfy Folder
+     C:/ComfyUI/output
+     C:/ComfyUI/output/{{$node[\
+
+-- [executeCommand] Cleanup Book Input Folder (READY)
+     C:/ComfyUI/books
+
+-- [code] Check Page Output
+     C:/ComfyUI/output
+
+-- [code] Acquire Comfy Lock
+     C:/ComfyUI/.dreampage-comfy.lock
+
+-- [code] Release Comfy Lock
+     C:/ComfyUI/.dreampage-comfy.lock
+
+-- [code] Release Comfy Lock (Error)
+     C:/ComfyUI/.dreampage-comfy.lock
+
+-- [code] Claim Post-Comfy Order
+     C:/ComfyUI/books
+
+-- [executeCommand] Build Next Cover Title
+     C:/ComfyUI/output/
+     C:/ComfyUI/script/build_last_page.py\
+
+-- [executeCommand] Upload Continue Cover
+     C:/ComfyUI/output/
+     C:/ComfyUI/script/build_last_page.py\
+
+-- [executeCommand] Build Last Page
+     C:/ComfyUI/output/
+     C:/ComfyUI/script/build_last_page.py\
+
+-- [executeCommand] Stamp QR On Innersider
+     C:/ComfyUI/output/
+     C:/ComfyUI/script/build_last_page.py\
+
+-- [code] Record Gelato Draft
+     C:/ComfyUI/state/gelato_drafts
+
+-- [executeCommand] Build Face Variants
+     C:/ComfyUI/script/face_variants/build_trist_variant.py\
+
+-- [executeCommand] Auto Merge Multibook
+     C:/ComfyUI/script/auto_merge_multibook.py\
+
+--- alle noder i Dreampage Worker v2 (med fremdrift) ---
+   MQ Trigger                             n8n-nodes-base.rabbitmqTrigger
+   Parse Job                              n8n-nodes-base.code
+   Edit Fields                            n8n-nodes-base.set
+   Setup Order Dirs                       n8n-nodes-base.executeCommand
+   Load Book Config                       n8n-nodes-base.code
+   Pages Config                           n8n-nodes-base.code
+   Page Loop                              n8n-nodes-base.splitInBatches
+   Build Page Prompt                      n8n-nodes-base.code
+   HTTP Request ComfyUI                   n8n-nodes-base.code
+   Init Poll                              n8n-nodes-base.set
+   Get History                            n8n-nodes-base.code
+   Parse History                          n8n-nodes-base.code
+   If Error                               n8n-nodes-base.if
+   Done Check                             n8n-nodes-base.if
+   Page Done                              n8n-nodes-base.noOp
+   Inc Tries                              n8n-nodes-base.code
+   If Timed Out                           n8n-nodes-base.if
+   Poll Wait                              n8n-nodes-base.code
+   All Pages Done                         n8n-nodes-base.code
+   Run Text Script                        n8n-nodes-base.executeCommand
+   Prepare Pages                          n8n-nodes-base.executeCommand
+   Read Cover PDF                         n8n-nodes-base.readWriteFile
+   Read Innersider PDF                    n8n-nodes-base.readWriteFile
+   Create Drive Folder                    n8n-nodes-base.googleDrive
+   Upload Cover                           n8n-nodes-base.googleDrive
+   Upload Innersider                      n8n-nodes-base.googleDrive
+   Make Cover Public                      n8n-nodes-base.googleDrive
+   Make Innersider Public                 n8n-nodes-base.googleDrive
+   Create Gelato Draft                    n8n-nodes-base.httpRequest
+   Send Telegram Approval                 n8n-nodes-base.httpRequest
+   Approval Poll Wait                     n8n-nodes-base.wait
+   Confirm Gelato Order                   n8n-nodes-base.httpRequest
+   Send Telegram Confirmation             n8n-nodes-base.telegram
+   Read Template                          n8n-nodes-base.readWriteFile
+   Read Config File                       n8n-nodes-base.readWriteFile
+   Parse Config                           n8n-nodes-base.code
+   Sticky Note                            n8n-nodes-base.stickyNote
+   Sticky Note1                           n8n-nodes-base.stickyNote
+   Sticky Note2                           n8n-nodes-base.stickyNote
+   Sticky Note3                           n8n-nodes-base.stickyNote
+   Download Child Image                   n8n-nodes-base.httpRequest
+   Save Child Image                       n8n-nodes-base.readWriteFile
+   Approval Continue?                     n8n-nodes-base.if
+   Build Gelato PDF                       n8n-nodes-base.executeCommand
+   Parse Gelato PDF                       n8n-nodes-base.code
+   Read Gelato PDF                        n8n-nodes-base.readWriteFile
+   Upload Gelato PDF                      n8n-nodes-base.googleDrive
+   Make Gelato PDF Public                 n8n-nodes-base.googleDrive
+   Init Approval Poll                     n8n-nodes-base.set
+   Get Telegram Updates                   n8n-nodes-base.httpRequest
+   Parse Approval Reply                   n8n-nodes-base.code
+   Approval Done?                         n8n-nodes-base.if
+   Count Innersider Pages                 n8n-nodes-base.executeCommand
+   Parse Innersider Count                 n8n-nodes-base.code
+   Validate Gelato Files                  n8n-nodes-base.code
+   Confirm Gelato Draft (TEST)            n8n-nodes-base.httpRequest
+   WP Progress: Book Creating             n8n-nodes-base.httpRequest
+   WP Progress: Quality Check             n8n-nodes-base.httpRequest
+   WP Progress: Sent To Print             n8n-nodes-base.httpRequest
+   Cleanup Comfy Folder                   n8n-nodes-base.executeCommand
+   Cleanup Book Input Folder (READY)      n8n-nodes-base.executeCommand
+   Release RabbitMQ Job                   n8n-nodes-base.rabbitmq
+   Check Page Output                      n8n-nodes-base.code
+   Page Already Done?                     n8n-nodes-base.if
+   Acquire Comfy Lock                     n8n-nodes-base.code
+   Lock Acquired?                         n8n-nodes-base.if
+   Wait Comfy Lock                        n8n-nodes-base.code
+   Release Comfy Lock                     n8n-nodes-base.code
+   Release Comfy Lock (Error)             n8n-nodes-base.code
+   Fail Comfy Page                        n8n-nodes-base.code
+   Claim Post-Comfy Order                 n8n-nodes-base.code
+   Post-Comfy Claimed?                    n8n-nodes-base.if
+   Duplicate Order Stop                   n8n-nodes-base.noOp
+   Suppress Telegram?                     n8n-nodes-base.if
+   Build Next Cover Title                 n8n-nodes-base.executeCommand
+   Upload Continue Cover                  n8n-nodes-base.executeCommand
+   Build Last Page                        n8n-nodes-base.executeCommand
+   Stamp QR On Innersider                 n8n-nodes-base.executeCommand
+   Record Gelato Draft                    n8n-nodes-base.code
+   Build Face Variants                    n8n-nodes-base.executeCommand
+   Photo Warning                          n8n-nodes-base.code
+   Auto Merge Multibook                   n8n-nodes-base.executeCommand
+
+########## G0skxlQwcLhDH3NT  My workflow 3  (11 noder) ##########
+
+--- alle noder i My workflow 3 ---
+   Webhook                                n8n-nodes-base.webhook
+   RabbitMQ                               n8n-nodes-base.rabbitmq
+   sort                                   n8n-nodes-base.set
+   HTTP Request                           n8n-nodes-base.httpRequest
+   HTTP Request1                          n8n-nodes-base.httpRequest
+   Edit Fields1                           n8n-nodes-base.set
+   Edit Fields2                           n8n-nodes-base.set
+   Merge3                                 n8n-nodes-base.merge
+   Sticky Note8                           n8n-nodes-base.stickyNote
+   Merge                                  n8n-nodes-base.merge
+   Edit Fields                            n8n-nodes-base.set

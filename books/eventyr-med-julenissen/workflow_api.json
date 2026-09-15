@@ -1,0 +1,427 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "Flux2_dev",
+      "images": [
+        "301",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "100": {
+    "inputs": {
+      "guidance": 6,
+      "conditioning": [
+        "118",
+        0
+      ]
+    },
+    "class_type": "FluxGuidance",
+    "_meta": {
+      "title": "FluxGuidance"
+    }
+  },
+  "102": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "104": {
+    "inputs": {
+      "samples": [
+        "156",
+        0
+      ],
+      "vae": [
+        "102",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "107": {
+    "inputs": {
+      "text": "low identity similarity, mixed identity, plastic skin, waxy face, over-smoothed skin, inconsistent sharpness, blurry face, artificial hair, deformed ears, uncanny, CGI, illustration\n",
+      "clip": [
+        "193",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "112": {
+    "inputs": {
+      "conditioning": [
+        "196",
+        0
+      ],
+      "latent": [
+        "150",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "118": {
+    "inputs": {
+      "conditioning": [
+        "112",
+        0
+      ],
+      "latent": [
+        "119",
+        0
+      ]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "ReferenceLatent"
+    }
+  },
+  "119": {
+    "inputs": {
+      "pixels": [
+        "188",
+        0
+      ],
+      "vae": [
+        "102",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "126": {
+    "inputs": {
+      "unet_name": "flux-2-klein-9b.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "136": {
+    "inputs": {
+      "conditioning": [
+        "107",
+        0
+      ]
+    },
+    "class_type": "ConditioningZeroOut",
+    "_meta": {
+      "title": "ConditioningZeroOut"
+    }
+  },
+  "150": {
+    "inputs": {
+      "pixels": [
+        "184",
+        1
+      ],
+      "vae": [
+        "102",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "152": {
+    "inputs": {
+      "samples": [
+        "150",
+        0
+      ],
+      "mask": [
+        "184",
+        2
+      ]
+    },
+    "class_type": "SetLatentNoiseMask",
+    "_meta": {
+      "title": "Set Latent Noise Mask"
+    }
+  },
+  "156": {
+    "inputs": {
+      "seed": 303864020447809,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "LanPaint_NumSteps": 2,
+      "LanPaint_PromptMode": "Image First",
+      "LanPaint_Info": "LanPaint KSampler. For more info, visit https://github.com/scraed/LanPaint. If you find it useful, please give a star ⭐️!",
+      "Inpainting_mode": "🖼️ Image Inpainting",
+      "More Info, Bug Report, Star on GitHub ⭐": "lanpaint_star_button",
+      "model": [
+        "126",
+        0
+      ],
+      "positive": [
+        "100",
+        0
+      ],
+      "negative": [
+        "107",
+        0
+      ],
+      "latent_image": [
+        "152",
+        0
+      ]
+    },
+    "class_type": "LanPaint_KSampler",
+    "_meta": {
+      "title": "LanPaint KSampler"
+    }
+  },
+  "161": {
+    "inputs": {
+      "lora_name": "bfs_head_v1_flux-klein_9b_step3500_rank128.safetensors",
+      "strength_model": 0.5
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "165": {
+    "inputs": {
+      "image": "forside-headmask(dyreparken).png",
+      "channel": "red"
+    },
+    "class_type": "LoadImageMask",
+    "_meta": {
+      "title": "Load Image (as Mask)"
+    }
+  },
+  "174": {
+    "inputs": {
+      "model_name": "bbox/face_yolov8m.pt"
+    },
+    "class_type": "UltralyticsDetectorProvider",
+    "_meta": {
+      "title": "YOLOv8 Face"
+    }
+  },
+  "175": {
+    "inputs": {
+      "threshold": 0.5,
+      "dilation": 40,
+      "crop_factor": 2.2,
+      "drop_size": 10,
+      "labels": "all",
+      "bbox_detector": [
+        "174",
+        0
+      ],
+      "image": [
+        "194",
+        0
+      ]
+    },
+    "class_type": "BboxDetectorSEGS",
+    "_meta": {
+      "title": "🔍 Detect Face in Reference (crop head+hair)"
+    }
+  },
+  "177": {
+    "inputs": {
+      "segs": [
+        "175",
+        0
+      ],
+      "fallback_image_opt": [
+        "194",
+        0
+      ]
+    },
+    "class_type": "SEGSToImageList",
+    "_meta": {
+      "title": "✂️ Crop Head Region from Reference"
+    }
+  },
+  "180": {
+    "inputs": {
+      "images": [
+        "177",
+        0
+      ]
+    },
+    "class_type": "ImageListToImageBatch",
+    "_meta": {
+      "title": "📦 Batch for IPAdapter"
+    }
+  },
+  "183": {
+    "inputs": {
+      "stitcher": [
+        "184",
+        0
+      ],
+      "inpainted_image": [
+        "104",
+        0
+      ]
+    },
+    "class_type": "InpaintStitchImproved",
+    "_meta": {
+      "title": "Stitch head onto template"
+    }
+  },
+  "184": {
+    "inputs": {
+      "downscale_algorithm": "lanczos",
+      "upscale_algorithm": "lanczos",
+      "preresize": false,
+      "preresize_mode": "ensure minimum resolution",
+      "preresize_min_width": 1024,
+      "preresize_min_height": 1024,
+      "preresize_max_width": 8192,
+      "preresize_max_height": 8192,
+      "mask_fill_holes": true,
+      "mask_expand_pixels": 35,
+      "mask_invert": false,
+      "mask_blend_pixels": 32,
+      "mask_hipass_filter": 0.1,
+      "extend_for_outpainting": false,
+      "extend_up_factor": 1,
+      "extend_down_factor": 1,
+      "extend_left_factor": 1,
+      "extend_right_factor": 1,
+      "context_from_mask_extend_factor": 1.5,
+      "output_resize_to_target_size": true,
+      "output_target_width": 1024,
+      "output_target_height": 1024,
+      "output_padding": "32",
+      "device_mode": "gpu (much faster)",
+      "image": [
+        "192",
+        0
+      ],
+      "mask": [
+        "165",
+        0
+      ]
+    },
+    "class_type": "InpaintCropImproved",
+    "_meta": {
+      "title": "Crop head region (1024x1024)"
+    }
+  },
+  "188": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1.3,
+      "resolution_steps": 1,
+      "image": [
+        "180",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "Fit source head to 1MP"
+    }
+  },
+  "192": {
+    "inputs": {
+      "image": "forside(dyreparken).jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "193": {
+    "inputs": {
+      "clip_name": "Qwen3-8B-Q8_0.gguf",
+      "type": "stable_diffusion"
+    },
+    "class_type": "CLIPLoaderGGUF",
+    "_meta": {
+      "title": "CLIPLoader (GGUF)"
+    }
+  },
+  "194": {
+    "inputs": {
+      "image": "Image_260627_222923.jpeg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "195": {
+    "inputs": {
+      "text": "head_swap: Use image 1 as the base image, preserving its environment, background, camera perspective, framing, exposure, contrast, and lighting. Remove the head from image 1 and seamlessly replace it with the head from image 2.\nMatch the original head size, face-to-body ratio, neck thickness, shoulder alignment, and camera distance so proportions remain natural and unchanged.\n\nAdapt the inserted head to the lighting of image 1 by matching light direction, intensity, softness, color temperature, shadows, and highlights, with no independent relighting.\nPreserve the identity of image 2, including hair texture, eye color, nose structure, facial proportions, and skin details.\nMatch the pose and expression from image 1, including head tilt, rotation, eye direction, gaze, micro-expressions, and lip position.\nEnsure seamless neck and jaw blending, consistent skin tone, realistic shadow contact, natural skin texture, and uniform sharpness.\nPhotorealistic, high quality, sharp details, 4K."
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "196": {
+    "inputs": {
+      "text": "head_swap: Use image 1 as the base image and preserve its body, environment, background, camera perspective, framing, composition, exposure, contrast, depth of field, and overall lighting.\n\nSeamlessly replace only the head and visible hair of the person in image 1 with the identity from image 2. Preserve the identity of image 2 as the highest priority. Accurately retain the same facial structure, face shape, forehead, eyebrows, eyes, eye color, nose, lips, jawline, cheeks, ears, hairline, hairstyle, hair texture, and distinctive skin details. Do not blend, average, reinterpret, or partially retain the facial identity from image 1.\n\nKeep the original head placement, head scale, face-to-body ratio, neck thickness, shoulder alignment, camera distance, lens perspective, and anatomical proportions from image 1. The replacement must look naturally attached to the existing body, without changing the body shape or posture.\n\nFollow the head rotation, tilt, gaze direction, and general expression required by image 1, while keeping the facial anatomy and recognizable identity from image 2 intact. Avoid exaggerated expressions, distorted features, altered eye shapes, unnatural smiles, or changes that weaken identity similarity.\n\nAdapt the inserted head naturally to the lighting conditions of image 1. Match the exact light direction, intensity, softness, color temperature, shadows, highlights, ambient light, skin reflections, and contrast. Do not independently relight the face or make it brighter, smoother, or sharper than the surrounding image.\n\nCreate a seamless transition around the jaw, ears, hairline, neck, and shoulders. Match skin tone, skin texture, pores, fine facial details, shadow contact, image grain, focus, motion blur, compression, and sharpness to the base image. Preserve realistic asymmetry and natural imperfections. The final result should look like an authentic photograph of the person from image 2 originally captured in image 1.\n\nPhotorealistic, highly accurate identity, natural anatomy, realistic skin texture, seamless integration, consistent lighting, high detail, no artificial or generated appearance.\n",
+      "clip": [
+        "193",
+        0
+      ]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "300": {
+    "class_type": "UpscaleModelLoader",
+    "inputs": {
+      "model_name": "4x-UltraSharp.pth"
+    },
+    "_meta": {
+      "title": "Load Upscale Model"
+    }
+  },
+  "301": {
+    "class_type": "ImageUpscaleWithModel",
+    "inputs": {
+      "upscale_model": [
+        "300",
+        0
+      ],
+      "image": [
+        "183",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Upscale Image (using Model)"
+    }
+  }
+}

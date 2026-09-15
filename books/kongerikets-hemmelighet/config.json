@@ -1,0 +1,137 @@
+{
+  "slug": "kongerikets-hemmelighet",
+  "displayName": "Kongerikets Hemmelighet",
+  "_status": "KLAR for testrender paa nb/nn. Historie, 14 innersider, headmasker, tekstscript (5 sprak), prepare-script og config er paa plass. GJENSTAAR: bakside-illustrasjon (script/bakside/kongerikets-hemmelighet/bakside.png), ryggrad (script/ryggrad/kongerikets-hemmelighet/ryggrad-nb.png) og egen tittellogo for en/sv (kongeriket-logo-en/-sv.png) - uten disse bygges ikke cover-PDF-en.",
+  "orderBasePath": "C:/ComfyUI/books/kongerikets-hemmelighet/orders",
+  "comfyOutputPrefix": "kongerikets-hemmelighet/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(kongeriket).png",
+      "mask_image": "forside-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page01",
+      "template_image": "01(kongeriket).png",
+      "mask_image": "01-headmask(kongeriket).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page02",
+      "template_image": "02(kongeriket).png",
+      "mask_image": "02-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page03",
+      "template_image": "03(kongeriket).png",
+      "mask_image": "03-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page04",
+      "template_image": "04(kongeriket).png",
+      "mask_image": "04-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page05",
+      "template_image": "05(kongeriket).png",
+      "mask_image": "05-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page06",
+      "template_image": "06(kongeriket).png",
+      "mask_image": "06-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page07",
+      "template_image": "07(kongeriket).png",
+      "mask_image": "07-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page08",
+      "template_image": "08(kongeriket).png",
+      "mask_image": "08-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page09",
+      "template_image": "09(kongeriket).png",
+      "mask_image": "09-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page10",
+      "template_image": "10(kongeriket).png",
+      "mask_image": "10-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page11",
+      "template_image": "11(kongeriket).png",
+      "mask_image": "11-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page12",
+      "template_image": "12(kongeriket).png",
+      "mask_image": "12-headmask(kongeriket).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page13",
+      "template_image": "13(kongeriket).png",
+      "mask_image": "13-headmask(kongeriket).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page14",
+      "template_image": "14(kongeriket).png",
+      "mask_image": "14-headmask(kongeriket).png",
+      "face_expression": "smil"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "textScript": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+  "prepareScript": "C:/ComfyUI/books/kongerikets-hemmelighet/script/prepare_order_kongeriket.py",
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "textScripts": {
+    "nb": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+    "nn": "C:/ComfyUI/script/nn/kongeriket-text-nn.py",
+    "en-US": "C:/ComfyUI/script/en-US/kongeriket-text-en-US.py",
+    "en-GB": "C:/ComfyUI/script/en-GB/kongeriket-text-en-GB.py",
+    "sv": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+    "en": "C:/ComfyUI/script/en-US/kongeriket-text-en-US.py",
+    "en-us": "C:/ComfyUI/script/en-US/kongeriket-text-en-US.py",
+    "en-gb": "C:/ComfyUI/script/en-GB/kongeriket-text-en-GB.py",
+    "no": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+    "nb-no": "C:/ComfyUI/script/nb/kongeriket-text-nb.py",
+    "nn-no": "C:/ComfyUI/script/nn/kongeriket-text-nn.py",
+    "sv-SE": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+    "sv-se": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+    "se": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+    "swedish": "C:/ComfyUI/script/sv/kongeriket-text-sv.py",
+    "svensk": "C:/ComfyUI/script/sv/kongeriket-text-sv.py"
+  }
+}

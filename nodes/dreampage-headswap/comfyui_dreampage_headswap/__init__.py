@@ -1,0 +1,12 @@
+"""DreamPage HeadSwap ComfyUI integration.
+
+ComfyUI is an integration layer only. The stack in `dreampage_headswap` runs without it.
+"""
+from .nodes import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
+from .native_nodes import NODE_CLASS_MAPPINGS as NATIVE_NODES, NODE_DISPLAY_NAME_MAPPINGS as NATIVE_NAMES
+
+NODE_CLASS_MAPPINGS = {**NODE_CLASS_MAPPINGS, **NATIVE_NODES}
+NODE_DISPLAY_NAME_MAPPINGS = {**NODE_DISPLAY_NAME_MAPPINGS, **NATIVE_NAMES}
+WEB_DIRECTORY = "./web"
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS", "WEB_DIRECTORY"]

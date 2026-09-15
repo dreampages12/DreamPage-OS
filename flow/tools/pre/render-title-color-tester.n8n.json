@@ -1,0 +1,71 @@
+{
+  "name": "Render Title – Farge-tester",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a1b2c3d4-0001-0001-0001-000000000001",
+      "name": "Start",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================\n// KONFIGURER DISSE – bytt ut til dine Mac-stier\n// ============================================================\nconst SCRIPT_PATH  = \"/Users/YOURNAME/ComfyUI/script/pre/render-title.py\";\nconst IMAGE_PATH   = \"/Users/YOURNAME/ComfyUI/input/frontpage_bg.png\";\nconst OUT_DIR      = \"/Users/YOURNAME/ComfyUI/output/title_tests\";\n\n// Bytt ut python3 med full sti om nødvendig, f.eks:\n// \"/usr/bin/python3\" eller din venv: \"/Users/YOURNAME/venv/bin/python3\"\nconst PYTHON       = \"python3\";\n\n// Tekst\nconst LINE1        = \"MIN BOK\";\nconst LINE2        = \"UNDERTITTEL\";\n\n// Typografi\nconst TOP_MARGIN   = 0.05;\nconst LINE_SPACING = 0.01;\nconst FONT_SMALL   = 80;\nconst FONT_LARGE   = 140;\n\n// ============================================================\n// FARGEPRESET\n// gold:   \"R,G,B\"         → flat farge\n//         \"R,G,B,R,G,B\"   → gradient (topp → bunn)\n// shadow: \"R,G,B\"\n// ============================================================\nconst colorPresets = [\n  { name: \"gull_klassisk\",   gold: \"212,175,55\",               shadow: \"5,5,5\"    },\n  { name: \"gull_varm\",       gold: \"255,215,0,180,130,20\",     shadow: \"20,10,0\"  },\n  { name: \"gull_brent\",      gold: \"200,140,20,140,80,0\",      shadow: \"20,8,0\"   },\n  { name: \"hvit\",            gold: \"255,255,255\",               shadow: \"0,0,0\"    },\n  { name: \"krem\",            gold: \"255,250,220\",               shadow: \"10,8,5\"   },\n  { name: \"solv\",            gold: \"220,220,220,160,160,160\",  shadow: \"5,5,5\"    },\n  { name: \"rose_gold\",       gold: \"255,190,152,200,120,80\",   shadow: \"60,20,10\" },\n  { name: \"himmelblaa\",      gold: \"100,160,255,50,90,210\",    shadow: \"5,10,30\"  },\n  { name: \"dyp_rod\",         gold: \"220,50,50,150,20,20\",      shadow: \"20,0,0\"   },\n  { name: \"skogsgronn\",      gold: \"80,180,100,30,120,50\",     shadow: \"0,15,5\"   },\n  { name: \"lys_lilla\",       gold: \"200,160,255,140,80,220\",   shadow: \"20,0,40\"  },\n  { name: \"svart\",           gold: \"30,30,30\",                  shadow: \"0,0,0\"    },\n];\n\n// ============================================================\n// Bygg ett item per farge (n8n kjorer Execute Command en gang per item)\n// ============================================================\nreturn colorPresets.map(preset => {\n  const outPath = `${OUT_DIR}/title_${preset.name}.png`;\n\n  const command = [\n    PYTHON,\n    `\"${SCRIPT_PATH}\"`,\n    `--image \"${IMAGE_PATH}\"`,\n    `--out \"${outPath}\"`,\n    `--line1 \"${LINE1}\"`,\n    `--line2 \"${LINE2}\"`,\n    `--top_margin ${TOP_MARGIN}`,\n    `--line_spacing ${LINE_SPACING}`,\n    `--font_small ${FONT_SMALL}`,\n    `--font_large ${FONT_LARGE}`,\n    `--gold \"${preset.gold}\"`,\n    `--shadow \"${preset.shadow}\"`,\n  ].join(' ');\n\n  return {\n    json: {\n      name:    preset.name,\n      command,\n      out_path: outPath,\n    }\n  };\n});\n"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000002",
+      "name": "Fargepreset + Kommando",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 340]
+    },
+    {
+      "parameters": {
+        "command": "={{ $json.command }}"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000003",
+      "name": "Kjor render-title.py",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [720, 340]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Skriv ut hvilke filer som ble lagret\nconst items = $input.all();\nconst results = items.map(item => ({\n  json: {\n    fil:    item.json.name || '?',\n    stdout: (item.json.stdout || '').trim(),\n    stderr: (item.json.stderr || '').trim(),\n    ok:     !(item.json.stderr || '').trim(),\n  }\n}));\nreturn results;\n"
+      },
+      "id": "a1b2c3d4-0001-0001-0001-000000000004",
+      "name": "Oppsummer resultat",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 340]
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [
+        [{ "node": "Fargepreset + Kommando", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fargepreset + Kommando": {
+      "main": [
+        [{ "node": "Kjor render-title.py", "type": "main", "index": 0 }]
+      ]
+    },
+    "Kjor render-title.py": {
+      "main": [
+        [{ "node": "Oppsummer resultat", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "local"
+  },
+  "id": "render-title-color-tester",
+  "tags": []
+}

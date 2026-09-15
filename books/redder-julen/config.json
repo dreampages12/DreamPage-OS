@@ -1,0 +1,34 @@
+{
+  "slug": "redder-julen",
+  "displayName": "Redder Julen",
+  "_status": "UNDER ARBEID: kun forside + headmask + logo er paa plass (2026-08-26). GJENSTAAR: historie/innersider, tekstscript (5 sprak), prepare-script, bakside, ryggrad, logo for en/sv, og registrering i worker (xy8qiRUzcBpH52CI). DP Title Tester er satt opp for nb.",
+  "orderBasePath": "C:/ComfyUI/books/redder-julen/orders",
+  "comfyOutputPrefix": "redder-julen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "expectedInnerPages": null,
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(redder-julen).png",
+      "mask_image": "forside-headmask(redder-julen).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "textScripts": {}
+}

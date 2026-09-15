@@ -1,0 +1,48 @@
+{
+  "book-square": {
+    "id": "book-square",
+    "kind": "procedural",
+    "label": "Kvadratisk bok (generert)",
+    "status": "ready",
+    "width": 1713,
+    "height": 1710,
+    "mapsDir": "C:\\ComfyUI\\server\\dp-mockup-server\\data\\calib\\book-square",
+    "proceduralVersion": 3,
+    "createdAt": "2026-08-07T09:32:49.623Z",
+    "calibratedAt": "2026-08-07T09:32:49.624Z",
+    "error": null
+  },
+  "psd_1c8e5a0dfdc188d1_layer-1": {
+    "id": "psd_1c8e5a0dfdc188d1_layer-1",
+    "kind": "psd",
+    "label": "Kvadratisk hardcover (05-Free)",
+    "layerName": "Layer 1",
+    "psdPath": "C:\\ComfyUI\\server\\dp-mockup-server\\data\\psd\\1c8e5a0dfdc188d1.psd",
+    "psdSha256": "1c8e5a0dfdc188d1e2281b325613d9116766faf6d4547e8c4cafb11cffb6069c",
+    "coverWidth": 2048,
+    "coverHeight": 2048,
+    "status": "ready",
+    "calibrationVersion": 8,
+    "createdAt": "2026-08-07T09:33:34.997Z",
+    "error": null,
+    "width": 1631,
+    "height": 1323,
+    "mapsDir": "C:/ComfyUI/server/dp-mockup-server/data/calib/psd_1c8e5a0dfdc188d1_layer-1",
+    "validation": {
+      "model": {
+        "mean": 0.3798169964851215,
+        "p99": 0.6997748052450561,
+        "max": 3.579581222641025,
+        "samples": 3800205
+      }
+    },
+    "influenceRatio": 0.588054201174986,
+    "calibratedAt": "2026-08-07T10:12:19Z",
+    "coverRect": [
+      479,
+      133,
+      1606,
+      1259
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# Requires an audited local BASE4B Diffusers snapshot AND a trained DreamSwap checkpoint.
+model:
+  backbone: flux_klein
+  identity_dim: 64
+  structure_dim: 16
+  weights_path: local_data/models/FLUX.2-klein-base-4B
+  train_transformer: false
+inference:
+  crop: {resolution: 512, context: 1.5, min_side: 16}
+  mask: {expand: 0, feather: 4.0}
+  quality: {threshold: 0.8}
+  reference_resolution: 128
+  degradation: neutral
+  steps: 28
+  seed: 17
+  identity_strength: 1.0
+  refine_strength: 0.0
+  debug: false

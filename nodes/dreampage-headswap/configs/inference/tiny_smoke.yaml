@@ -1,0 +1,16 @@
+model:
+  backbone: tiny
+  identity_dim: 64
+  structure_dim: 16
+  width: 32
+inference:
+  crop: {resolution: 64, context: 1.5, min_side: 16}
+  mask: {expand: 0, feather: 2.0}
+  quality: {threshold: 0.8}
+  reference_resolution: 64
+  degradation: neutral
+  steps: 8
+  seed: 17
+  identity_strength: 1.0
+  refine_strength: 0.0
+  debug: false

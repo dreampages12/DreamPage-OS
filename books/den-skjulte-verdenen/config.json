@@ -1,0 +1,137 @@
+{
+  "slug": "den-skjulte-verdenen",
+  "displayName": "Den Skjulte Verdenen",
+  "textScript": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+  "prepareScript": "C:/ComfyUI/books/den-skjulte-verdenen/script/prepare_order_den_skjulte_verdenen.py",
+  "driveFolderId": "12LvdWt0_Dz8EPPL_3q9zoo2rkSUdz8iX",
+  "orderBasePath": "C:/ComfyUI/books/den-skjulte-verdenen/orders",
+  "comfyOutputPrefix": "den-skjulte-verdenen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(verdenen).png",
+      "mask_image": "forside-headmask(verdenen).png",
+      "face_expression": "smil"
+    },
+    {
+      "page_key": "page01",
+      "template_image": "01(verdenen).png",
+      "mask_image": "01-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page02",
+      "template_image": "02(verdenen).png",
+      "mask_image": "02-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page03",
+      "template_image": "03(verdenen).png",
+      "mask_image": "03-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page04",
+      "template_image": "04(verdenen-right).png",
+      "mask_image": "04-headmask(verdenen-right).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page05",
+      "template_image": "05(verdenen).png",
+      "mask_image": "05-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page06",
+      "template_image": "06(verdenen).png",
+      "mask_image": "06-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page07",
+      "template_image": "07(verdenen).png",
+      "mask_image": "07-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page08",
+      "template_image": "08(verdenen).png",
+      "mask_image": "08-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page09",
+      "template_image": "09(verdenen).png",
+      "mask_image": "09-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page10",
+      "template_image": "10(verdenen).png",
+      "mask_image": "10-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page11",
+      "template_image": "11(verdenen).png",
+      "mask_image": "11-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page12",
+      "template_image": "12(verdenen).png",
+      "mask_image": "12-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page13",
+      "template_image": "13(verdenen).png",
+      "mask_image": "13-headmask(verdenen).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page14",
+      "template_image": "14(verdenen).png",
+      "mask_image": "14-headmask(verdenen).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 30,
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "workflowApi": "workflow_api.json",
+  "textScripts": {
+    "nb": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+    "nn": "C:/ComfyUI/script/nn/den-skjulte-verdenen-text-nn.py",
+    "en-US": "C:/ComfyUI/script/en-US/den-skjulte-verdenen-text-en-US.py",
+    "en-GB": "C:/ComfyUI/script/en-GB/den-skjulte-verdenen-text-en-GB.py",
+    "en": "C:/ComfyUI/script/en-US/den-skjulte-verdenen-text-en-US.py",
+    "en-us": "C:/ComfyUI/script/en-US/den-skjulte-verdenen-text-en-US.py",
+    "en-gb": "C:/ComfyUI/script/en-GB/den-skjulte-verdenen-text-en-GB.py",
+    "no": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+    "nb-no": "C:/ComfyUI/script/nb/den-skjulte-verdenen-text-nb.py",
+    "nn-no": "C:/ComfyUI/script/nn/den-skjulte-verdenen-text-nn.py",
+    "sv": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+    "sv-SE": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+    "sv-se": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+    "se": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+    "swedish": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py",
+    "svensk": "C:/ComfyUI/script/sv/den-skjulte-verdenen-text-sv.py"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "slug": "den-tapte-superbyen",
+  "displayName": "Den Tapte Superbyen",
+  "_status": "UNDER ARBEID: forside-malen (forside(superbyen).png) og headmask mangler fortsatt. Innsidene, textScript, prepareScript, bakside og ryggrad kommer senere. Boka kan IKKE produseres ennaa.",
+  "_continuationOf": "den-skjulte-styrken",
+  "orderBasePath": "C:/ComfyUI/books/den-tapte-superbyen/orders",
+  "comfyOutputPrefix": "den-tapte-superbyen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(superbyen).png",
+      "mask_image": "forside-headmask(superbyen).png"
+    }
+  ],
+  "expectedInnerPages": 31,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}

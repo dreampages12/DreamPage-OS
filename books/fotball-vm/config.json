@@ -1,0 +1,138 @@
+{
+  "slug": "fotball-vm",
+  "displayName": "Fotball VM",
+  "_continuationOf": "fotballstjernen",
+  "orderBasePath": "C:/ComfyUI/books/fotball-vm/orders",
+  "comfyOutputPrefix": "fotball-vm/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(fotball-vm).png",
+      "mask_image": "forside-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page01",
+      "template_image": "01(fotball-vm).png",
+      "mask_image": "01-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page02",
+      "template_image": "02(fotball-vm).png",
+      "mask_image": "02-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page03",
+      "template_image": "03(fotball-vm).png",
+      "mask_image": "03-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page04",
+      "template_image": "04(fotball-vm).png",
+      "mask_image": "04-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page05",
+      "template_image": "05(fotball-vm).png",
+      "mask_image": "05-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page06",
+      "template_image": "06(fotball-vm).png",
+      "mask_image": "06-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page07",
+      "template_image": "07(fotball-vm).png",
+      "mask_image": "07-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page08",
+      "template_image": "08(fotball-vm).png",
+      "mask_image": "08-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page09",
+      "template_image": "09(fotball-vm).png",
+      "mask_image": "09-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page10",
+      "template_image": "10(fotball-vm).png",
+      "mask_image": "10-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page11",
+      "template_image": "11(fotball-vm).png",
+      "mask_image": "11-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page12",
+      "template_image": "12(fotball-vm-left).png",
+      "mask_image": "12-headmask(fotball-vm-left).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page13",
+      "template_image": "13(fotball-vm).png",
+      "mask_image": "13-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page14",
+      "template_image": "14(fotball-vm).png",
+      "mask_image": "14-headmask(fotball-vm).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 30,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  },
+  "textScript": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+  "prepareScript": "C:/ComfyUI/books/fotball-vm/script/prepare_order_fotball_vm.py",
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "textScripts": {
+    "nb": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+    "nn": "C:/ComfyUI/script/nn/fotball-vm-text-nn.py",
+    "en-US": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
+    "en-GB": "C:/ComfyUI/script/en-GB/fotball-vm-text-en-GB.py",
+    "en": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
+    "en-us": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
+    "en-gb": "C:/ComfyUI/script/en-GB/fotball-vm-text-en-GB.py",
+    "no": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+    "nb-no": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
+    "nn-no": "C:/ComfyUI/script/nn/fotball-vm-text-nn.py",
+    "sv": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+    "sv-SE": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+    "sv-se": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+    "se": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+    "swedish": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
+    "svensk": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py"
+  },
+  "driveFolderId": "1GEm0_sOa-Cz6HkX6-dq52GSk0YUSIMIE"
+}

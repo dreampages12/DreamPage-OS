@@ -1,0 +1,34 @@
+{
+  "slug": "havpalasset",
+  "displayName": "Havpalasset",
+  "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript, bakside/ryggrad, kort-haar-varianten og driveFolderId mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i havfruen.",
+  "_continuationOf": "havfruen",
+  "orderBasePath": "C:/ComfyUI/books/havpalasset/orders",
+  "comfyOutputPrefix": "havpalasset/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(havpalasset).png",
+      "mask_image": "forside-headmask(havpalasset).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 30,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}

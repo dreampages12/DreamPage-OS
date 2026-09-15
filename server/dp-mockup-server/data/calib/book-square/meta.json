@@ -1,0 +1,25 @@
+{
+  "formatVersion": 2,
+  "width": 1713,
+  "height": 1710,
+  "source": "procedural",
+  "proceduralVersion": 3,
+  "geometry": {
+    "tilt": 0.93,
+    "depth": 0.88,
+    "blockWidth": 0.062,
+    "blockTilt": 0.955,
+    "shadow": 0.55,
+    "shadowBlur": 0.024,
+    "shading": 0.3,
+    "hinge": 0.018,
+    "padX": 0.1,
+    "padY": 0.05,
+    "padBottom": 0.09
+  },
+  "size": 1500,
+  "coverSpace": {
+    "width": 1518,
+    "height": 1725
+  }
+}

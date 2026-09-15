@@ -1,0 +1,279 @@
+{
+ "1": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "PATCHED_crop.png"
+  },
+  "_meta": {
+   "title": "Barnebildet - HELE bildet (patches av scriptet)"
+  }
+ },
+ "3": {
+  "class_type": "UNETLoader",
+  "inputs": {
+   "unet_name": "flux-2-klein-9b.safetensors",
+   "weight_dtype": "default"
+  }
+ },
+ "4": {
+  "class_type": "CLIPLoaderGGUF",
+  "inputs": {
+   "clip_name": "Qwen3-8B-Q8_0.gguf",
+   "type": "stable_diffusion"
+  }
+ },
+ "5": {
+  "class_type": "VAELoader",
+  "inputs": {
+   "vae_name": "flux2-vae.safetensors"
+  }
+ },
+ "6": {
+  "class_type": "VAEEncode",
+  "inputs": {
+   "pixels": [
+    "20",
+    0
+   ],
+   "vae": [
+    "5",
+    0
+   ]
+  }
+ },
+ "8": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "A sharp, high-detail photograph of this exact same child, unchanged. Change only his expression and head pose: turn the head to face the camera straight on - level, upright, not tilted - with the eyes open, clearly visible and looking directly into the lens; and give him a quietly sad, downcast expression - the inner ends of the eyebrows lifted just a little, the upper eyelids heavy and relaxed, the gaze soft, the corners of the mouth turned gently down, the lips closed and resting together at their full natural width, not pursed, not pouting, not pressed tight. The forehead stays completely smooth and unlined, the brows are not furrowed and not drawn together, the skin under the eyes stays clear. He looks gently sad and disappointed - a small child's quiet sadness - not angry, not sulking, not crying, no tears. Everything else stays exactly as it is. Photorealistic, natural smooth child skin, sharp focus.",
+   "clip": [
+    "4",
+    0
+   ]
+  }
+ },
+ "9": {
+  "class_type": "ReferenceLatent",
+  "inputs": {
+   "conditioning": [
+    "8",
+    0
+   ],
+   "latent": [
+    "6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "ReferenceLatent - originalen som kontekst til prompten"
+  }
+ },
+ "10": {
+  "class_type": "FluxGuidance",
+  "inputs": {
+   "conditioning": [
+    "9",
+    0
+   ],
+   "guidance": 2.8
+  }
+ },
+ "11": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "different child, different face, changed identity, changed face shape, changed jawline, changed eyes, changed eye colour, changed nose, changed ears, changed hair, added hair, more hair, added hair clips, added hairband, added accessories, added freckles, added moles, added spots, added blemishes, blotchy skin, rash, older child, younger child, doll, forehead wrinkles, wrinkled forehead, frown lines, furrowed brow, knitted brows, brows drawn together, glabella lines, deep creases, wrinkles, lined skin, dark circles under eyes, eye bags, sunken eyes, hollow eyes, scowling, angry, grumpy, sulking, crying, tears, looking away, eyes to the side, closed eyes, squinting, squinted eyes, eyes shut, tilted head, open mouth, teeth, tongue, smile, smiling, grin, happy, pouting, pursed lips, blurry, soft focus, low detail, airbrushed, smooth plastic skin, waxy, washed out, colour shift, oversaturated, CGI, illustration, painting",
+   "clip": [
+    "4",
+    0
+   ]
+  }
+ },
+ "12": {
+  "class_type": "ConditioningZeroOut",
+  "inputs": {
+   "conditioning": [
+    "11",
+    0
+   ]
+  }
+ },
+ "13": {
+  "class_type": "KSampler",
+  "inputs": {
+   "seed": 90210,
+   "steps": 30,
+   "cfg": 1.0,
+   "sampler_name": "euler",
+   "scheduler": "simple",
+   "denoise": 1.0,
+   "model": [
+    "3",
+    0
+   ],
+   "positive": [
+    "10",
+    0
+   ],
+   "negative": [
+    "12",
+    0
+   ],
+   "latent_image": [
+    "6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "denoise 1.0 - rein prompt, ingen maske"
+  }
+ },
+ "14": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "13",
+    0
+   ],
+   "vae": [
+    "5",
+    0
+   ]
+  }
+ },
+ "15": {
+  "class_type": "SaveImage",
+  "inputs": {
+   "images": [
+    "24",
+    0
+   ],
+   "filename_prefix": "face_variants/PATCHED"
+  },
+  "_meta": {
+   "title": "Utdata (prefix patches av scriptet)"
+  }
+ },
+ "16": {
+  "class_type": "UltralyticsDetectorProvider",
+  "inputs": {
+   "model_name": "bbox/face_yolov8m.pt"
+  },
+  "_meta": {
+   "title": "YOLO ansiktsdetektor"
+  }
+ },
+ "17": {
+  "class_type": "BboxDetectorSEGS",
+  "inputs": {
+   "bbox_detector": [
+    "16",
+    0
+   ],
+   "image": [
+    "1",
+    0
+   ],
+   "threshold": 0.4,
+   "dilation": 10,
+   "crop_factor": 2.4,
+   "drop_size": 10,
+   "labels": "all"
+  },
+  "_meta": {
+   "title": "Finn ansiktet - crop_factor 3.0 = romslig, tar med haar og skuldre"
+  }
+ },
+ "18": {
+  "class_type": "SEGSToImageList",
+  "inputs": {
+   "segs": [
+    "17",
+    0
+   ],
+   "fallback_image_opt": [
+    "1",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Fallback til hele bildet hvis ingen ansikt funnet"
+  }
+ },
+ "19": {
+  "class_type": "ImageListToImageBatch",
+  "inputs": {
+   "images": [
+    "18",
+    0
+   ]
+  }
+ },
+ "20": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "19",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "megapixels": 1.5,
+   "resolution_steps": 1
+  },
+  "_meta": {
+   "title": "Skaler til 1 MP for Klein"
+  }
+ },
+ "21": {
+  "class_type": "ColorMatch",
+  "inputs": {
+   "image_ref": [
+    "20",
+    0
+   ],
+   "image_target": [
+    "14",
+    0
+   ],
+   "method": "mkl"
+  },
+  "_meta": {
+   "title": "Match fargene tilbake mot originalen"
+  }
+ },
+ "22": {
+  "class_type": "UpscaleModelLoader",
+  "inputs": {
+   "model_name": "4x-UltraSharp.pth"
+  }
+ },
+ "23": {
+  "class_type": "ImageUpscaleWithModel",
+  "inputs": {
+   "upscale_model": [
+    "22",
+    0
+   ],
+   "image": [
+    "21",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "4x-UltraSharp - henter tilbake hudtekstur"
+  }
+ },
+ "24": {
+  "class_type": "ImageScaleToTotalPixels",
+  "inputs": {
+   "image": [
+    "23",
+    0
+   ],
+   "upscale_method": "lanczos",
+   "megapixels": 2.5,
+   "resolution_steps": 1
+  },
+  "_meta": {
+   "title": "Ned til 2.5 MP"
+  }
+ }
+}

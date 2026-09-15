@@ -1,0 +1,11 @@
+Original page15 ("Dette eventyret er over, men magien lever videre")
+Kopiert hit 2026-08-18 for at den ikke skal gaa tapt naar siste innerside
+byttes ut med "Fortsett eventyret"-QR-siden for Fotball VM.
+
+Filene er de globale malene fra C:/ComfyUI/input/:
+  15(fotballstjernen).png        comfy-mal (head-swap)
+  15-headmask(fotballstjernen).png
+
+Siden brukes fortsatt av ALLE ordrer uten continue_code. Bare ordrer som
+faar en fortsett-eventyret-side (input/blank-back.png i ordremappa) bytter
+den ut. Se process_book i script/<locale>/fotballstjernen-text-<locale>.py.

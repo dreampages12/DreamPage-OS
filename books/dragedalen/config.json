@@ -1,0 +1,34 @@
+{
+  "slug": "dragedalen",
+  "displayName": "Dragedalen",
+  "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript, bakside/ryggrad og driveFolderId mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i dragejakten.",
+  "_continuationOf": "dragejakten",
+  "orderBasePath": "C:/ComfyUI/books/dragedalen/orders",
+  "comfyOutputPrefix": "dragedalen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(dragedalen).png",
+      "mask_image": "forside-headmask(dragedalen).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 30,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}

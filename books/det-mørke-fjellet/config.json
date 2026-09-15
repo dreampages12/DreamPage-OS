@@ -1,0 +1,35 @@
+{
+  "slug": "det-morke-fjellet",
+  "displayName": "Det Mørke Fjellet",
+  "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript og bakside/ryggrad mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i den-skjulte-verdenen.",
+  "_continuationOf": "den-skjulte-verdenen",
+  "_slugAlias": "det-mørke-fjellet (directory junction peker hit, saa begge skrivemaatene virker som next_book_slug)",
+  "orderBasePath": "C:/ComfyUI/books/det-morke-fjellet/orders",
+  "comfyOutputPrefix": "det-morke-fjellet/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(fjellet).png",
+      "mask_image": "forside-headmask(fjellet).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 30,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}

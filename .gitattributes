@@ -1,0 +1,4 @@
+# Git skal vaere en tro kopi av det som faktisk ligger paa disk. Ingen
+# linjeskift-konvertering: filene her kjorer i produksjon, og en normalisering
+# ved utsjekk ville endret bytes i filer ingen har bedt om aa endre.
+* -text

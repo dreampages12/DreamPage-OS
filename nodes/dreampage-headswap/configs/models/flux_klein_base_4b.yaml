@@ -1,0 +1,9 @@
+model:
+  backbone: flux_klein
+  identity_dim: 64
+  structure_dim: 16
+  weights_path: null  # Complete reviewed local Diffusers snapshot, never ComfyUI 9B.
+  dtype: bf16
+  train_transformer: false  # Train DreamFace + our latent cross-attention/context adapters.
+  gradient_checkpointing: true
+  text_guidance_scale: 4.0 # BASE text CFG at sampling only; 1 disables it.

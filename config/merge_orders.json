@@ -1,0 +1,9 @@
+{
+ "_": "AVSKRUDD 2026-08-18. Sammenslaaing gjoeres na fra Telegram-boten (dp_bot: Sla sammen ordre). gate/record i gelato_merge.py kalles ikke lenger fra n8n - se patch_worker_merge_off.py.",
+ "enabled": false,
+ "window_hours": 24,
+ "timeout_seconds": 900,
+ "poll_seconds": 3,
+ "require_same_address": true,
+ "max_items_per_order": 4
+}

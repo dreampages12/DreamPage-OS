@@ -1,0 +1,45 @@
+model:
+  width: 32
+  max_delta: 0.08
+teacher:
+  checkpoint: runs/identity-encoder/checkpoint.best.pt
+  review: local_data/teacher_review.json
+  allow_unvalidated_for_synthetic: false
+dataset:
+  manifest: data/pairs/pairs.train.jsonl
+  artifacts_manifest: data/refinement/artifacts.jsonl
+  peer_manifests: []
+  resolution: 64
+  source_crops: true
+  reference_count: 1
+  allow_synthetic: false
+  mask_channel: red
+optimizer: {name: adamw, lr: 0.0003, weight_decay: 0.01}
+scheduler: {name: constant, warmup_steps: 20}
+losses:
+  reconstruction: 1.0
+  boundary: 1.0
+  lighting: 0.1
+  local_texture: 0.5
+  identity_source: 1.0
+  identity_anchor: 3.0
+  residual_penalty: 0.1
+training:
+  device: cpu
+  precision: fp32
+  seed: 1234
+  batch_size: 2
+  accumulation_steps: 1
+  max_steps: 1000
+  gradient_clip: 1.0
+  checkpoint_every: 100
+  log_every: 20
+  cpu_threads: 2
+  tracker: jsonl
+  output_dir: runs/refiner
+validation:
+  manifest: data/pairs/pairs.validation.jsonl
+  every: 100
+  max_batches: 8
+  batch_size: 1
+  samples: true

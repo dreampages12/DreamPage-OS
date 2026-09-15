@@ -1,0 +1,71 @@
+# --------------------------------------------------------------------------
+# DreamPage OS
+#
+# ComfyUI selv. DreamPage-image/ er upstream comfyanonymous/ComfyUI pinnet paa
+# en kjent commit, med sin EGEN .git. Den skal aldri ligge i vaart repo - og
+# den skal aldri redigeres. Alt vi vil endre i ComfyUI skjer via nodes/.
+# --------------------------------------------------------------------------
+/DreamPage-image/
+
+# --------------------------------------------------------------------------
+# Stort, regenererbart eller kundedata
+# --------------------------------------------------------------------------
+/models/
+/state/
+/output/
+/input/
+/tmp/
+
+# Kundeartefakter: 72 GB ferdige sider, PDF-er og barnebilder.
+# Ordredefinisjonen ligger i state/orders/<job_key>.json, ikke her.
+/books/*/orders/
+
+# 15 GB modeller og datasett til headswap-treningen.
+/nodes/dreampage-headswap/local_data/
+/nodes/dreampage-headswap/runs/
+/nodes/dreampage-headswap/build/
+/nodes/dreampage-headswap/.venv*/
+/nodes/dreampage-headswap/*.egg-info/
+
+# Mockup-serverens cache (333 MB, bygges paa nytt) og PSD-kilden (122 MB,
+# over GitHubs filgrense). Kalibreringsmappene under data/calib/ ER i git -
+# de er det dyre resultatet, og serveren virker uten PSD-en.
+/server/dp-mockup-server/data/cache/
+/server/dp-mockup-server/data/psd/
+/server/dp-mockup-server/node_modules/
+
+# --------------------------------------------------------------------------
+# Hemmeligheter
+#
+# En API-noekkel i git-historikk maa roteres, ikke slettes. Derfor staar det
+# ingen i historikken i det hele tatt - se flow/dp_secrets.py.
+# --------------------------------------------------------------------------
+/config/secrets.json
+/config/dp_bot.json
+/config/api.json
+/tunnel/*credentials*
+/tunnel/*.json
+!/tunnel/*.example.json
+*.pem
+
+# archive/worker-continue-qr.patched.json er en raa n8n-eksport paa 107 KB med
+# bot-token og Gelato-noekkel spredt gjennom hele fila. Den er et historisk
+# dokument; aa redigere den ville gjort den verdiloes, saa den blir paa disk
+# og utenfor git. Se archive/README.md.
+/archive/worker-continue-qr.patched.json
+
+# --------------------------------------------------------------------------
+# Vanlig stoey
+# --------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.log
+*.log.*
+.venv/
+venv*/
+.vs/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
