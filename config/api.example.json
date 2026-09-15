@@ -1,0 +1,9 @@
+{
+  "_": "Kopier til api.json. api.json staar i .gitignore - et token i git-historikk maa roteres, ikke slettes.",
+  "tokens": {
+    "<generer med: python -c \"import secrets;print(secrets.token_urlsafe(32))\">": "dashboard"
+  },
+  "cors_origins": [
+    "https://admin.dreampage.store"
+  ]
+}
