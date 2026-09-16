@@ -52,9 +52,18 @@ from PIL import Image, ImageOps
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import analyse_photo as AP
 
-COMFY = os.environ.get("DP_COMFY_URL", "http://127.0.0.1:8188")
-INPUT_DIR = os.environ.get("DP_COMFY_INPUT", "C:/DreamPage-OS/input")
-OUTPUT_DIR = os.environ.get("DP_COMFY_OUTPUT", "C:/DreamPage-OS/output")
+# Adressen staar ETT sted: config/flow.json -> comfy.url, lest av flow/paths.py
+# (som fortsatt lar DP_COMFY_URL overstyre). Her stod "http://127.0.0.1:8188"
+# som standardverdi, og den var feil: 16.09.2026 kjoerte var egen ComfyUI paa
+# 8189 mens en gammel, elevert prosess UTEN modeller fortsatt eide 8188.
+# Steget er fail-soft, saa varianten ville bare stille uteblitt og siden falt
+# tilbake paa originalbildet. Samme felle som regen_page.py alt er rettet for.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from paths import COMFY_URL as COMFY  # noqa: E402
+from paths import INPUT as _INPUT, OUTPUT as _OUTPUT  # noqa: E402
+
+INPUT_DIR = os.environ.get("DP_COMFY_INPUT", str(_INPUT))
+OUTPUT_DIR = os.environ.get("DP_COMFY_OUTPUT", str(_OUTPUT))
 WF_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workflows")
 
 CROP_FACTOR = 1.7          # hvor mye rundt ansiktet vi tar med i utsnittet

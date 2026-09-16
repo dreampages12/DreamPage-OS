@@ -245,17 +245,40 @@ class ConversionTests(unittest.TestCase):
             image_to_array(None)
 
 
+DREAMPAGE_CATEGORIES = {"DreamPage/HeadSwap", "DreamPage/Studio"}
+
+
 class NodeContractTests(unittest.TestCase):
     def test_every_node_declares_a_complete_comfyui_contract(self):
         self.assertEqual(sorted(NODE_CLASS_MAPPINGS), sorted(NODE_DISPLAY_NAME_MAPPINGS))
         for name, node in NODE_CLASS_MAPPINGS.items():
             with self.subTest(node=name):
-                types = node.INPUT_TYPES()
+                try:
+                    types = node.INPUT_TYPES()
+                except ModuleNotFoundError as exc:
+                    # De ni native Studio-nodene slaar opp modellkataloger via
+                    # ComfyUI sin egen `folder_paths`, som bare finnes inne i
+                    # ComfyUI-prosessen. De KAN ikke introspiseres herfra.
+                    # Registreringen deres verifiseres i stedet mot en kjoerende
+                    # instans: tools/node_requirements.py --check --object-info.
+                    self.skipTest(f"{name} krever ComfyUI-runtime ({exc.name})")
+                    raise AssertionError("uansett ikke naadd")  # pragma: no cover
                 self.assertIn("required", types)
                 self.assertTrue(callable(getattr(node, node.FUNCTION)))
                 self.assertEqual(len(node.RETURN_TYPES), len(node.RETURN_NAMES))
-                self.assertEqual(node.CATEGORY, "DreamPage/HeadSwap")
-                self.assertTrue(node.__doc__, "every node needs an operator-visible description")
+                # To bevisste nodefamilier: "DreamPage/HeadSwap" er den
+                # trente modellen, "DreamPage/Studio" er de ni native
+                # Klein-nodene som kom til senere. Kontrakten er at en
+                # node ligger under et DreamPage-navnerom saa operatoeren
+                # finner den - ikke at det finnes bare ett.
+                self.assertIn(node.CATEGORY, DREAMPAGE_CATEGORIES)
+                # ComfyUI viser DESCRIPTION, ikke __doc__. Kontrakten er at
+                # operatoeren ser NOE - derfor godtas begge. Testen krevde
+                # foer bare __doc__, altsaa nettopp det feltet ComfyUI ikke
+                # leser, og lot de sju HeadSwap-nodene staa uten synlig
+                # beskrivelse i grensesnittet.
+                self.assertTrue(getattr(node, "DESCRIPTION", None) or node.__doc__,
+                                f"{name} needs an operator-visible description")
                 for section in ("required", "optional"):
                     for key, spec in types.get(section, {}).items():
                         self.assertIsInstance(spec, tuple, f"{name}.{key}")

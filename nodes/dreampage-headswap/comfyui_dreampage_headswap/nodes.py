@@ -263,3 +263,12 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DP_QualityCheck": "DP Quality Check",
     "DP_HeadSwapPipeline": "DP HeadSwap Pipeline",
 }
+
+# ComfyUI viser `DESCRIPTION` i noden, ikke `__doc__`. Disse sju nodene hadde
+# bare docstring, saa /object_info rapporterte tom beskrivelse og operatoeren
+# saa ingenting i grensesnittet - mens de ni Studio-nodene, som setter
+# DESCRIPTION eksplisitt, viste sin. Vi speiler docstringen i stedet for aa
+# skrive teksten to ganger: da kan de ikke drifte fra hverandre.
+for _name, _cls in NODE_CLASS_MAPPINGS.items():
+    if not getattr(_cls, "DESCRIPTION", None) and _cls.__doc__:
+        _cls.DESCRIPTION = " ".join(_cls.__doc__.split())
