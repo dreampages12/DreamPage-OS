@@ -1673,11 +1673,39 @@ def next_state_path(order_id: str) -> str:
 
 
 def load_next_state(order_id: str) -> dict:
+    """Øktas forside-varianter, med de som er borte fra disk luket ut.
+
+    Luking MÅ skje her, i det ene lesepunktet. Knappene sender en INDEKS
+    inn i `variants` (`nxp|<ordre>||<i>`), så hadde visningen filtrert på
+    egen hånd ville nummer 2 i albumet pekt på en annen fil enn nummer 2 i
+    lista - og du hadde valgt en forside du ikke såg.
+
+    Grunnen til at det trengs: fire av disse filene pekte fortsatt på den
+    gamle C:\ComfyUI-mappa etter flyttingen, og `show_next_variants` kalte
+    `preview()` rett på hver sti uten å sjekke. Da ville hele albumet
+    feilet på en FileNotFoundError i stedet for å vise de som fins. Det
+    samme skjer nå når opprydding fjerner gamle varianter.
+    """
     try:
         with open(next_state_path(order_id), encoding="utf-8") as fh:
-            return json.load(fh)
+            state = json.load(fh)
     except (OSError, json.JSONDecodeError):
         return {"order_id": order_id, "variants": []}
+
+    paths = state.get("variants") or []
+    alive = [p for p in paths if os.path.isfile(p)]
+    if len(alive) != len(paths):
+        state["variants"] = alive
+        state.setdefault("order_id", order_id)
+        # Skriv tilbake BARE når noe faktisk falt bort, ellers ville hver
+        # menyvisning rørt fila.
+        try:
+            save_next_state(state)
+        except OSError:
+            pass
+        log(f"[fortsett] {order_id}: {len(paths) - len(alive)} variant(er) "
+            f"finnes ikke lenger - luket ut av økta")
+    return state
 
 
 def save_next_state(state: dict) -> None:
@@ -1828,6 +1856,12 @@ def job_next_render(order_id: str, chat_id, extra: dict) -> None:
 
 
 def show_next_variants(order_id: str, chat_id, paths: list[str]) -> None:
+    if not paths:
+        # Etter luking i load_next_state kan lista vaere tom. Da er det ikke
+        # en feil - det er bare ingenting aa vise.
+        send(chat_id, f"Ordre <b>{order_id}</b> har ingen forside-varianter "
+                      "lagret lenger. Trykk «Lag 3 nye forsider».")
+        return
     shown = paths[-9:]                     # Telegram tar maks 10 i et album
     first = len(paths) - len(shown)
     send_album(chat_id, [preview(p, name_hint=f"{order_id}-nx") for p in shown],
