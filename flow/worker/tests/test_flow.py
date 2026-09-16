@@ -194,7 +194,7 @@ def test_serialisering(sb: Sandbox) -> None:
         store.enqueue(key, sb.payload(key))
     r.start()
     for key in keys:
-        r.submit(runner_mod.QueuedJob(key, sb.payload(key)))
+        r.submit(runner_mod.QueuedJob(key, sb.payload(key), pipeline="pages"))
 
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
@@ -223,13 +223,15 @@ def test_idempotens(sb: Sandbox) -> None:
     sb.child_photo("I1")
 
     store.enqueue("I1", sb.payload("I1"))
-    first = r.run_job(runner_mod.QueuedJob("I1", sb.payload("I1")))
+    first = r.run_job(runner_mod.QueuedJob("I1", sb.payload("I1"),
+                                       pipeline="pages"))
     assert first["status"] == "done", first
     assert len(fake.rendered) == 3, fake.rendered
 
     # Kjoer igjen. Ingen nye sider skal lages.
     store.retry("I1")
-    second = r.run_job(runner_mod.QueuedJob("I1", sb.payload("I1")))
+    second = r.run_job(runner_mod.QueuedJob("I1", sb.payload("I1"),
+                                        pipeline="pages"))
     assert second["status"] == "done", second
     assert len(fake.rendered) == 3, (
         f"andre kjoering laget nye sider: {fake.rendered}. En ordre som kommer "
@@ -337,7 +339,8 @@ def test_sidenoekler_lekker_ikke(sb: Sandbox) -> None:
     r.comfy = fake
     sb.child_photo("X2")
     store.enqueue("X2", sb.payload("X2"))
-    res = r.run_job(runner_mod.QueuedJob("X2", sb.payload("X2")))
+    res = r.run_job(runner_mod.QueuedJob("X2", sb.payload("X2"),
+                                     pipeline="pages"))
     assert res["status"] == "done", res
     assert len(fake.rendered) == 3, (
         f"X2 laget bare {len(fake.rendered)} sider - den saa i X1 sin mappe")
@@ -361,7 +364,7 @@ def test_ubyggbar_bok_feiler_hoeyt(sb: Sandbox) -> None:
     payload["book_slug"] = "finnes-ikke"
     payload["book_title"] = "Finnes Ikke"
     store.enqueue("U1", payload)
-    res = r.run_job(runner_mod.QueuedJob("U1", payload))
+    res = r.run_job(runner_mod.QueuedJob("U1", payload, pipeline="pages"))
 
     assert res["status"] == "failed", res
     assert res.get("permanent") is True, res
@@ -466,7 +469,8 @@ def test_avbrudd_stopper_mellom_sider(sb: Sandbox) -> None:
     store.enqueue("K1", sb.payload("K1"))
     store.start("K1")
     store.request_cancel("K1")
-    res = r.run_job(runner_mod.QueuedJob("K1", sb.payload("K1")))
+    res = r.run_job(runner_mod.QueuedJob("K1", sb.payload("K1"),
+                                     pipeline="pages"))
     assert res["status"] == "failed", res
     assert "avbrutt" in (res.get("error") or "").lower(), res
 
@@ -652,9 +656,11 @@ def test_pipeline_override_endrer_ikke_standarden(sb: Sandbox) -> None:
     import pipeline as pipeline_mod
     from runner import QueuedJob
 
-    # Standarden er uendret, og et ukjent navn er en feil - ikke et stille
-    # fall tilbake til den aktive.
-    assert pipeline_mod.ACTIVE == "pages", pipeline_mod.ACTIVE
+    # Den aktive pipelinen er en av de kjente - ikke et navn noen har skrevet
+    # feil. (Her stod det en gang `== "pages"`. Det var en oyeblikksverdi, ikke
+    # en invariant: fase 5 gjorde "full" aktiv 16.09.2026, og da feilet en test
+    # som egentlig handler om noe annet - nemlig at OVERSTYRINGEN ikke lekker.)
+    assert pipeline_mod.ACTIVE in pipeline_mod.PIPELINES, pipeline_mod.ACTIVE
     for navn in ("pages", "full"):
         assert pipeline_mod.by_name(navn), navn
     try:
@@ -702,7 +708,7 @@ def test_feilet_jobb_varsler(sb: Sandbox) -> None:
         payload = sb.payload("V1")
         payload["book_slug"] = "finnes-ikke"
         store.enqueue("V1", payload)
-        res = r.run_job(runner_mod.QueuedJob("V1", payload))
+        res = r.run_job(runner_mod.QueuedJob("V1", payload, pipeline="pages"))
     finally:
         notify.send = original
 
@@ -738,7 +744,7 @@ def test_varsling_som_feiler_stopper_ingenting(sb: Sandbox) -> None:
         # Skal ikke kaste videre: jobben er alt feilet, og varselet er et
         # sidespor. Kaster den her, mister vi finished-callbacken og dermed
         # ack-en til RabbitMQ.
-        res = r.run_job(runner_mod.QueuedJob("V2", payload))
+        res = r.run_job(runner_mod.QueuedJob("V2", payload, pipeline="pages"))
     finally:
         notify.send = original
 
@@ -831,6 +837,19 @@ def main() -> int:
     # Importene maa skje ETTER at DP_ROOT er satt.
     sys.path.insert(0, str(FLOW))
     sys.path.insert(0, str(WORKER))
+
+    # Sandkassa kjorer "pages", uansett hva som er aktivt i produksjon.
+    #
+    # Disse testene handler om SIDE-LOEKKA - serialisering, idempotens,
+    # avbrudd, varsling. Etter at fase 5 gjorde "full" aktiv (16.09.2026)
+    # ville Runner.start() ogsaa dratt gjenopptatte jobber gjennom Drive- og
+    # Gelato-stegene, som krever ekte infrastruktur og ekte penger. Da tester
+    # de noe annet enn det de heter.
+    #
+    # De enkelte kallene sier `pipeline="pages"` selv; dette daekker veien
+    # gjennom Runner.start(), der jobber legges paa koen uten et valg.
+    import pipeline as pipeline_mod
+    pipeline_mod.ACTIVE = "pages"
 
     names = [name for name, _, _ in _results]
     _results.clear()

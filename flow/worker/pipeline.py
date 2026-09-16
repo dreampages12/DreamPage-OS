@@ -185,8 +185,28 @@ PIPELINES: dict[str, tuple[Step, ...]] = {
     "full": FULL_PIPELINE,
 }
 
-# Byttes til "full" i fase 5. Én linje, og den er i git.
-ACTIVE = "pages"
+# FASE 5 ER AKTIV fra 16.09.2026.
+#
+# Gjennomgangen skjer i GELATO-UTKASTET, ikke for det. Det er slik det alltid
+# har vaert gjort, og det er hele poenget med at pipelinen stopper ved et
+# utkast i stedet for en bestilling: mennesket ser boka i Gelato og bestiller
+# der. Et stopp etter sidene ville lagt inn et ekstra ledd som ikke fantes
+# for, og latt ordre bli staaende og vente paa at noen kjorer /bygg.
+#
+# Forutsetningene som maatte vaere paa plass, og som var det:
+#   * n8n eier ikke lenger noen del av ordreveien - alle ordre-workflowene er
+#     deaktiverte, og WooCommerce publiserer selv til RabbitMQ. Se
+#     docs/ordreveien.md, verifisert mot broker og n8n-API 16.09.2026.
+#   * "full" er kjort helt igjennom paa en EKTE ordre: 1517 (Hestestjernen),
+#     alle 17 steg, build_pdfs 137 s og upload_and_draft 26 s.
+#
+# Pipelinen bestiller fortsatt INGENTING. Den stopper ved utkastet, og det er
+# et menneske som trykker bestill i Gelato.
+#
+# Tilbake til manuell bygging: sett denne til "pages". Én linje, og den er i
+# git. En ENKELT ordre kan alltid kjores med den andre pipelinen uten aa
+# roere denne - se QueuedJob.pipeline og POST /api/jobs.
+ACTIVE = "full"
 
 
 def active() -> tuple[Step, ...]:
