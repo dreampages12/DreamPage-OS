@@ -55,7 +55,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PRE_DIR = os.path.join(SCRIPT_DIR, "pre")
-TITLES_CONFIG = "C:/ComfyUI/config/next_book_titles.json"
+TITLES_CONFIG = "C:/DreamPage-OS/config/next_book_titles.json"
 
 PAGE_PX = 2625            # 8.75 tommer * 300 dpi — samme som LULU_PAGE_PX
 PAGE_INCH = 8.5           # tekst-scriptene tegner siden som 8.5x8.5 i PDF-en
@@ -202,7 +202,7 @@ def resolve_background(book_slug: str, explicit: str = "") -> str:
         warn(f"oppgitt bakgrunn finnes ikke: {explicit}")
     if book_slug:
         import glob
-        hits = sorted(glob.glob(f"C:/ComfyUI/books/{book_slug}/dreampage-first*.png"))
+        hits = sorted(glob.glob(f"C:/DreamPage-OS/books/{book_slug}/dreampage-first*.png"))
         if hits:
             return hits[0]
         warn(f"fant ingen dreampage-first*.png for {book_slug}")
@@ -309,10 +309,10 @@ def resolve_raw_cover(raw: str, prefix: str) -> str:
 def template_size(next_slug: str) -> Optional[int]:
     """Bredden på forside-malen tittelparametrene er tunet mot."""
     try:
-        with open(f"C:/ComfyUI/books/{next_slug}/config.json", encoding="utf-8-sig") as fh:
+        with open(f"C:/DreamPage-OS/books/{next_slug}/config.json", encoding="utf-8-sig") as fh:
             cfg = json.load(fh)
         front = next(p for p in cfg.get("pages", []) if p.get("page_key") == "page00")
-        path = os.path.join("C:/ComfyUI/input", front["template_image"])
+        path = os.path.join("C:/DreamPage-OS/input", front["template_image"])
         if os.path.isfile(path):
             with Image.open(path) as im:
                 return im.width

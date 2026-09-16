@@ -47,7 +47,7 @@ weights, which tests software behavior and says nothing about identity or realis
 Python 3.10 or newer, with PyTorch 2.5 or newer.
 
 ```powershell
-cd C:\ComfyUI\dreampage-headswap
+cd C:\DreamPage-OS\nodes\dreampage-headswap
 pip install -e ".[dev]"
 ```
 

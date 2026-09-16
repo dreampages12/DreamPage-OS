@@ -51,10 +51,10 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 import dp_secrets  # noqa: E402
-STATE_DIR = "C:/ComfyUI/state/gelato_drafts"
-CONFIG_PATH = "C:/ComfyUI/config/merge_orders.json"
+STATE_DIR = "C:/DreamPage-OS/state/gelato_drafts"
+CONFIG_PATH = "C:/DreamPage-OS/config/merge_orders.json"
 LOCK_PATH = os.path.join(STATE_DIR, ".merge.lock")
-LOG_PATH = "C:/ComfyUI/state/gelato_merge.log"
+LOG_PATH = "C:/DreamPage-OS/state/gelato_merge.log"
 
 # Standardverdier. config/merge_orders.json kan overstyre alt sammen, slik at
 # du kan skru funksjonen av uten aa rore n8n eller denne fila.

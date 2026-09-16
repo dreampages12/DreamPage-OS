@@ -1,6 +1,6 @@
 # Current DreamPage workflow
 
-Inspected 2026-09-11, read-only. No customer images were opened, executed, copied, or admitted to training. The representative graph is `C:/ComfyUI/books/fotballstjernen/workflow_api.json`; a loader/settings scan of all 23 `books/*/workflow_api.json` files found the same Klein 9B, Qwen GGUF, four-step LanPaint, and crop-mask settings. This records wiring, not a quality benchmark.
+Inspected 2026-09-11, read-only. No customer images were opened, executed, copied, or admitted to training. The representative graph is `C:/DreamPage-OS/books/fotballstjernen/workflow_api.json`; a loader/settings scan of all 23 `books/*/workflow_api.json` files found the same Klein 9B, Qwen GGUF, four-step LanPaint, and crop-mask settings. This records wiring, not a quality benchmark.
 
 ## Three production inputs
 

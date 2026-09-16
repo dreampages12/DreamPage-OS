@@ -1,0 +1,69 @@
+# Modellstier for DreamPage-image. GENERERT av `python tools/models.py paths`.
+#
+# Gis til ComfyUI med --extra-model-paths-config. Skrives ALDRI inn i
+# DreamPage-image - det er nettopp slik vi endrer ComfyUI uten aa
+# redigere den.
+#
+# Hver undermappe i models/ blir en mappenoekkel, PLUSS aliasene som
+# custom nodes ber om under andre navn (ultralytics_bbox og
+# ultralytics_segm er de som faktisk stopper en bokside).
+
+dreampage:
+  base_path: C:/DreamPage-OS/models
+  LLM: LLM
+  RMBG: RMBG
+  annotator: annotator
+  audio_encoders: audio_encoders
+  background_removal: background_removal
+  checkpoints: checkpoints
+  clip: clip
+  clip_vision: clip_vision
+  configs: configs
+  controlnet: controlnet
+  detection: detection
+  diffusers: diffusers
+  diffusion_models: diffusion_models
+  embeddings: embeddings
+  face_models: face_models
+  facedetection: facedetection
+  facerestore_models: facerestore_models
+  facexlib: facexlib
+  frame_interpolation: frame_interpolation
+  gligen: gligen
+  grounding-dino: grounding-dino
+  hypernetworks: hypernetworks
+  inpaint: inpaint
+  insightface: insightface
+  instantid: instantid
+  ipadapter: ipadapter
+  ipadapter-flux: ipadapter-flux
+  ipadapter_plus: ipadapter_plus
+  latent_upscale_models: latent_upscale_models
+  liveportrait: liveportrait
+  loras: loras
+  mediapipe: mediapipe
+  model_patches: model_patches
+  nsfw_detector: nsfw_detector
+  onnx: onnx
+  optical_flow: optical_flow
+  photomaker: photomaker
+  pulid: pulid
+  reactor: reactor
+  sam2: sam2
+  sams: sams
+  style_models: style_models
+  text_encoders: text_encoders
+  ultralytics: ultralytics
+  unet: unet
+  upscale_models: upscale_models
+  vae: vae
+  vae_approx: vae_approx
+  wan: wan
+  yolo: yolo
+
+  # aliaser - noekkelnavn som ikke er et mappenavn
+  facedetection_models: facedetection
+  nsfw: nsfw_detector
+  rmbg: RMBG
+  ultralytics_bbox: ultralytics/bbox
+  ultralytics_segm: ultralytics/segm

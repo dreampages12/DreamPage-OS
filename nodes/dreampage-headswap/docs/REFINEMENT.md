@@ -71,7 +71,7 @@ and exclusively synthetic train/validation pairs. It cannot authorize training o
 
 ## Commands
 
-From `C:\ComfyUI\dreampage-headswap`, with `$env:PYTHONPATH = "src;."`:
+From `C:\DreamPage-OS\DreamPage-image\dreampage-headswap`, with `$env:PYTHONPATH = "src;."`:
 
 ```powershell
 ..\venv\Scripts\python.exe training/train_refiner.py --config configs/training/refiner.yaml

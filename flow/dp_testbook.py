@@ -48,7 +48,7 @@ import regen_page                                                  # noqa: E402
 import reprint_order                                               # noqa: E402
 
 BOOKS_DIR = dp_order.BOOKS_DIR
-COMFY_INPUT = r"C:\ComfyUI\input"
+COMFY_INPUT = r"C:\DreamPage-OS\input"
 TEST_MARKER = "is_test"
 
 
@@ -101,7 +101,7 @@ def create(slug: str, child_name: str, face_source: str,
     os.makedirs(os.path.join(order_path, "input"), exist_ok=True)
     os.makedirs(os.path.join(order_path, "pdf"), exist_ok=True)
 
-    # regen_page leter etter C:/ComfyUI/input/<order_id>.jpg, samme som for
+    # regen_page leter etter C:/DreamPage-OS/input/<order_id>.jpg, samme som for
     # en ekte ordre. JPEG fordi workflowen alltid har faatt JPEG derfra.
     face_dest = os.path.join(COMFY_INPUT, order_id + ".jpg")
     from PIL import Image
@@ -198,7 +198,7 @@ def delete(order_id: str) -> list[str]:
                 prefix = json.load(fh).get("comfyOutputPrefix", slug + "/orders")
         except (OSError, json.JSONDecodeError):
             continue
-        out = os.path.join(r"C:\ComfyUI\output", prefix.replace("/", os.sep), order_id)
+        out = os.path.join(r"C:\DreamPage-OS\output", prefix.replace("/", os.sep), order_id)
         if os.path.isdir(out):
             shutil.rmtree(out, ignore_errors=True)
             removed.append(out)

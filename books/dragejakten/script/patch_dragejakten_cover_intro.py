@@ -17,7 +17,7 @@ import argparse
 import os
 import re
 
-SCRIPT_ROOT = r"C:\ComfyUI\script"
+SCRIPT_ROOT = r"C:\DreamPage-OS\flow"
 TARGETS = {
     "nb": os.path.join(SCRIPT_ROOT, "nb", "dragejakten-text-nb.py"),
     "nn": os.path.join(SCRIPT_ROOT, "nn", "dragejakten-text-nn.py"),

@@ -64,9 +64,9 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-INPUT_DIR = r"C:\ComfyUI\input"
-OUTPUT_DIR = r"C:\ComfyUI\output"
-BOOKS_DIR = r"C:\ComfyUI\books"
+INPUT_DIR = r"C:\DreamPage-OS\input"
+OUTPUT_DIR = r"C:\DreamPage-OS\output"
+BOOKS_DIR = r"C:\DreamPage-OS\books"
 WORKDIR = os.path.join(INPUT_DIR, "_maskwork")
 
 # Instruksjonen til Klein. "Fortsett bakgrunnen" er den viktige delen: uten

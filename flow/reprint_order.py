@@ -50,8 +50,8 @@ CONTINUE_SECRET = (os.environ.get("DP_CONTINUE_CALLBACK_SECRET") or
                    __import__("json").load(open(os.path.join(
                        SCRIPT_DIR, "..", "config", "secrets.json"),
                        encoding="utf-8-sig")).get("continue_callback_secret", ""))
-DRAFT_STATE_DIR = r"C:\ComfyUI\state\gelato_drafts"
-PREPARED_DIR = r"C:\ComfyUI\state\reprint\prepared"
+DRAFT_STATE_DIR = r"C:\DreamPage-OS\state\gelato_drafts"
+PREPARED_DIR = r"C:\DreamPage-OS\state\reprint\prepared"
 
 # Disse lages på nytt av hvert bygg og er aldri "en manuell endring":
 # blank-back skrives av build_last_page ETTER prepare, page99 er QR-siden,

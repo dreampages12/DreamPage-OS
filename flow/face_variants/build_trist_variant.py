@@ -5,7 +5,7 @@ DreamPage - lag TRIST-varianten av barnebildet.
 Kun for boker som staar i BOOKS (i dag: fotballstjernen, side 04). Alle andre
 boker gaar rett gjennom uten aa gjore noe.
 
-Ut kommer C:/ComfyUI/input/<job_key>-trist.jpg. Det er filnavnet "Pages Config"
+Ut kommer C:/DreamPage-OS/input/<job_key>-trist.jpg. Det er filnavnet "Pages Config"
 i n8n leter etter naar en side har face_expression = "trist"; finnes den ikke,
 bruker sideloopen originalbildet som for. Derfor kan dette scriptet ALDRI
 stoppe en ordre - det avslutter med 0 uansett hva som gaar galt.
@@ -13,7 +13,7 @@ stoppe en ordre - det avslutter med 0 uansett hva som gaar galt.
 Motor: Flux.2 Klein (workflows/trist.json) - samme UNET og text encoder som
 sidegenereringen, saa modellene blir staaende i VRAM.
 
-Scriptet tar SAMME laas som sideloopen (C:/ComfyUI/.dreampage-comfy.lock), slik
+Scriptet tar SAMME laas som sideloopen (C:/DreamPage-OS/DreamPage-image/.dreampage-comfy.lock), slik
 at det aldri sender jobb til ComfyUI mens en annen ordre genererer sider.
 
 Bruk:
@@ -33,7 +33,7 @@ sys.path.insert(0, HERE)
 import build_face_variants as BFV
 
 WORKFLOW = os.path.join(HERE, "workflows", "trist.json")
-LOCK = "C:/ComfyUI/.dreampage-comfy.lock"
+LOCK = "C:/DreamPage-OS/DreamPage-image/.dreampage-comfy.lock"
 LOCK_TTL = 2 * 60 * 60          # samme 2 timer som n8n-noden
 LOCK_WAIT = 45 * 60             # hvor lenge vi venter paa lasen
 TIMEOUT = 900

@@ -19,7 +19,7 @@ from PIL import Image
 
 Image.MAX_IMAGE_PIXELS = None
 
-MODEL = r"C:\ComfyUI\models\upscale_models\4x-UltraSharp.pth"
+MODEL = r"C:\DreamPage-OS\models\upscale_models\4x-UltraSharp.pth"
 TILE = 512          # kildepiksler per rute
 OVERLAP = 32        # kildepiksler som beregnes ekstra og kastes
 

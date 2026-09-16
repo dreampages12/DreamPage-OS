@@ -6,11 +6,11 @@ import sys
 from pathlib import Path
 
 
-BOOK_ROOT = Path(r"C:\ComfyUI\books\enhjorning")
+BOOK_ROOT = Path(r"C:\DreamPage-OS\books\enhjorning")
 BASE_DIR = BOOK_ROOT / "base"
 ORDERS_DIR = BOOK_ROOT / "orders"
-COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "enhjorning" / "orders"
-SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+COMFY_OUTPUT_ROOT = Path(r"C:\DreamPage-OS\output") / "enhjorning" / "orders"
+SHARED_SCRIPT_DIR = Path(r"C:\DreamPage-OS\flow")
 EXTRA_INPUT_FILES = [
     "dreampage-first.png",
     "blank-back.png",

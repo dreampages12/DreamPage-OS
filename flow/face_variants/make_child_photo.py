@@ -179,7 +179,7 @@ def make(src, out_dir, use_ai=True, timeout=900, model=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("images", nargs="+")
-    ap.add_argument("--out", default="C:/ComfyUI/output/barnebilde")
+    ap.add_argument("--out", default="C:/DreamPage-OS/output/barnebilde")
     ap.add_argument("--no-ai", action="store_true")
     ap.add_argument("--ai-model", default=None)
     ap.add_argument("--timeout", type=int, default=900)

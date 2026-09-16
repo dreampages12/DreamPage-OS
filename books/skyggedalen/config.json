@@ -3,7 +3,7 @@
   "displayName": "Skyggedalen",
   "_status": "STUBB: kun forsiden finnes (forside(skyggedalen).png + headmask). Brukes som neste-bok paa fortsett-siden i Enhjorningsdalen. Innsider, textScript, prepareScript, bakside og ryggrad mangler - boka kan IKKE produseres enda.",
   "_continuationOf": "enhjorning",
-  "orderBasePath": "C:/ComfyUI/books/skyggedalen/orders",
+  "orderBasePath": "C:/DreamPage-OS/books/skyggedalen/orders",
   "comfyOutputPrefix": "skyggedalen/orders",
   "patchNodes": {
     "template": "192",

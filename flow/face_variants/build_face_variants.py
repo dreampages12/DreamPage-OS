@@ -53,8 +53,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import analyse_photo as AP
 
 COMFY = os.environ.get("DP_COMFY_URL", "http://127.0.0.1:8188")
-INPUT_DIR = os.environ.get("DP_COMFY_INPUT", "C:/ComfyUI/input")
-OUTPUT_DIR = os.environ.get("DP_COMFY_OUTPUT", "C:/ComfyUI/output")
+INPUT_DIR = os.environ.get("DP_COMFY_INPUT", "C:/DreamPage-OS/input")
+OUTPUT_DIR = os.environ.get("DP_COMFY_OUTPUT", "C:/DreamPage-OS/output")
 WF_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "workflows")
 
 CROP_FACTOR = 1.7          # hvor mye rundt ansiktet vi tar med i utsnittet

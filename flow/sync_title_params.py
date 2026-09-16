@@ -18,7 +18,7 @@ import sys
 
 DB = r"C:\Users\tobia\.n8n\database.sqlite"
 TESTER_ID = "1BqeGkXyjbUBsR9N"
-TITLES_CONFIG = "C:/ComfyUI/config/next_book_titles.json"
+TITLES_CONFIG = "C:/DreamPage-OS/config/next_book_titles.json"
 
 FRACTIONAL = {"top_margin", "line_spacing", "logo_scale"}
 ABSOLUTE = {"font_small", "font_large"}
@@ -26,10 +26,10 @@ ABSOLUTE = {"font_small", "font_large"}
 
 def template_width(slug: str) -> int:
     from PIL import Image
-    with open(f"C:/ComfyUI/books/{slug}/config.json", encoding="utf-8-sig") as fh:
+    with open(f"C:/DreamPage-OS/books/{slug}/config.json", encoding="utf-8-sig") as fh:
         cfg = json.load(fh)
     front = next(p for p in cfg["pages"] if p["page_key"] == "page00")
-    with Image.open("C:/ComfyUI/input/" + front["template_image"]) as im:
+    with Image.open("C:/DreamPage-OS/input/" + front["template_image"]) as im:
         return im.width
 
 

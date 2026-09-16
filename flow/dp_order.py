@@ -34,8 +34,8 @@ for _stream in (sys.stdout, sys.stderr):
 
 DB = r"C:\Users\tobia\.n8n\database.sqlite"
 WORKFLOW_ID = "xy8qiRUzcBpH52CI"
-CACHE_DIR = r"C:\ComfyUI\state\orders"
-BOOKS_DIR = r"C:\ComfyUI\books"
+CACHE_DIR = r"C:\DreamPage-OS\state\orders"
+BOOKS_DIR = r"C:\DreamPage-OS\books"
 
 # Hvor mange executions vi ser bakover når vi leter. Blobbene er store, så
 # vi filtrerer på ordrenummeret i SQL først og parser bare treffene.
@@ -331,7 +331,7 @@ def resolve(order_id: str, refresh: bool = False) -> dict:
         config = json.load(fh)
 
     order_path = os.path.join(BOOKS_DIR, slug, "orders", order_id)
-    comfy_dir = os.path.join(r"C:\ComfyUI\output",
+    comfy_dir = os.path.join(r"C:\DreamPage-OS\output",
                              config.get("comfyOutputPrefix", f"{slug}/orders").replace("/", os.sep),
                              order_id, "comfy")
 
@@ -403,14 +403,14 @@ def page_entry(config: dict, page_key: str) -> dict | None:
 # Kroppsvarianter
 #
 # Samme bok, men malbilder der barnet har en yngre kropp. Variantfilene ligger
-# side om side med de vanlige i C:/ComfyUI/input og heter det samme pluss et
+# side om side med de vanlige i C:/DreamPage-OS/input og heter det samme pluss et
 # suffiks: "04(dinosaur).png" -> "04(dinosaur)2-4aar.png".
 #
 # En bok trenger IKKE ha varianter for alle sidene. Sider uten variantfil
 # faller tilbake til standardmalen, saa en halvferdig serie er brukbar med en
 # gang i stedet for aa maatte vente paa at hele boka er tegnet paa nytt.
 # --------------------------------------------------------------------------
-INPUT_DIR = r"C:\ComfyUI\input"
+INPUT_DIR = r"C:\DreamPage-OS\input"
 
 BODY_VARIANTS = {
     "standard": {"label": "Standard", "suffix": ""},

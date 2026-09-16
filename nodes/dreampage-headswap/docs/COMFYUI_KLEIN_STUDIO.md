@@ -69,7 +69,7 @@ En LoRA eller identitetsadapter trent for BASE **4B** kan ikke uten videre koble
 For å generere workflowfilene på nytt fra prosjektmappen mens ComfyUI kjører:
 
 ```powershell
-C:\ComfyUI\venv\Scripts\python.exe scripts/build_klein_workflow.py
+C:\DreamPage-OS\DreamPage-image\venv\Scripts\python.exe scripts/build_klein_workflow.py
 ```
 
 Frontend-stylingen krever at ComfyUI har lastet pakken og at nettleseren er oppdatert. Hvis nodene mangler, kontroller at pakken lastes fra `custom_nodes/dreampage_headswap` og at DreamPage-pakken er installert i Python-miljøet som faktisk starter ComfyUI. En restart må vente til aktive jobber er ferdige.

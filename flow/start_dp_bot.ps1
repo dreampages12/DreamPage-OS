@@ -1,10 +1,10 @@
 # Start operatoerboten detached, som mockup-serveren.
-#   powershell -ExecutionPolicy Bypass -File C:\ComfyUI\script\start_dp_bot.ps1
+#   powershell -ExecutionPolicy Bypass -File C:\DreamPage-OS\flow\start_dp_bot.ps1
 $ErrorActionPreference = 'Stop'
 $py  = (Get-Command python).Source
-$bot = 'C:\ComfyUI\script\dp_bot.py'
-$out = 'C:\ComfyUI\state\dp_bot.out.log'
-$err = 'C:\ComfyUI\state\dp_bot.err.log'
+$bot = 'C:\DreamPage-OS\flow\dp_bot.py'
+$out = 'C:\DreamPage-OS\state\dp_bot.out.log'
+$err = 'C:\DreamPage-OS\state\dp_bot.err.log'
 
 # Windows sin -RedirectStandardError TOEMMER fila naar prosessen starter. Ble
 # boten drept midt i en jobb, slettet vaktmesterens omstart nettopp den

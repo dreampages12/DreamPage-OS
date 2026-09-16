@@ -2,7 +2,7 @@
   "slug": "fotball-vm",
   "displayName": "Fotball VM",
   "_continuationOf": "fotballstjernen",
-  "orderBasePath": "C:/ComfyUI/books/fotball-vm/orders",
+  "orderBasePath": "C:/DreamPage-OS/books/fotball-vm/orders",
   "comfyOutputPrefix": "fotball-vm/orders",
   "patchNodes": {
     "template": "192",
@@ -108,8 +108,8 @@
     "frontpage": "workflow_api.json",
     "innerpages": "workflow_api.json"
   },
-  "textScript": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
-  "prepareScript": "C:/ComfyUI/books/fotball-vm/script/prepare_order_fotball_vm.py",
+  "textScript": "C:/DreamPage-OS/flow/text/nb/fotball-vm-text-nb.py",
+  "prepareScript": "C:/DreamPage-OS/books/fotball-vm/script/prepare_order_fotball_vm.py",
   "innerPatchNodes": {
     "template": "192",
     "face": "194",
@@ -117,22 +117,22 @@
     "mask": "165"
   },
   "textScripts": {
-    "nb": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
-    "nn": "C:/ComfyUI/script/nn/fotball-vm-text-nn.py",
-    "en-US": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
-    "en-GB": "C:/ComfyUI/script/en-GB/fotball-vm-text-en-GB.py",
-    "en": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
-    "en-us": "C:/ComfyUI/script/en-US/fotball-vm-text-en-US.py",
-    "en-gb": "C:/ComfyUI/script/en-GB/fotball-vm-text-en-GB.py",
-    "no": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
-    "nb-no": "C:/ComfyUI/script/nb/fotball-vm-text-nb.py",
-    "nn-no": "C:/ComfyUI/script/nn/fotball-vm-text-nn.py",
-    "sv": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
-    "sv-SE": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
-    "sv-se": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
-    "se": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
-    "swedish": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py",
-    "svensk": "C:/ComfyUI/script/sv/fotball-vm-text-sv.py"
+    "nb": "C:/DreamPage-OS/flow/text/nb/fotball-vm-text-nb.py",
+    "nn": "C:/DreamPage-OS/flow/text/nn/fotball-vm-text-nn.py",
+    "en-US": "C:/DreamPage-OS/flow/text/en-US/fotball-vm-text-en-US.py",
+    "en-GB": "C:/DreamPage-OS/flow/text/en-GB/fotball-vm-text-en-GB.py",
+    "en": "C:/DreamPage-OS/flow/text/en-US/fotball-vm-text-en-US.py",
+    "en-us": "C:/DreamPage-OS/flow/text/en-US/fotball-vm-text-en-US.py",
+    "en-gb": "C:/DreamPage-OS/flow/text/en-GB/fotball-vm-text-en-GB.py",
+    "no": "C:/DreamPage-OS/flow/text/nb/fotball-vm-text-nb.py",
+    "nb-no": "C:/DreamPage-OS/flow/text/nb/fotball-vm-text-nb.py",
+    "nn-no": "C:/DreamPage-OS/flow/text/nn/fotball-vm-text-nn.py",
+    "sv": "C:/DreamPage-OS/flow/text/sv/fotball-vm-text-sv.py",
+    "sv-SE": "C:/DreamPage-OS/flow/text/sv/fotball-vm-text-sv.py",
+    "sv-se": "C:/DreamPage-OS/flow/text/sv/fotball-vm-text-sv.py",
+    "se": "C:/DreamPage-OS/flow/text/sv/fotball-vm-text-sv.py",
+    "swedish": "C:/DreamPage-OS/flow/text/sv/fotball-vm-text-sv.py",
+    "svensk": "C:/DreamPage-OS/flow/text/sv/fotball-vm-text-sv.py"
   },
   "driveFolderId": "1GEm0_sOa-Cz6HkX6-dq52GSk0YUSIMIE"
 }

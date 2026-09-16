@@ -46,7 +46,7 @@ def next_shim(info: dict, next_slug: str) -> dict:
     Rendringen skal bruke neste bok sin mal/maske/workflow, men ordrens
     barnebilde og ordrens egen utmappe - ikke neste bok sin.
     """
-    next_config_path = os.path.join(r"C:\ComfyUI\books", next_slug, "config.json")
+    next_config_path = os.path.join(r"C:\DreamPage-OS\books", next_slug, "config.json")
     if not os.path.isfile(next_config_path):
         raise FileNotFoundError(f"fant ikke {next_config_path}")
     with open(next_config_path, encoding="utf-8-sig") as fh:

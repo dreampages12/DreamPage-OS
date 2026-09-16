@@ -11,7 +11,7 @@ Sideregnskap: 14 oppslag x 2 + intro + blank-back = 30 innersider.
 Idempotent: kjor den om igjen naar som helst, den skriver hele fila paa nytt.
 
   python build_juleprinsessen.py            # bare staging i script/out/
-  python build_juleprinsessen.py --apply    # skriver til C:/ComfyUI/script/<locale>/
+  python build_juleprinsessen.py --apply    # skriver til C:/DreamPage-OS/flow/<locale>/
 """
 import io
 import os
@@ -23,7 +23,7 @@ from story_juleprinsessen import (  # noqa: E402
     COVER_NB, BACK_NB, BACK_HL, PAGES_NB, TRANSLATIONS,
 )
 
-SCRIPT_ROOT = r"C:\ComfyUI\script"
+SCRIPT_ROOT = r"C:\DreamPage-OS\flow"
 SRC_NAME = "den-magiske-bursdagen-jente-text-%s.py"
 DST_NAME = "juleprinsessen-text-%s.py"
 LOCALES = ["nb", "nn", "en-US", "en-GB", "sv"]

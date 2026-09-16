@@ -5,11 +5,11 @@ from pathlib import Path
 
 # === KONFIGURASJON ==========================
 # Juster disse hvis du endrer struktur senere
-BOOK_ROOT = Path(r"C:\ComfyUI\books\kongerikets-hemmelighet")
+BOOK_ROOT = Path(r"C:\DreamPage-OS\books\kongerikets-hemmelighet")
 BASE_DIR = BOOK_ROOT / "base"
 ORDERS_DIR = BOOK_ROOT / "orders"
-COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "kongerikets-hemmelighet" / "orders"
-SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+COMFY_OUTPUT_ROOT = Path(r"C:\DreamPage-OS\output") / "kongerikets-hemmelighet" / "orders"
+SHARED_SCRIPT_DIR = Path(r"C:\DreamPage-OS\flow")
 EXTRA_INPUT_FILES = [
     "dreampage-first.png",
     "blank-back.png",

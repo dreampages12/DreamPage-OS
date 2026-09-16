@@ -23,7 +23,7 @@ import io
 import os
 import sys
 
-SCRIPT_ROOT = r"C:\ComfyUI\script"
+SCRIPT_ROOT = r"C:\DreamPage-OS\flow"
 NAME = "den-magiske-reisen-jente-text-%s.py"
 LOCALES = ["nb", "nn", "en-US", "en-GB", "sv"]
 BACKUP_SUFFIX = ".backup-before-dpfirst-linespacing-20260914"

@@ -3,7 +3,7 @@
   "displayName": "Dragedalen",
   "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript, bakside/ryggrad og driveFolderId mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i dragejakten.",
   "_continuationOf": "dragejakten",
-  "orderBasePath": "C:/ComfyUI/books/dragedalen/orders",
+  "orderBasePath": "C:/DreamPage-OS/books/dragedalen/orders",
   "comfyOutputPrefix": "dragedalen/orders",
   "patchNodes": {
     "template": "192",

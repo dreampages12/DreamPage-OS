@@ -4,7 +4,7 @@
   "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript og bakside/ryggrad mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i den-skjulte-verdenen.",
   "_continuationOf": "den-skjulte-verdenen",
   "_slugAlias": "det-mørke-fjellet (directory junction peker hit, saa begge skrivemaatene virker som next_book_slug)",
-  "orderBasePath": "C:/ComfyUI/books/det-morke-fjellet/orders",
+  "orderBasePath": "C:/DreamPage-OS/books/det-morke-fjellet/orders",
   "comfyOutputPrefix": "det-morke-fjellet/orders",
   "patchNodes": {
     "template": "192",

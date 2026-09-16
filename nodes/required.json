@@ -1,0 +1,154 @@
+{
+  "_": "Generert av tools/node_requirements.py. Hver class_type i books/*/workflow_api.json er sporet til noden som registrerer den i NODE_CLASS_MAPPINGS. En manglende node gir ikke oppstartsfeil - den gir 'node does not exist' midt i en betalt ordre.",
+  "generated": "2026-09-16T07:27:07+02:00",
+  "comfyui_commit": "8505abf52e42f4441d9d53baf4c31a2ec7123400",
+  "class_types_used": 26,
+  "core_classes": [
+    "CLIPTextEncode",
+    "ColorMatch",
+    "ConditioningZeroOut",
+    "FluxGuidance",
+    "ImageScaleToTotalPixels",
+    "ImageUpscaleWithModel",
+    "KSampler",
+    "LoadImage",
+    "LoadImageMask",
+    "LoraLoaderModelOnly",
+    "ReferenceLatent",
+    "SaveImage",
+    "SetLatentNoiseMask",
+    "UNETLoader",
+    "UpscaleModelLoader",
+    "VAEDecode",
+    "VAEEncode",
+    "VAELoader"
+  ],
+  "unresolved_classes": {},
+  "required_nodes": [
+    {
+      "name": "ComfyUI-GGUF",
+      "url": "",
+      "note": "ingen git - installert fra zip eller skrevet for haand. Kopier verbatim; en reinstallasjon kan miste lokale endringer.",
+      "requirements": [
+        "gguf>=0.13.0",
+        "sentencepiece",
+        "protobuf"
+      ],
+      "is_link": false,
+      "classes": [
+        "CLIPLoaderGGUF"
+      ],
+      "dreampage_own": false,
+      "tier": "bok"
+    },
+    {
+      "name": "comfyui-impact-pack",
+      "url": "",
+      "note": "ingen git - installert fra zip eller skrevet for haand. Kopier verbatim; en reinstallasjon kan miste lokale endringer.",
+      "requirements": [
+        "segment-anything",
+        "scikit-image",
+        "piexif",
+        "transformers",
+        "opencv-python-headless",
+        "scipy",
+        "numpy",
+        "dill",
+        "matplotlib",
+        "git+https://github.com/facebookresearch/sam2"
+      ],
+      "is_link": false,
+      "classes": [
+        "BboxDetectorSEGS",
+        "ImageListToImageBatch",
+        "SEGSToImageList"
+      ],
+      "dreampage_own": false,
+      "tier": "bok"
+    },
+    {
+      "name": "comfyui-impact-subpack",
+      "url": "",
+      "note": "ingen git - installert fra zip eller skrevet for haand. Kopier verbatim; en reinstallasjon kan miste lokale endringer.",
+      "requirements": [
+        "matplotlib",
+        "ultralytics>=8.3.162",
+        "numpy",
+        "opencv-python-headless",
+        "dill"
+      ],
+      "is_link": false,
+      "classes": [
+        "UltralyticsDetectorProvider"
+      ],
+      "dreampage_own": false,
+      "tier": "bok"
+    },
+    {
+      "name": "ComfyUI-Inpaint-CropAndStitch",
+      "url": "https://github.com/lquesada/ComfyUI-Inpaint-CropAndStitch.git",
+      "commit": "c9393427b20e8f0d282d48b840e98189be3c5488",
+      "is_link": false,
+      "classes": [
+        "InpaintCropImproved",
+        "InpaintStitchImproved"
+      ],
+      "dreampage_own": false,
+      "tier": "bok"
+    },
+    {
+      "name": "LanPaint",
+      "url": "",
+      "note": "ingen git - installert fra zip eller skrevet for haand. Kopier verbatim; en reinstallasjon kan miste lokale endringer.",
+      "is_link": false,
+      "classes": [
+        "LanPaint_KSampler"
+      ],
+      "dreampage_own": false,
+      "tier": "bok"
+    }
+  ],
+  "installed_but_unused": [
+    "ComfyUI-AdvancedLivePortrait",
+    "ComfyUI-AutoCropFaces",
+    "ComfyUI-IPAdapter-Flux",
+    "ComfyUI-Manager",
+    "ComfyUI-PuLID-Flux2",
+    "ComfyUI-ReActor",
+    "ComfyUI-WanAnimatePreprocess",
+    "ComfyUI-WanVideoWrapper",
+    "ComfyUI-tbox",
+    "ComfyUI_AdvancedRefluxControl",
+    "ComfyUI_IPAdapter_plus",
+    "ComfyUI_InstantID",
+    "Comfyui_Redux_Advanced",
+    "SDXL_EcomID_ComfyUI",
+    "comfyui-advanced-controlnet",
+    "comfyui-custom-scripts",
+    "comfyui-detail-daemon",
+    "comfyui-florence2",
+    "comfyui-frame-interpolation",
+    "comfyui-inpaint-nodes",
+    "comfyui-instantId-faceswap",
+    "comfyui-kjnodes",
+    "comfyui-rmbg",
+    "comfyui-segment-anything-2",
+    "comfyui-tensorops",
+    "comfyui-utils-nodes",
+    "comfyui-videohelpersuite",
+    "comfyui_controlnet_aux",
+    "comfyui_essentials",
+    "comfyui_faceanalysis",
+    "comfyui_head_hair_mask_guard",
+    "comfyui_pulid_flux_ll",
+    "comfyui_segment_anything",
+    "comfyui_stablehair_ll",
+    "dreampage_headswap",
+    "example_node.py.example",
+    "facerestore_cf",
+    "pulid_comfyui",
+    "sd-perturbed-attention",
+    "was-ns",
+    "websocket_image_save.py"
+  ]
+}

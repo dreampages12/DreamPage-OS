@@ -53,21 +53,21 @@ import regen_page
 import render_next_cover
 import reprint_order
 
-CONFIG_PATH = r"C:\ComfyUI\config\dp_bot.json"
-STATE_DIR = r"C:\ComfyUI\state\reprint"
+CONFIG_PATH = r"C:\DreamPage-OS\config\dp_bot.json"
+STATE_DIR = r"C:\DreamPage-OS\state\reprint"
 # Egen state for fortsett-forsiden. Ikke i sidevalg-økta: den har en
 # stage-maskin (picking -> rendering -> built) som fortsett-siden ikke er en
 # del av, og å blande dem ville latt en halvferdig forside stoppe et sidebytte.
-NEXT_STATE_DIR = r"C:\ComfyUI\state\next_cover"
+NEXT_STATE_DIR = r"C:\DreamPage-OS\state\next_cover"
 # Et bygg tar minutter og lever bare i minnet. Dør boten underveis, er jobben
 # borte, og «Bygger …» blir stående som siste melding for alltid. Markøren
 # gjør et avbrutt bygg synlig ved neste oppstart.
-INFLIGHT_DIR = r"C:\ComfyUI\state\reprint\inflight"
-PREVIEW_DIR = r"C:\ComfyUI\tmp\dp_bot_previews"
-LOG_PATH = r"C:\ComfyUI\state\dp_bot.log"
+INFLIGHT_DIR = r"C:\DreamPage-OS\state\reprint\inflight"
+PREVIEW_DIR = r"C:\DreamPage-OS\tmp\dp_bot_previews"
+LOG_PATH = r"C:\DreamPage-OS\state\dp_bot.log"
 
 PREVIEW_MAX_WIDTH = 1600      # Telegram: <=10 MB og bredde+høyde <=10000
-UPLOAD_DIR = r"C:\ComfyUI\tmp\dp_bot_uploads"
+UPLOAD_DIR = r"C:\DreamPage-OS\tmp\dp_bot_uploads"
 
 # Bot API tar 50 MB per dokument. Coverne er 3-6 MB og går rett gjennom,
 # men innersider (54-68 MB) og gelato-PDF-en (57-74 MB) gjør det ALDRI -
@@ -1892,7 +1892,7 @@ def job_next_apply(order_id: str, chat_id, extra: dict) -> None:
 # --------------------------------------------------------------------------
 # Menyer — alt skal kunne gjøres med knapper, uten å huske syntaks
 # --------------------------------------------------------------------------
-BOOKS_DIR = r"C:\ComfyUI\books"
+BOOKS_DIR = r"C:\DreamPage-OS\books"
 
 
 def recent_orders(limit: int = 8) -> list[tuple[str, str]]:
@@ -2293,7 +2293,7 @@ def handle_photo(chat_id, message: dict) -> None:
         session = face_waiting[0]
         order_id = session["order_id"]
         path = download_file(file_id, UPLOAD_DIR)
-        dest = os.path.join(r"C:\ComfyUI\input",
+        dest = os.path.join(r"C:\DreamPage-OS\input",
                             f"{order_id}-ny{dt.datetime.now().strftime('%m%d%H%M')}.jpg")
         from PIL import Image
         with Image.open(path) as img:
@@ -2631,7 +2631,7 @@ def handle_callback(query: dict) -> None:
     elif action == "tstb":
         books = dict(dp_testbook.testable_books())
         title = books.get(order_id, order_id)
-        config_path = os.path.join(r"C:\ComfyUI\books", order_id, "config.json")
+        config_path = os.path.join(r"C:\DreamPage-OS\books", order_id, "config.json")
         variants = ["standard"]
         try:
             with open(config_path, encoding="utf-8-sig") as fh:

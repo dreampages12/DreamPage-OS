@@ -15,7 +15,7 @@ Bruk:  python apply_face_expressions.py [--apply]
 """
 import argparse, io, json, os, shutil, time
 
-BOOKS = "C:/ComfyUI/books"
+BOOKS = "C:/DreamPage-OS/books"
 DEFAULT = "noytral"
 
 # slug -> {page_key: uttrykk}. Kun avvik fra default.

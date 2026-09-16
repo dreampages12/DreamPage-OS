@@ -90,7 +90,7 @@ def main() -> int:
     # lenger under sin egen orderReferenceId. Uten denne sperren ville soeket
     # nedenfor komme tomt tilbake og vi ville laget et DUPLIKAT ved siden av
     # det sammenslaatte utkastet - to trykte boeker for en betalt.
-    merge_state = f"C:/ComfyUI/state/gelato_drafts/{args.order}.json"
+    merge_state = f"C:/DreamPage-OS/state/gelato_drafts/{args.order}.json"
     if os.path.isfile(merge_state) and not args.force:
         with open(merge_state, encoding="utf-8") as fh:
             state = json.load(fh)
@@ -106,11 +106,11 @@ def main() -> int:
         raise SystemExit(f"execution {args.execution} gjelder ordre "
                          f"{payload.get('order_id')}, ikke {args.order}")
 
-    with open(f"C:/ComfyUI/books/{args.slug}/config.json", encoding="utf-8-sig") as fh:
+    with open(f"C:/DreamPage-OS/books/{args.slug}/config.json", encoding="utf-8-sig") as fh:
         cfg = json.load(fh)
     parent = cfg["driveFolderId"]
 
-    pdf_dir = f"C:/ComfyUI/books/{args.slug}/orders/{args.order}/pdf"
+    pdf_dir = f"C:/DreamPage-OS/books/{args.slug}/orders/{args.order}/pdf"
     cover = f"{pdf_dir}/{args.name}_cover.pdf"
     gelato_pdf = f"{pdf_dir}/{args.name}_gelato.pdf"
     inner = f"{pdf_dir}/{args.name}_innersider.pdf"

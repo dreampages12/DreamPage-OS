@@ -8,7 +8,7 @@ shape="block") og forsidetittel som linje1-tekst + linje2-LOGO.
 Idempotent: kjor den om igjen naar som helst, den skriver hele fila paa nytt.
 
   python build_verdenen.py            # bare staging i script/out/
-  python build_verdenen.py --apply    # skriver til C:/ComfyUI/script/<locale>/
+  python build_verdenen.py --apply    # skriver til C:/DreamPage-OS/flow/<locale>/
 """
 import io
 import os
@@ -20,7 +20,7 @@ from story_verdenen import (  # noqa: E402
     COVER_NB, BACK_NB, BACK_HL, PAGES_NB, TRANSLATIONS,
 )
 
-SCRIPT_ROOT = r"C:\ComfyUI\script"
+SCRIPT_ROOT = r"C:\DreamPage-OS\flow"
 SRC_NAME = "den-magiske-bursdagen-jente-text-%s.py"
 DST_NAME = "den-skjulte-verdenen-text-%s.py"
 LOCALES = ["nb", "nn", "en-US", "en-GB", "sv"]

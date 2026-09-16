@@ -45,8 +45,8 @@ for _stream in (sys.stdout, sys.stderr):
 COMFY = "http://127.0.0.1:8188"
 
 
-OUTPUT_ROOT = r"C:\ComfyUI\output"
-LOCK_PATH = r"C:\ComfyUI\.dreampage-comfy.lock"
+OUTPUT_ROOT = r"C:\DreamPage-OS\output"
+LOCK_PATH = r"C:\DreamPage-OS\DreamPage-image\.dreampage-comfy.lock"
 LOCK_TTL = 2 * 60 * 60          # samme som workeren
 RENDER_TIMEOUT = 15 * 60
 
@@ -289,13 +289,13 @@ def render_variants(info: dict, page_key: str, count: int = 3,
     workflow_file = (config.get("workflowApi")
                      or (config.get("workflowApis") or {}).get("innerpages")
                      or "workflow_api.json")
-    workflow_path = os.path.join(r"C:\ComfyUI\books", info["book_slug"], workflow_file)
+    workflow_path = os.path.join(r"C:\DreamPage-OS\books", info["book_slug"], workflow_file)
     with open(workflow_path, encoding="utf-8-sig") as fh:
         base_prompt = json.load(fh)
 
     face = face_image or info["face_image"]
-    if not os.path.isfile(os.path.join(r"C:\ComfyUI\input", face)):
-        raise SystemExit(f"fant ikke barnebildet C:/ComfyUI/input/{face}")
+    if not os.path.isfile(os.path.join(r"C:\DreamPage-OS\input", face)):
+        raise SystemExit(f"fant ikke barnebildet C:/DreamPage-OS/input/{face}")
 
     prefix = config.get("comfyOutputPrefix", f"{info['book_slug']}/orders")
     out_rel = f"{prefix}/{info['order_id']}/variants"
@@ -360,7 +360,7 @@ def main() -> int:
     ap.add_argument("--order", required=True)
     ap.add_argument("--page", required=True, help="03, page03 eller forside")
     ap.add_argument("--count", type=int, default=3)
-    ap.add_argument("--face", default="", help="annet barnebilde i C:/ComfyUI/input")
+    ap.add_argument("--face", default="", help="annet barnebilde i C:/DreamPage-OS/input")
     args = ap.parse_args()
 
     info = dp_order.resolve(args.order)

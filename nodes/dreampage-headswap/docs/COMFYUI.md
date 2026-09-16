@@ -11,8 +11,8 @@ workflow is untouched.
 The nodes need `dreampage_headswap` importable by the same interpreter ComfyUI runs on.
 
 ```powershell
-C:\ComfyUI\venv\Scripts\python.exe -m pip install -e C:\ComfyUI\dreampage-headswap
-New-Item -ItemType Junction -Path C:\ComfyUI\custom_nodes\dreampage_headswap -Target C:\ComfyUI\dreampage-headswap\comfyui_dreampage_headswap
+C:\DreamPage-OS\DreamPage-image\venv\Scripts\python.exe -m pip install -e C:\DreamPage-OS\nodes\dreampage-headswap
+New-Item -ItemType Junction -Path C:\DreamPage-OS\DreamPage-image\custom_nodes\dreampage_headswap -Target C:\DreamPage-OS\nodes\dreampage-headswap\comfyui_dreampage_headswap
 ```
 
 The junction means the nodes ComfyUI loads and the nodes the tests import are the same files.

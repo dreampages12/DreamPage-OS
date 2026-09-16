@@ -333,7 +333,7 @@ def crop_logo_to_visible_alpha(logo_img, alpha_threshold=8):
 
 
 def resolve_front_cover_logo(base_dir: str | None = None) -> str | None:
-    """Resolve the cover logo from C:/ComfyUI/script/logo/<locale>."""
+    """Resolve the cover logo from C:/DreamPage-OS/assets/logo/<locale>."""
     candidates = [
         os.path.join(LOGO_DIR, "sjojungfru-logo-sv.png"),
         os.path.join(LOGO_DIR, "sjojungfru-logo.png"),

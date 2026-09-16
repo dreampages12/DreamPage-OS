@@ -42,7 +42,7 @@ import cv2
 import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODEL = "C:/ComfyUI/models/mediapipe/face_landmarker.task"
+MODEL = "C:/DreamPage-OS/models/mediapipe/face_landmarker.task"
 REGISTRY = os.path.join(HERE, "workflows", "tools.json")
 CLAUDE = os.environ.get("DP_CLAUDE_BIN", "C:/Users/tobia/.local/bin/claude.exe")
 

@@ -49,7 +49,7 @@ def main() -> int:
     refresh = {}
     for spec in args.refresh:
         oid, slug, name = spec.split(":", 2)
-        pdf = f"C:/ComfyUI/books/{slug}/orders/{oid}/pdf/{name}_gelato.pdf"
+        pdf = f"C:/DreamPage-OS/books/{slug}/orders/{oid}/pdf/{name}_gelato.pdf"
         if not os.path.isfile(pdf):
             raise SystemExit("mangler " + pdf)
         refresh["item-" + oid] = {"order_id": oid, "slug": slug, "name": name, "pdf": pdf}
@@ -89,7 +89,7 @@ def main() -> int:
         ref = it["itemReferenceId"]
         if ref in refresh:
             b = refresh[ref]
-            with open(f"C:/ComfyUI/books/{b['slug']}/config.json", encoding="utf-8-sig") as fh:
+            with open(f"C:/DreamPage-OS/books/{b['slug']}/config.json", encoding="utf-8-sig") as fh:
                 parent = json.load(fh)["driveFolderId"]
             up = drive_upload(b["pdf"], parent, b["order_id"])
             url = up.get("downloadUrl")

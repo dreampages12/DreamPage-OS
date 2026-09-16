@@ -10,7 +10,12 @@
 # --------------------------------------------------------------------------
 # Stort, regenererbart eller kundedata
 # --------------------------------------------------------------------------
-/models/
+# /models/* og ikke /models/: git kan ikke re-inkludere en fil inne i en
+# ekskludert KATALOG, bare inne i en katalog der innholdet er ekskludert.
+# Manifestet er hele poenget - uten det er kunnskapen om hvilke 6 modeller
+# (28 GB) boekene trenger noe som bare finnes paa én disk.
+/models/*
+!/models/manifest.json
 /state/
 /output/
 /input/
@@ -20,12 +25,14 @@
 # Ordredefinisjonen ligger i state/orders/<job_key>.json, ikke her.
 /books/*/orders/
 
-# 15 GB modeller og datasett til headswap-treningen.
-/nodes/dreampage-headswap/local_data/
-/nodes/dreampage-headswap/runs/
-/nodes/dreampage-headswap/build/
-/nodes/dreampage-headswap/.venv*/
-/nodes/dreampage-headswap/*.egg-info/
+# 15 GB modeller og datasett til headswap-treningen. Uten skraastrek paa
+# slutten: mappene finnes ikke foer overgangen flytter dem hit, og et
+# moenster som bare matcher kataloger treffer da ingenting.
+/nodes/dreampage-headswap/local_data
+/nodes/dreampage-headswap/runs
+/nodes/dreampage-headswap/build
+/nodes/dreampage-headswap/.venv*
+/nodes/dreampage-headswap/*.egg-info
 
 # Mockup-serverens cache (333 MB, bygges paa nytt) og PSD-kilden (122 MB,
 # over GitHubs filgrense). Kalibreringsmappene under data/calib/ ER i git -

@@ -2,7 +2,7 @@
 """Kjoer alle ComfyUI-sidene i en ordre paa nytt, rett inn i comfy/.
 
 Bruksomraadet er "malene er byttet ut" - nye innsider/forside i
-C:/ComfyUI/input - der hver eneste side maa lages paa nytt, ikke bare den
+C:/DreamPage-OS/input - der hver eneste side maa lages paa nytt, ikke bare den
 ene siden regen_page.py tar.
 
 Forskjellene fra regen_page.py:
@@ -59,7 +59,7 @@ def main() -> int:
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--face", default="",
-                    help="barnebilde i C:/ComfyUI/input (default: ordrens eget)")
+                    help="barnebilde i C:/DreamPage-OS/input (default: ordrens eget)")
     ap.add_argument("--pages", default="",
                     help="komma-separert liste, f.eks. page00,page03 (default: alle)")
     ap.add_argument("--wait-lock", type=int, default=3600)
@@ -89,14 +89,14 @@ def main() -> int:
         pages = [dp_order.apply_variants(p, body, hair, skin) for p in pages]
 
     face = args.face or info["face_image"]
-    face_path = os.path.join(r"C:\ComfyUI\input", face)
+    face_path = os.path.join(r"C:\DreamPage-OS\input", face)
     if not os.path.isfile(face_path):
         raise SystemExit("fant ikke barnebildet " + face_path)
 
     workflow_file = (config.get("workflowApi")
                      or (config.get("workflowApis") or {}).get("innerpages")
                      or "workflow_api.json")
-    workflow_path = os.path.join(r"C:\ComfyUI\books", info["book_slug"], workflow_file)
+    workflow_path = os.path.join(r"C:\DreamPage-OS\books", info["book_slug"], workflow_file)
     with open(workflow_path, encoding="utf-8-sig") as fh:
         base_prompt = json.load(fh)
 

@@ -2,7 +2,7 @@
   "slug": "eventyr-med-julenissen",
   "displayName": "Eventyr med Julenissen",
   "_status": "UNDER ARBEID: kun forside + headmask finnes (forside(julenissen).png). GJENSTAAR: 14 innersider + headmasker, historie i 5 sprak, tekstscript, prepare-script, bakside/ryggrad og registrering i worker (patch_worker_add_book_egget.py). Registrert i DP Title Tester 2026-08-24.",
-  "orderBasePath": "C:/ComfyUI/books/eventyr-med-julenissen/orders",
+  "orderBasePath": "C:/DreamPage-OS/books/eventyr-med-julenissen/orders",
   "comfyOutputPrefix": "eventyr-med-julenissen/orders",
   "patchNodes": {
     "template": "192",

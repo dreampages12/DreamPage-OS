@@ -3,7 +3,7 @@
   "displayName": "Havpalasset",
   "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript, bakside/ryggrad, kort-haar-varianten og driveFolderId mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i havfruen.",
   "_continuationOf": "havfruen",
-  "orderBasePath": "C:/ComfyUI/books/havpalasset/orders",
+  "orderBasePath": "C:/DreamPage-OS/books/havpalasset/orders",
   "comfyOutputPrefix": "havpalasset/orders",
   "patchNodes": {
     "template": "192",

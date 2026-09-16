@@ -522,7 +522,7 @@ def crop_logo_to_visible_alpha(logo_img, alpha_threshold=8):
 
 
 def resolve_front_cover_logo(base_dir: str | None = None) -> str | None:
-    """Resolve Styrken cover logo from C:/ComfyUI/script/logo/<locale>."""
+    """Resolve Styrken cover logo from C:/DreamPage-OS/assets/logo/<locale>."""
     locale_logo_name = {
         "nb": "styrken-logo-nb.png",
         "nn": "styrken-logo-nb.png",

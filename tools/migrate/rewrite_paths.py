@@ -144,7 +144,13 @@ SKIP_RELATIVE = {os.path.join("tools", "migrate"), "docs", "archive"}
 
 # PLAN.md beskriver selve migreringen. Den skal fortsatt kunne lese "fra
 # C:\ComfyUI til DreamPage-image" etterpaa.
-SKIP_FILES = {"PLAN.md"}
+SKIP_FILES = {"PLAN.md",
+              # Denne SKAL kunne nevne den gamle stien: den sjekker om den
+              # fortsatt finnes. Foerste kjoering rettet sjekken til aa peke
+              # paa seg selv.
+              "dreampage.ps1",
+              # Genereres av tools/models.py paths og tools/node_requirements.py
+              "extra_model_paths.yaml", "required.json"}
 TEXT_EXT = {".py", ".ps1", ".json", ".yaml", ".yml", ".js", ".mjs", ".md",
             ".ini", ".cfg", ".txt", ".bat", ".cmd"}
 

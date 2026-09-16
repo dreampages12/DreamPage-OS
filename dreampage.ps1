@@ -207,15 +207,17 @@ function Invoke-Up {
         Say '  Har fase 1a kjoert? tools/migrate/phase1a_move.ps1' Yellow
         exit 1
     }
-    # Junctionen fra fase 1a skal vaere borte til slutt. Saa lenge den finnes,
-    # vet vi ikke om sti-inventaret er komplett.
-    if (Test-Path 'C:\ComfyUI') {
-        $item = Get-Item 'C:\ComfyUI'
-        if ($item.LinkType) {
-            Say '  MERK: C:\ComfyUI finnes fortsatt som junction (fase 1b gjenstaar).' Yellow
-        } else {
-            Say '  ADVARSEL: C:\ComfyUI er en EKTE mappe. Navnebyttet er ikke gjort.' Red
-        }
+    # Den gamle installasjonen skal vaere borte til slutt. Saa lenge den staar
+    # der, ligger det 21 GB git-historikk og en duplisert kopi av boekene som
+    # kan forvirre - og vi vet ikke sikkert at ingenting leser derfra.
+    #
+    # Stien settes fra deler: tools/migrate/rewrite_paths.py rettet en gang
+    # denne sjekken til aa peke paa seg selv, fordi den matchet literalen.
+    $legacy = 'C:' + 'Comfy' + 'UI'
+    if (Test-Path $legacy) {
+        $n = @(Get-ChildItem $legacy -Force -EA SilentlyContinue).Count
+        Say "  MERK: $legacy finnes fortsatt ($n oppforinger). Slett den naar en" Yellow
+        Say '        ekte ordre har gaatt gjennom DreamPage OS.' Yellow
     }
 
     if (-not $SkipModels) { [void](Invoke-Models) }

@@ -191,6 +191,68 @@ def cmd_build(args) -> int:
     return 0
 
 
+# Mappenoekler som IKKE er navnet paa en mappe. Custom nodes ber om dem med
+# egne navn, og en yaml som bare speiler mappelisten ville ikke daekket dem.
+# Funnet ved aa greppe custom_nodes for add_model_folder_path/get_folder_paths.
+ALIASES = {
+    "ultralytics_bbox": "ultralytics/bbox",
+    "ultralytics_segm": "ultralytics/segm",
+    "facedetection_models": "facedetection",
+    "nsfw": "nsfw_detector",
+    "rmbg": "RMBG",
+}
+
+
+def cmd_paths(args) -> int:
+    """Skriv config/extra_model_paths.yaml fra de faktiske mappene i models/.
+
+    Denne filen er hele grunnen til at DreamPage-image kan forbli urediget:
+    ComfyUI far modellstiene paa kommandolinja i stedet for aa lete i sitt
+    eget tre.
+
+    Den genereres, ikke skrives for haand. Foerste forsoek var en liste over
+    ComfyUI sine standard-noekler, og da saa ansiktsdetektoren NULL modeller:
+    `models/ultralytics/` er ikke en standard-noekkel - Impact Subpack
+    registrerer den selv, og ber om `ultralytics`, `ultralytics_bbox` og
+    `ultralytics_segm`. Hver side ville feilet paa
+    "model_name: 'bbox/face_yolov8m.pt' not in []".
+    """
+    NL = chr(10)
+    base = Path(args.base or MODELS)
+    if not base.is_dir():
+        raise SystemExit(f"{base} finnes ikke")
+    dirs = sorted(d.name for d in base.iterdir() if d.is_dir())
+    lines = [
+        "# Modellstier for DreamPage-image. GENERERT av "
+        "`python tools/models.py paths`.",
+        "#",
+        "# Gis til ComfyUI med --extra-model-paths-config. Skrives ALDRI inn i",
+        "# DreamPage-image - det er nettopp slik vi endrer ComfyUI uten aa",
+        "# redigere den.",
+        "#",
+        "# Hver undermappe i models/ blir en mappenoekkel, PLUSS aliasene som",
+        "# custom nodes ber om under andre navn (ultralytics_bbox og",
+        "# ultralytics_segm er de som faktisk stopper en bokside).",
+        "",
+        "dreampage:",
+        f"  base_path: {str(base).replace(chr(92), '/')}",
+    ]
+    for name in dirs:
+        lines.append(f"  {name}: {name}")
+    lines.append("")
+    lines.append("  # aliaser - noekkelnavn som ikke er et mappenavn")
+    for key, rel in sorted(ALIASES.items()):
+        if (base / rel.split("/")[0]).is_dir():
+            lines.append(f"  {key}: {rel}")
+    out = Path(args.out or (ROOT / "config" / "extra_model_paths.yaml"))
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(NL.join(lines) + NL, encoding="utf-8")
+    print(f"skrevet {out}")
+    print(f"  base_path   {base}")
+    print(f"  {len(dirs)} mappenoekler + {len(ALIASES)} aliaser")
+    return 0
+
+
 def _load_manifest() -> dict:
     if not MANIFEST.is_file():
         raise SystemExit(f"fant ingen {MANIFEST}. Kjoer: python tools/models.py build")
@@ -300,6 +362,11 @@ def main() -> int:
 
     v = sub.add_parser("verify", help="check --verify")
     v.set_defaults(func=cmd_check, verify=True)
+
+    pa = sub.add_parser("paths", help="skriv config/extra_model_paths.yaml")
+    pa.add_argument("--base", help="models-mappa (standard: <ROOT>/models)")
+    pa.add_argument("--out", help="hvor yaml-en skrives")
+    pa.set_defaults(func=cmd_paths)
 
     f = sub.add_parser("fetch", help="last ned det som mangler")
     f.add_argument("--dry-run", action="store_true")

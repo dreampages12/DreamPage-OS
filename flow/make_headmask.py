@@ -7,8 +7,8 @@ tegnet for haand (04/05 i 2-4-aars-settet til dinosaurenes-dal), slik at de
 genererte maskene faar samme form og dekning som de manuelle.
 
 Bruk:
-  python make_headmask.py --image "C:/ComfyUI/input/01(dinosaur)2-4aar.png" \
-      --out "C:/ComfyUI/input/01-headmask(dinosaur)2-4aar.png"
+  python make_headmask.py --image "C:/DreamPage-OS/input/01(dinosaur)2-4aar.png" \
+      --out "C:/DreamPage-OS/input/01-headmask(dinosaur)2-4aar.png"
   python make_headmask.py --calibrate <bilde> <manuell-maske> [...]
 """
 

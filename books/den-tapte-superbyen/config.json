@@ -3,7 +3,7 @@
   "displayName": "Den Tapte Superbyen",
   "_status": "UNDER ARBEID: forside-malen (forside(superbyen).png) og headmask mangler fortsatt. Innsidene, textScript, prepareScript, bakside og ryggrad kommer senere. Boka kan IKKE produseres ennaa.",
   "_continuationOf": "den-skjulte-styrken",
-  "orderBasePath": "C:/ComfyUI/books/den-tapte-superbyen/orders",
+  "orderBasePath": "C:/DreamPage-OS/books/den-tapte-superbyen/orders",
   "comfyOutputPrefix": "den-tapte-superbyen/orders",
   "patchNodes": {
     "template": "192",

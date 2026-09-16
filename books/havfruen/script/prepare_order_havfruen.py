@@ -5,11 +5,11 @@ from pathlib import Path
 from PIL import Image
 
 # === KONFIGURASJON ==========================
-BOOK_ROOT = Path(r"C:\ComfyUI\books\havfruen")
+BOOK_ROOT = Path(r"C:\DreamPage-OS\books\havfruen")
 BASE_DIR = BOOK_ROOT / "base"
 ORDERS_DIR = BOOK_ROOT / "orders"
-COMFY_OUTPUT_ROOT = Path(r"C:\ComfyUI\output") / "havfruen" / "orders"
-SHARED_SCRIPT_DIR = Path(r"C:\ComfyUI\script")
+COMFY_OUTPUT_ROOT = Path(r"C:\DreamPage-OS\output") / "havfruen" / "orders"
+SHARED_SCRIPT_DIR = Path(r"C:\DreamPage-OS\flow")
 EXTRA_INPUT_FILES = [
     "dreampage-first.png",
     "blank-back.png",

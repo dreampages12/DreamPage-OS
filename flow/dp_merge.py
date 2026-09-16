@@ -41,7 +41,7 @@ import reprint_order                                               # noqa: E402
 from finish_order import PRODUCT_UID, gelato                       # noqa: E402
 
 DRAFT_STATE_DIR = reprint_order.DRAFT_STATE_DIR
-SESSION_DIR = r"C:\ComfyUI\state\reprint"
+SESSION_DIR = r"C:\DreamPage-OS\state\reprint"
 
 
 # --------------------------------------------------------------------------

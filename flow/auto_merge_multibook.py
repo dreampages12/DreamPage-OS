@@ -42,7 +42,7 @@ import traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-DRAFT_STATE_DIR = r"C:\ComfyUI\state\gelato_drafts"
+DRAFT_STATE_DIR = r"C:\DreamPage-OS\state\gelato_drafts"
 LOCK_PATH = os.path.join(DRAFT_STATE_DIR, ".automerge.lock")
 LOCK_STALE_SECONDS = 900
 

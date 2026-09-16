@@ -7,10 +7,10 @@
 # Trygg aa kjore nar som helst: gjor ingenting hvis boten allerede lever.
 $ErrorActionPreference = 'Stop'
 $py  = (Get-Command python).Source
-$bot = 'C:\ComfyUI\script\dp_bot.py'
-$out = 'C:\ComfyUI\state\dp_bot.out.log'
-$err = 'C:\ComfyUI\state\dp_bot.err.log'
-$log = 'C:\ComfyUI\state\dp_bot_watchdog.log'
+$bot = 'C:\DreamPage-OS\flow\dp_bot.py'
+$out = 'C:\DreamPage-OS\state\dp_bot.out.log'
+$err = 'C:\DreamPage-OS\state\dp_bot.err.log'
+$log = 'C:\DreamPage-OS\state\dp_bot_watchdog.log'
 
 function Note($message) {
     "$((Get-Date).ToString('s'))  $message" | Add-Content -Path $log -Encoding utf8

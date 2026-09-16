@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 
-COMFY_ROOT = Path(r"C:\ComfyUI")
+COMFY_ROOT = Path(r"C:\DreamPage-OS\DreamPage-image")
 BOOK_ROOT = COMFY_ROOT / "books" / "enhjorning"
 ORDER_ROOT = BOOK_ROOT / "orders"
 PREPARE_SCRIPT = BOOK_ROOT / "script" / "prepare_order_enhjorning.py"

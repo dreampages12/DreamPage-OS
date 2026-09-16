@@ -8,7 +8,7 @@ forsidetittel som linje1-tekst + linje2-LOGO med glod.
 Idempotent: kjor den om igjen naar som helst, den skriver hele fila paa nytt.
 
   python build_fotball_vm.py            # bare staging i script/out/
-  python build_fotball_vm.py --apply    # skriver til C:/ComfyUI/script/<locale>/
+  python build_fotball_vm.py --apply    # skriver til C:/DreamPage-OS/flow/<locale>/
 """
 import io
 import os
@@ -20,7 +20,7 @@ from story_fotball_vm import (  # noqa: E402
     COVER_NB, BACK_NB, BACK_HL, PAGES_NB, TRANSLATIONS,
 )
 
-SCRIPT_ROOT = r"C:\ComfyUI\script"
+SCRIPT_ROOT = r"C:\DreamPage-OS\flow"
 SRC_NAME = "fotballstjernen-text-%s.py"
 DST_NAME = "fotball-vm-text-%s.py"
 LOCALES = ["nb", "nn", "en-US", "en-GB", "sv"]

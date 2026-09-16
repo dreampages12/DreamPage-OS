@@ -10,7 +10,7 @@ from story_kongeriket import (  # noqa: E402
     COVER_NB, INTRO_NB, BACK_NB, BACK_HL, PAGES_NB, TRANSLATIONS,
 )
 
-SCRIPT_ROOT = r"C:\ComfyUI\script"
+SCRIPT_ROOT = r"C:\DreamPage-OS\flow"
 LOCALES = ["nb", "nn", "en-US", "en-GB", "sv"]
 APPLY = "--apply" in sys.argv
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")

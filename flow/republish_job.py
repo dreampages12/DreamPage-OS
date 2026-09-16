@@ -22,7 +22,7 @@ import sys
 DB = r"C:\Users\tobia\.n8n\database.sqlite"
 QUEUE = "dreampage-jobs"
 CRED_ID = "paSMyl2k9MRFBE0P"
-CRED_TOOL = "C:/ComfyUI/script/n8n_credential.py"
+CRED_TOOL = "C:/DreamPage-OS/flow/n8n_credential.py"
 
 
 def load_payload(execution_id: int) -> dict:

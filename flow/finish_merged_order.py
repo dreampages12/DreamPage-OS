@@ -31,7 +31,7 @@ import dp_secrets  # noqa: E402
 GELATO_KEY = dp_secrets.gelato_api_key()
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36")
-STATE_DIR = "C:/ComfyUI/state/gelato_drafts"
+STATE_DIR = "C:/DreamPage-OS/state/gelato_drafts"
 
 
 def gelato(method: str, path: str, body=None):
@@ -130,7 +130,7 @@ def main() -> int:
         b["page_count"] = it.get("pageCount", 30)
         b["remote_size"] = remote_size(it["files"][0]["url"])
 
-        b["pdf"] = (f"C:/ComfyUI/books/{b['slug']}/orders/{b['order_id']}"
+        b["pdf"] = (f"C:/DreamPage-OS/books/{b['slug']}/orders/{b['order_id']}"
                     f"/pdf/{b['name']}_gelato.pdf")
         if not os.path.isfile(b["pdf"]):
             raise SystemExit("mangler " + b["pdf"])
@@ -196,7 +196,7 @@ def main() -> int:
 
     # 3) Last opp PDF-ene paa nytt, slik at lenkene peker paa noeyaktig disse filene.
     for b in books:
-        with open(f"C:/ComfyUI/books/{b['slug']}/config.json", encoding="utf-8-sig") as fh:
+        with open(f"C:/DreamPage-OS/books/{b['slug']}/config.json", encoding="utf-8-sig") as fh:
             parent = json.load(fh)["driveFolderId"]
         up = drive_upload(b["pdf"], parent, b["order_id"])
         b["file_url"] = (up.get("downloadUrl")
