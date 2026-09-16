@@ -111,6 +111,34 @@ def main() -> int:
         log.info("status-API lytter", host=status_conf.host,
                  port=status_conf.port, ruter="/api/status*")
 
+    # Det fulle API-et paa tailnett-adressen, for kontrollpanelet paa en annen
+    # maskin. Det trenger POST og det trenger koeen, saa det kan ikke bruke
+    # statusporten - og 8765 skal aldri vaere offentlig. Tailnettet er den
+    # tredje veien: ikke localhost, ikke internett.
+    #
+    # Feiler bindingen (Tailscale nede, adressen byttet), logger vi og gaar
+    # videre. Ordreflyten gaar over RabbitMQ og er ikke avhengig av dette -
+    # en worker som ikke starter fordi et panel ikke naas, er en verre feil.
+    if api_conf.get("tailnet"):
+        import net as net_mod
+        ts_ips = net_mod.tailscale_ips()
+        if not ts_ips:
+            log.warn("tailnet er paa, men fant ingen 100.64.0.0/10-adresse "
+                     "- er Tailscale nede? API-et svarer bare paa localhost")
+        for ts_ip in ts_ips:
+            try:
+                ts_conf = uvicorn.Config(app, host=ts_ip, port=port,
+                                         log_level="warning", access_log=False)
+                ts_server = uvicorn.Server(ts_conf)
+                threading.Thread(target=ts_server.run,
+                                 name=f"api-tailnet-{ts_ip}",
+                                 daemon=True).start()
+                log.info("API lytter ogsaa paa tailnettet",
+                         host=ts_ip, port=port)
+            except OSError as exc:
+                log.warn("kunne ikke binde til tailnett-adressen",
+                         host=ts_ip, feil=str(exc))
+
     log.info("API lytter", host=api_conf["host"], port=port)
     try:
         uvicorn.run(app, host=api_conf["host"], port=port,

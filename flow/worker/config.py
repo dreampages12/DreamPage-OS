@@ -85,6 +85,15 @@ DEFAULTS: dict = {
         "status_port": 8766,
         "status_host": "127.0.0.1",
 
+        # Skal det fulle API-et ogsaa svare paa tailnett-adressen, slik at et
+        # kontrollpanel paa en ANNEN maskin naar det? Standarden er false:
+        # en ny server skal ikke bli naabar fordi den arver en config.
+        # Denne maskinen slaar det paa i config/flow.json.
+        #
+        # Binder til tailnett-adressen spesifikt, ALDRI 0.0.0.0 - da ville
+        # API-et ogsaa svart paa hjemmenettet (192.168.x). Se worker/net.py.
+        "tailnet": False,
+
         # CORS-origin for admin-dashbordet. Aldri "*".
         "cors_origins": ["https://admin.dreampage.store"],
         "rate_limit_per_minute": 30,

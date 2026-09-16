@@ -5,6 +5,10 @@
     "_port": "8189 er den PERMANENTE porten, ikke en midlertidig omvei. Den ble valgt fordi en gammel, elevert ComfyUI fra C:\\ComfyUI eide 8188 uten aa se modellene - men det er ingen grunn til aa flytte tilbake naar den er borte: alt (paths.py, worker/config.py, dreampage.ps1, regen_page.py) leser url herfra, og et bytte er bare ny risiko for at noe annet tar porten. Er du usikker paa om du snakker med RIKTIG instans: GET /api/status -> image.is_dreampage_image og image.models_visible.",
     "url": "http://127.0.0.1:8189"
   },
+  "api": {
+    "_": "tailnet=true lar det FULLE API-et (8765) ogsaa svare paa tailnett-adressen, fordi kontrollpanelet kjorer pa en annen maskin og trenger POST + koen. Standarden i flow/worker/config.py er false, og den skal den vaere: en ny server skal ikke bli naabar ved a arve denne fila. Binder til 100.x SPESIFIKT, aldri 0.0.0.0 - hjemmenettet (192.168.x) skal ikke na API-et. Statusporten 8766 er urort og forblir localhost-only; den nas utenfra via tunnelen.",
+    "tailnet": true
+  },
   "server": {
     "_": "Hvem denne serveren er i flaaten. `id` staar IKKE her - den ligger i state/server_id.json og foelger maskinen, ikke vertsnavnet, slik at et navnebytte ikke gjor serveren til en ny server i overvaakingen. label og role er det mennesker leser i en flaatevisning.",
     "label": "tobias-pc",

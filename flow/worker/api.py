@@ -111,6 +111,36 @@ def _cors_origins() -> list[str]:
     return list(flow_config.api()["cors_origins"])
 
 
+# Origins paa tailnettet. Kontrollpanelet kjoerer paa en annen maskin, og vi
+# vet ikke hvilken port det bruker - derfor et moenster i stedet for en liste.
+#
+# Hva som matcher:
+#   http://100.78.242.12:3000        tailnett-IP (RFC 6598, 100.64-100.127)
+#   http://dreampage-01:8080         MagicDNS-kortnavn
+#   https://dreampage-01.tail1234.ts.net
+#
+# Hva som IKKE matcher: 192.168.x (hjemmenettet), alt offentlig, og "*".
+#
+# Merk hva som egentlig beskytter API-et: bearer-tokenet, og at porten bare
+# er bundet til localhost + tailnett-adressen (worker/net.py). CORS er en
+# nettleserregel, ikke en grense - en angriper med curl bryr seg ikke om den.
+# Dette moensteret er derfor bekvemmelighet for panelet, ikke sikkerheten.
+_TAILNET_ORIGIN = (
+    r"https?://("
+    r"100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d{1,3}\.\d{1,3}"   # tailnett-IP
+    r"|(?:[A-Za-z0-9-]+\.)+ts\.net"                                  # MagicDNS
+    r"|[A-Za-z0-9-]+"                                                # kortnavn
+    r")(:\d{1,5})?$"
+)
+
+
+def _cors_origin_regex() -> str | None:
+    """None naar tailnet er av, saa oppsettet ikke endres for andre servere."""
+    if not flow_config.api().get("tailnet"):
+        return None
+    return _TAILNET_ORIGIN
+
+
 def _authenticate(creds: HTTPAuthorizationCredentials | None) -> dict:
     tokens = _tokens()
     if not tokens:
@@ -173,6 +203,7 @@ def create_app(runner=None, consumer=None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=_cors_origins(),
+        allow_origin_regex=_cors_origin_regex(),
         allow_credentials=True,
         allow_methods=["GET", "POST"],
         allow_headers=["Authorization", "Content-Type"],

@@ -584,6 +584,57 @@ def test_status_api_har_bare_statusruter(sb: Sandbox) -> None:
             f"eksponerte porten er aapen for hele internett.")
 
 
+@test
+def test_cors_slipper_bare_tailnettet(sb: Sandbox) -> None:
+    """CORS-moensteret skal treffe tailnettet og INGENTING annet.
+
+    Kontrollpanelet kjoerer paa en annen maskin og vi vet ikke hvilken port
+    det bruker, saa origin matches med et moenster i stedet for en liste.
+    Et moenster som er litt for loest slipper inn hjemmenettet eller en
+    offentlig side, og da kan en fane brukeren har aapen snakke med API-et.
+
+    Grensetilfellene er med fordi forfatteren traadde feil paa dem:
+    100.63 og 100.128 ligger UTENFOR 100.64.0.0/10, og
+    `.ts.net`-navn har flere ledd enn ett. Foerste versjon av regexet
+    avviste dreampage-01.tail1234.ts.net.
+
+    Merk at CORS ikke er grensen her - tokenet og bind-adressen er det
+    (worker/net.py). Denne testen holder bekvemmeligheten aerlig.
+    """
+    import re
+    import api as api_mod
+
+    rx = re.compile(api_mod._TAILNET_ORIGIN)
+    lov = [
+        "http://100.64.0.1", "http://100.127.255.254",
+        "http://100.78.242.12:3000", "http://dreampage-01:8080",
+        "https://dreampage-01.tail1234.ts.net",
+        "https://dreampage-01.tail1234.ts.net:8443",
+    ]
+    ulov = [
+        "http://192.168.86.50:3000",      # hjemmenettet
+        "http://10.0.0.5", "http://172.16.0.5",
+        "http://100.63.255.255",          # rett UNDER blokka
+        "http://100.128.0.1",             # rett OVER blokka
+        "https://evil.example.com",
+        "http://evil.com/100.78.242.12",  # IP-en i stien, ikke verten
+        "https://not-ts.net.evil.com",
+        "http://100.78.242.12.evil.com",
+    ]
+    for o in lov:
+        assert rx.match(o), f"{o} burde vaert tillatt"
+    for o in ulov:
+        assert not rx.match(o), (
+            f"{o} slapp gjennom CORS-moensteret. Det skal BARE treffe "
+            f"tailnettet - ikke hjemmenettet og ikke noe offentlig.")
+
+    # Av som standard: en ny server skal ikke arve dette.
+    import config as cfg_mod
+    assert cfg_mod.DEFAULTS["api"]["tailnet"] is False, (
+        "tailnet maa vaere false i standardene. Skrus paa per maskin i "
+        "config/flow.json, ellers blir neste server naabar uten at noen ba om det.")
+
+
 def main() -> int:
     sandbox = Sandbox()
     # Importene maa skje ETTER at DP_ROOT er satt.
