@@ -1,62 +1,77 @@
-# cloudflared named tunnel for DESKTOP-TIF6H5B.
+# cloudflared named tunnel: BARE status-API-et for denne serveren.
 #
-# Tunnelen er TRANSPORT, ikke autentisering. Bearer-tokenet kreves uansett hvor
-# kallet kommer fra - se flow/worker/api.py. Cloudflare Access kan legges foran
-# som et ekstra lag; det erstatter ikke tokenet.
+# Vertsnavn:  dp-01.hageai.com   (matcher server.label i config/flow.json)
+# Tunnel:     dp-01-status / c6ecc2db-f411-4dec-949e-5e55cc0e99f7
 #
-# KUN flow-API-et eksponeres. ComfyUI (8188), n8n (5678), mockup-serveren
-# (8790) og RabbitMQ skal ALDRI ut. Derfor er catch-all 404 den siste regelen,
-# og derfor er ingress skrevet som eksplisitte stier i stedet for en
-# vert-til-port-regel: uten path-filteret ville alt paa porten vaert naabart.
+# ---------------------------------------------------------------------------
+# HVORFOR hageai.com og ikke dreampage.store
+# ---------------------------------------------------------------------------
+# Origin-sertifikatet i ~/.cloudflared/cert.pem er scopet til ÉN sone, og det
+# er hageai.com. Den kjørende Cloudflared-tjenesten bruker en `--token` for
+# tunnel d9b1ec20 i en ANNEN konto, med ingress styrt fra Cloudflare-dashbordet
+# - den kan altså ikke få nye ruter herfra. hageai.com er samme domene som
+# apex/godseye/hq/remote/ring alt tunnelerer gjennom, altså infrastruktur.
 #
-# UTGAAENDE trafikk trenger ingen tunnel: RabbitMQ over Tailscale, Gelato,
-# Google Drive og Telegram fungerer som i dag. Tunnelen finnes bare for at
-# admin-dashbordet skal naa API-et INN.
+# Skal statusen ligge på dreampage.store i stedet, er det ett dashbord-steg;
+# se README.md i denne mappa.
 #
-# Se README.md i denne mappa for hvordan den settes opp - og for hvorfor denne
-# filen IKKE er i bruk enda.
+# ---------------------------------------------------------------------------
+# HVA SOM SLIPPER UT - og hvorfor det er så lite
+# ---------------------------------------------------------------------------
+# Bare `/api/status`, `/api/status/summary` og `/api/status/id`. Ingenting
+# annet, heller ikke på samme port.
+#
+# Det er tre lag, og hvert av dem er nok alene:
+#
+#   1. Denne ingress-lista. `path` er et regex, og alt som ikke matcher blir
+#      404 FØR forespørselen når maskinen. /api/jobs, /api/queue, /api/health
+#      og /panel er derfor ikke nåbare utenfra i det hele tatt.
+#   2. Bearer-token. API-et krever det uansett hvor kallet kommer fra -
+#      tunnelen er TRANSPORT, ikke autentisering.
+#   3. Token-scope. Tokenet som skal brukes utenfra har scope "status" og får
+#      403 på alt annet enn statusrutene. Lekker det, er det ikke en
+#      kundedatalekkasje.
+#
+# Grunnen til at /api/health IKKE er med, selv om den ser ut som et
+# helsesjekkepunkt: den returnerer hele ComfyUI-argv, altså filsystemstier.
+# /api/queue og /api/jobs inneholder barnenavn og ordrenummer. Statusen er
+# skilt ut i flow/worker/status.py nettopp for å ha ett sted som er trygt å
+# eksponere.
+#
+# ComfyUI (8189), n8n (5678), mockup-serveren (8790) og RabbitMQ har ingen
+# regel her og skal ALDRI få en.
 
-tunnel: REPLACE_WITH_TUNNEL_ID
-credentials-file: C:\DreamPage-OS\tunnel\credentials.json
+tunnel: c6ecc2db-f411-4dec-949e-5e55cc0e99f7
+credentials-file: C:\Users\tobia\.cloudflared\c6ecc2db-f411-4dec-949e-5e55cc0e99f7.json
 
-# Ingen ekstra logging av forespoerselinnhold: ordrepayloadene inneholder
-# adresser og e-post.
+# Ikke logg forespørselsinnhold. Selv om statusen ikke har kundedata, har vi
+# ingen grunn til å skrive trafikk til disk.
 loglevel: info
 transport-loglevel: warn
 
 originRequest:
   connectTimeout: 30s
-  # Et sidebygg kan holde en forespoersel i timer hvis noen poller /api/jobs
-  # gjennom tunnelen. SSE-stroemmen (/api/events) er aapen saa lenge
-  # dashbordet er aapent.
-  noHappyEyeballs: false
-  keepAliveTimeout: 90s
+  # Statusen svarer fra en 5-sekunders cache, så den er alltid rask. Korte
+  # timeouts er riktig her: et kall som henger er et kall som er galt.
+  httpHostHeader: 127.0.0.1:8765
+  keepAliveTimeout: 30s
 
 ingress:
-  # --- admin-dashbordet: flow-API-et -------------------------------------
-  - hostname: desktop-tif6h5b.dreampage.store
-    path: ^/api/
+  # --- de tre statusrutene -----------------------------------------------
+  # ^...$ med eksplisitt avslutning: uten anker ville "/api/statusXYZ" og
+  # "/api/status/../jobs" kunne matche.
+  - hostname: dp-01.hageai.com
+    path: ^/api/status$
     service: http://127.0.0.1:8765
 
-  # Panelet. Selve siden har ingen data og ingen hemmeligheter; alt innhold
-  # hentes av nettleseren fra /api/ med token.
-  - hostname: desktop-tif6h5b.dreampage.store
-    path: ^/panel$
+  - hostname: dp-01.hageai.com
+    path: ^/api/status/(summary|id)$
     service: http://127.0.0.1:8765
 
   # Alt annet paa vaart eget vertsnavn -> 404. Uten denne ville en feil i en
-  # senere regel kunne eksponere en annen port.
-  - hostname: desktop-tif6h5b.dreampage.store
+  # senere regel kunne eksponere resten av porten.
+  - hostname: dp-01.hageai.com
     service: http_status:404
 
-  # --- eksisterende rute, maa beholdes -----------------------------------
-  # admin.dreampage.store -> localhost:3000 kjoerer i dag paa tunnel
-  # d9b1ec20-d7a4-421b-9d56-ba1ce8305aca med --token, altsaa med ingress
-  # styrt fra Cloudflare-dashbordet. Skal den tunnelen konverteres til en
-  # named tunnel med DENNE filen, MAA regelen under vaere med - ellers
-  # forsvinner admin-dashbordet i det tjenesten startes paa nytt.
-  - hostname: admin.dreampage.store
-    service: http://127.0.0.1:3000
-
-  # Global catch-all.
+  # Global catch-all. Denne tunnelen har bare ETT vertsnavn, og skal ha det.
   - service: http_status:404

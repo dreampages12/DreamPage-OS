@@ -4,122 +4,141 @@ Tunnelen er det eneste som slipper trafikk **inn** til maskinen. Alt utgående
 — RabbitMQ over Tailscale, Gelato, Google Drive, Telegram — fungerer uten den
 og skal ikke røres.
 
-## Status: ikke satt opp. Dette trenger deg.
-
-`config.yml` er skrevet og klar, men den er **ikke i bruk**, og det er ikke en
-forglemmelse. Slik ser det ut på maskinen nå:
+## Status: i drift, og eksponerer bare status
 
 ```
-Windows-tjeneste "Cloudflared"   Running, Automatic
-  kommandolinje:  cloudflared.exe tunnel run --token eyJhIjoi…
-  tunnel:         d9b1ec20-d7a4-421b-9d56-ba1ce8305aca
-  eksponerer:     admin.dreampage.store  ->  localhost:3000
+https://dp-01.hageai.com/api/status           <- Bearer-token med scope "status"
+https://dp-01.hageai.com/api/status/summary
+https://dp-01.hageai.com/api/status/id
+alt annet                                     -> 404 i Cloudflares kant
 ```
 
-`--token` betyr **fjernstyrt ingress**: rutene ligger i Cloudflare-dashbordet,
-ikke i en lokal fil. En `config.yml` på disk blir fullstendig ignorert av en
-slik tunnel. Å bare legge filen her og starte tjenesten på nytt ville derfor
-ikke gjort noe — eller, verre, ville tatt ned `admin.dreampage.store`.
+Tunnel `dp-01-status` / `c6ecc2db-f411-4dec-949e-5e55cc0e99f7`, konfigurert i
+`config.yml`, startet som egen prosess og holdt i live av
+`dreampage.ps1 ensure` (tjenesten `tunnel-status`).
 
-Det finnes også en *annen*, ubrukt named tunnel i
-`~/.cloudflared/1506ea11-9ebb-4037-956e-b8a664b70379.json` med en `config.yml`
-som peker på `remote.hageai.com` — et annet prosjekt. Ikke rør den.
+## Hvorfor hageai.com og ikke dreampage.store
 
-## To veier videre
+Origin-sertifikatet i `~/.cloudflared/cert.pem` er scopet til **én** sone, og
+det er `hageai.com` (zoneID `d8ca3e90…`). Det er samme domene som `apex`,
+`godseye`, `hq`, `remote` og `ring` allerede tunnelerer gjennom — altså
+infrastruktur, ikke kundeflate.
 
-### Vei 1 — legg hostnavnet til på den eksisterende tunnelen (minst risiko)
+`dreampage.store` ligger i en **annen konto**. Den kjørende Windows-tjenesten
+«Cloudflared» bruker en `--token` for tunnel `d9b1ec20…` der, og `--token`
+betyr fjernstyrt ingress: rutene ligger i Cloudflare-dashbordet, ikke i en
+lokal fil. En `config.yml` på disk blir fullstendig ignorert av en slik
+tunnel, så statusruten kunne ikke legges der herfra.
 
-Rører ikke den kjørende tjenesten. I Cloudflare-dashbordet:
+Vil du ha statusen på `dreampage.store` i stedet, er det ett dashbord-steg:
 
-1. Zero Trust → Networks → Tunnels → tunnelen `d9b1ec20…`
-2. Public Hostnames → Add a public hostname
-   - Subdomain: `desktop-tif6h5b`
-   - Domain: `dreampage.store`
-   - Path: `api` *(og en egen oppføring for `panel`)*
-   - Service: `HTTP` → `127.0.0.1:8765`
-3. Sørg for at det finnes en catch-all som gir 404 for alt annet på det
-   hostnavnet.
+> Zero Trust → Networks → Tunnels → tunnelen for `admin.dreampage.store` →
+> **Public hostname** → Add: `dp-01.dreampage.store` → service
+> `http://127.0.0.1:8765`.
+>
+> Men merk: dashbord-ingress har **ikke** sti-filteret denne fila har. Da
+> ville hele port 8765 vært nåbar, inkludert `/api/jobs` og `/api/queue` som
+> inneholder barnenavn og ordrenummer. Legg i så fall Cloudflare Access foran,
+> eller behold `dp-01.hageai.com` for status og la dashbordet gå over
+> Tailscale.
 
-Ulempen: konfigurasjonen er ikke i git, som er hele grunnen til at vi
-migrerer bort fra n8n. Den er da ett klikk fra å bli borte uten spor.
+To cloudflared-prosesser side om side er helt normalt, og det er det som
+kjører nå: Windows-tjenesten for `admin.dreampage.store`, og vår egen for
+statusen.
 
-### Vei 2 — konverter til named tunnel med `config.yml` (det oppdraget ber om)
+## Tre lag, hvert av dem nok alene
 
-Gir konfigurasjonen i git og diffbar historikk. Krever et kort avbrudd for
-`admin.dreampage.store`, så gjør det når ingen ordre kjører
-(`.\dreampage.ps1 status`).
+1. **Ingress-filteret** i `config.yml`. `path` er et regex med anker, så
+   `/api/statusXYZ` og `/api/status/../jobs` matcher ikke. Alt som ikke er de
+   tre rutene blir 404 **før** forespørselen når maskinen.
+2. **Bearer-token.** API-et krever det uansett hvor kallet kommer fra.
+   Tunnelen er transport, ikke autentisering.
+3. **Token-scope.** Tokenet som brukes utenfra har scope `status` og får 403
+   på alt annet. Lekker det, er det ikke en kundedatalekkasje.
+
+Verifisert utenfra 16.09.2026:
+
+| rute | status-token | uten token | FULL token |
+|---|---|---|---|
+| `/api/status` | 200 | 401 | 200 |
+| `/api/status/summary` | 200 | 401 | 200 |
+| `/api/status/id` | 200 | 401 | 200 |
+| `/api/health` | 404 | 404 | **404** |
+| `/api/queue` | 404 | 404 | **404** |
+| `/api/jobs` | 404 | 404 | **404** |
+| `/panel` | 404 | 404 | **404** |
+| `/api/statusXYZ` | 404 | 404 | **404** |
+
+Den siste kolonnen er poenget: selv et token med full tilgang kommer ikke til
+kundedata gjennom tunnelen, fordi ruten ikke finnes der.
+
+`/api/health` er bevisst **ikke** eksponert, selv om den ser ut som et
+helsesjekkepunkt: den returnerer hele ComfyUI-argv, altså filsystemstier.
+Statusen er skilt ut i `flow/worker/status.py` nettopp for å ha ett svar som
+er trygt å sende ut. Svaret er ~1,2 kB og inneholder ingen stier, ingen navn
+og ingen ordrenummer — det er dekket av en test i
+`flow/worker/tests/test_flow.py`.
+
+ComfyUI (8189), n8n (5678), mockup-serveren (8790) og RabbitMQ har ingen regel
+i `config.yml` og skal aldri få en.
+
+## Flere servere
+
+`server.label` i `config/flow.json` er `dp-01`, og vertsnavnet følger samme
+mønster. Neste maskin blir `dp-02.hageai.com` med sin egen tunnel og sitt eget
+`status`-token. `server.id` i svaret er en UUID i `state/server_id.json` som
+følger maskinen, ikke vertsnavnet — så et navnebytte lager ikke en ny server i
+flåtevisningen, og to PC-er som tilfeldigvis heter det samme smelter ikke
+sammen til én.
+
+En flåtestyrer poller `/api/status/summary` per server: én linje med
+`server_id`, `label`, `status`, `busy`, `waiting` og `accepting_jobs`.
+
+## Drift
 
 ```powershell
-# 1. logg inn (åpner nettleser, velger sone)
-cloudflared tunnel login
-
-# 2. lag tunnelen. Skriver credentials til ~\.cloudflared\<id>.json
-cloudflared tunnel create desktop-tif6h5b
-
-# 3. flytt legitimasjonen hit og skriv id-en inn i config.yml.
-#    credentials.json står i .gitignore - den er en nøkkel, ikke konfigurasjon.
-Move-Item "$env:USERPROFILE\.cloudflared\<ID>.json" C:\DreamPage-OS\tunnel\credentials.json
-#    ... og bytt REPLACE_WITH_TUNNEL_ID i config.yml med <ID>
-
-# 4. DNS-ruten
-cloudflared tunnel route dns desktop-tif6h5b desktop-tif6h5b.dreampage.store
-
-# 5. prøv den i forgrunnen FØRST, uten å røre tjenesten
-cloudflared --config C:\DreamPage-OS\tunnel\config.yml tunnel run
-
-# 6. virker den, bytt tjenesten over
-Stop-Service Cloudflared
-sc.exe delete Cloudflared
-cloudflared --config C:\DreamPage-OS\tunnel\config.yml service install
-Start-Service Cloudflared
+.\dreampage.ps1 ensure       # starter tunnelen hvis den er nede
+.\dreampage.ps1 status       # viser tunnel-status
+Get-Content state\log\tunnel.err.log -Tail 20
 ```
 
-**`admin.dreampage.store` må være med i `config.yml` før steg 6.** Den ligger
-allerede inne i filen, men verifiser at porten (3000) stemmer — ingenting
-lytter på 3000 på denne maskinen i dag, så dashbordet kjører et annet sted,
-eller er ikke startet.
-
-## Verifiser fra utsiden
-
-Kjør dette fra en annen maskin, ikke herfra — en lokal test går ikke gjennom
-tunnelen og beviser ingenting.
-
-```bash
-# skal gi 401: tunnelen er transport, tokenet er autentisering
-curl -si https://desktop-tif6h5b.dreampage.store/api/health | head -1
-
-# skal gi 200
-curl -si -H "Authorization: Bearer <token>" \
-     https://desktop-tif6h5b.dreampage.store/api/health | head -1
-
-# skal gi 404 - ingenting annet enn API-stien er rutet
-curl -si https://desktop-tif6h5b.dreampage.store/ | head -1
-
-# ComfyUI og n8n skal IKKE være nåbare noe sted via domenet
-curl -si https://desktop-tif6h5b.dreampage.store/system_stats | head -1
-curl -si https://desktop-tif6h5b.dreampage.store/rest/login | head -1
-```
-
-Og fra maskinen selv, for å bekrefte at portene ikke er åpnet i ruteren:
+Slå den av helt:
 
 ```powershell
-# 8188 lytter på 0.0.0.0 fordi ComfyUI startes med --listen. Det er greit på
-# LAN/Tailscale, men skal aldri komme ut gjennom tunnelen.
-Get-NetTCPConnection -LocalPort 8188,5678,8765,8790 -State Listen |
-  Select-Object LocalAddress, LocalPort
+Get-CimInstance Win32_Process -Filter "Name='cloudflared.exe'" |
+  Where-Object { $_.CommandLine -like '*dp-01-status*' } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force }
+C:\Users\tobia\Downloads\cloudflared.exe tunnel delete dp-01-status
+# og slett CNAME dp-01.hageai.com i Cloudflare
 ```
 
-## Cloudflare Access
+Å slette tunnelen trekker tilbake legitimasjonen i
+`~/.cloudflared/c6ecc2db-….json` — det er den eneste kopien.
 
-Verdt å vurdere foran API-et: da må en forespørsel både passere Access og ha
-bearer-tokenet. Det gjør at et lekket token alene ikke er nok. Merk at Access
-sender en interaktiv innloggingsflyt, så dashbordet må bruke en service token
-(`CF-Access-Client-Id` / `CF-Access-Client-Secret`) og ikke en nettleserøkt.
+`cloudflared.exe` ligger i `C:\Users\tobia\Downloads\`. Det er skjørt: en
+opprydding i Downloads tar ned tunnelen. Flytt den til
+`C:\Program Files\cloudflared\` og rett stien i `dreampage.ps1` når du får
+anledning.
+
+## Fallgruve som traff oss
+
+`cloudflared tunnel route dns dp-01-status dp-01.hageai.com` opprettet CNAME-en
+mot **feil tunnel** — den leste `tunnel:`-feltet i `~/.cloudflared/config.yml`
+(`1506ea11…`, prosjektet `remote.hageai.com`) i stedet for tunnelen som ble
+oppgitt som argument. Loggen sa det rett ut: `will route to this tunnel
+tunnelID=1506ea11…`. Rettet ved å sette CNAME-innholdet direkte via
+Cloudflare-API-et.
+
+**Les alltid tunnelID-en i utskriften fra `route dns`.** Blir den feil, svarer
+vertsnavnet 404 fra en tunnel som ikke har regelen — altså ingen lekkasje, men
+en rute som ser død ut uten forklaring.
 
 ## Filer her
 
 | Fil | I git | Merknad |
 |---|---|---|
-| `config.yml` | ja | ingress. `REPLACE_WITH_TUNNEL_ID` må byttes |
-| `credentials.json` | **nei** | tunnelnøkkel. `.gitignore` |
+| `config.yml` | ja | ingress, med tunnel-id |
 | `README.md` | ja | denne |
+
+Tunnellegitimasjonen ligger i `~/.cloudflared/c6ecc2db-….json` og skal **ikke**
+flyttes hit — den er en nøkkel, ikke konfigurasjon, og mappa her er i git.

@@ -200,6 +200,33 @@ $SERVICES = @(
         Wait   = 30
     },
     @{
+        # Vaar EGEN named tunnel: eksponerer BARE /api/status* paa
+        # dp-01.hageai.com. Se tunnel/config.yml for hvorfor saa lite
+        # slipper ut, og hvorfor det er hageai.com og ikke dreampage.store.
+        #
+        # Egen prosess, ikke Windows-tjenesten: tjenesten kjoerer en ANNEN
+        # konto sin tunnel med --token, og aa slaa dem sammen ville krevd
+        # dashbord-tilgang vi ikke har. To cloudflared-prosesser side om
+        # side er helt normalt.
+        Name  = 'tunnel-status'
+        Match = 'dp-01-status'
+        Port  = $null
+        Start = {
+            $cf = 'C:\Users\tobia\Downloads\cloudflared.exe'
+            if (-not (Test-Path $cf)) { Say '  cloudflared.exe finnes ikke' Yellow; return }
+            New-Item -ItemType Directory -Path $LOGDIR -Force | Out-Null
+            Start-Process -FilePath $cf `
+                -ArgumentList @('tunnel', '--config',
+                                (Join-Path $ROOT 'tunnel\config.yml'),
+                                'run', 'dp-01-status') `
+                -WindowStyle Hidden `
+                -RedirectStandardOutput (Join-Path $LOGDIR 'tunnel.out.log') `
+                -RedirectStandardError (Join-Path $LOGDIR 'tunnel.err.log')
+        }
+        Health = { $null -ne (Get-Proc 'dp-01-status') }
+        Wait   = 45
+    },
+    @{
         Name  = 'tunnel'
         Match = 'cloudflared'
         Port  = $null

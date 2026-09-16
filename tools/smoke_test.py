@@ -54,7 +54,18 @@ DUMMY_PNG = (b"\x89PNG\r\n\x1a\n" + b"\x00" * 512)
 def api(path: str, method: str = "GET", body: dict | None = None):
     with open(ROOT / "config" / "api.json", encoding="utf-8-sig") as fh:
         conf = json.load(fh)
-    token = next(iter(conf.get("tokens") or {}), None) or conf.get("token")
+    # MAA vaere et token med full tilgang: roeyktesten POSTer jobber og leser
+    # /api/jobs. Et "status"-token gir 403 der. Foer scopene fantes tok denne
+    # bare det foerste tokenet i fila, og da ville en omstokking av api.json
+    # gitt en roeyktest som feilet paa noe som ikke var i veien.
+    tokens = conf.get("tokens") or {}
+    token = next((t for t, v in tokens.items()
+                  if not isinstance(v, dict)
+                  or str(v.get("scope", "full")).lower() == "full"), None)
+    if token is None:
+        token = conf.get("token")
+    if token is None:
+        raise SystemExit("fant ingen token med full tilgang i config/api.json")
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(
         "http://127.0.0.1:8765" + path, data=data, method=method,
