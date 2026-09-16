@@ -72,6 +72,21 @@ function Get-ComfyPort {
     return 8188
 }
 
+function Test-OurComfy {
+    # Svarer VAAR ComfyUI paa porten - fra DreamPage-image, med modeller?
+    $stats = Get-Json "$(Get-ComfyUrl)/system_stats" $null 15
+    if ($null -eq $stats) { return $false }
+    $argv = (@($stats.system.argv) -join ' ')
+    if ([string]::IsNullOrEmpty($argv)) { return $false }
+    if ($argv -notlike "*DreamPage-image*") {
+        Say "  ADVARSEL: ComfyUI paa $(Get-ComfyUrl) kjorer IKKE fra $script:IMAGE" Red
+        Say "            argv: $argv" Red
+        Say '            Den ser sannsynligvis ingen modeller. Stopp den.' Red
+        return $false
+    }
+    return $true
+}
+
 function Get-ApiToken {
     $path = Join-Path $ROOT 'config\api.json'
     if (-not (Test-Path $path)) { return $null }
@@ -116,19 +131,18 @@ $SERVICES = @(
         # hver bokside ville feilet - og en helsesjekk som bare spurte om noe
         # svarte, sa OK. Supervisoren ville dessuten sett "lever allerede" og
         # aldri startet den riktige.
-        Health = {
-            $stats = Get-Json "$(Get-ComfyUrl)/system_stats" $null 15
-            if ($null -eq $stats) { return $false }
-            $argv = ($stats.system.argv -join ' ').Replace('', '/')
-            $want = $IMAGE.Replace('', '/')
-            if ($argv -notlike "*$want*") {
-                Say "  ADVARSEL: ComfyUI paa $(Get-ComfyUrl) kjorer IKKE fra $IMAGE" Red
-                Say "            argv: $argv" Red
-                Say '            Den ser sannsynligvis ingen modeller. Stopp den.' Red
-                return $false
-            }
-            return $true
-        }
+        # Ikke "svarer noe paa porten" - men "svarer VAAR instans".
+        #
+        # 16.09.2026 svarte en ComfyUI startet fra den gamle C:\ComfyUI paa
+        # 8188, elevert og uten mappe-flaggene. Den saa null modeller, saa
+        # hver bokside ville feilet - og en helsesjekk som bare spurte om noe
+        # svarte, sa OK. Supervisoren ville sett "lever allerede" og aldri
+        # startet den riktige.
+        #
+        # Sjekken er lagt i en egen funksjon, ikke i en scriptblokk her:
+        # blokka kalles med & og ser da verken $IMAGE eller $PSScriptRoot,
+        # saa den feilet med "Strengen kan ikke ha lengden null".
+        Health = { Test-OurComfy }
         Wait   = 300
     },
     @{
