@@ -15,7 +15,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('up', 'down', 'restart', 'status', 'logs', 'models', 'test')]
+    [ValidateSet('up', 'down', 'restart', 'status', 'logs', 'models', 'test', 'ensure')]
     [string]$Command = 'status',
 
     # Hopp over modellsjekken. up bruker den selv etter foerste gang.
@@ -254,6 +254,64 @@ function Invoke-Models {
     return ($LASTEXITCODE -eq 0)
 }
 
+# ---------------------------------------------------------------------------
+# ensure: vaktmesteren for HELE stacken
+#
+# Bakgrunnen: fram til naa hadde bare dp_bot en vaktmester. Etter en omstart
+# kom boten tilbake, men ComfyUI og flow gjorde det IKKE - og da hoper
+# ordrene seg opp i RabbitMQ uten at noe sier fra. Det er samme feilklasse
+# som drepte boten i to doegn 12.08.2026, bare med stoerre konsekvens: en
+# doed bot merkes med en gang, en doed worker ser ut som stille.
+#
+# Kjoeres av scheduled task hvert 5. minutt og ved innlogging. Den er stille
+# naar alt lever - ellers ville loggen vaert ubrukelig - og skriver bare naar
+# den faktisk gjoer noe. Ingen modellsjekk: den er treg, og ensure skal vaere
+# billig nok aa kjoere hvert 5. minutt for alltid.
+# ---------------------------------------------------------------------------
+function Invoke-Ensure {
+    $log = Join-Path $ROOT 'state\watchdog.log'
+    function Note($m) {
+        $line = "$((Get-Date).ToString('s'))  $m"
+        Write-Host $line
+        try { Add-Content $log $line -Encoding utf8 } catch {}
+    }
+
+    # En kald ComfyUI kan bruke minutter paa aa svare. Uten denne laasen ville
+    # neste kjoering (5 min senere) sett 'NED' og startet EN TO.
+    $lock = Join-Path $ROOT 'state\watchdog.lock'
+    if (Test-Path $lock) {
+        $age = (Get-Date) - (Get-Item $lock).LastWriteTime
+        if ($age.TotalMinutes -lt 15) { return 0 }
+        Note "tar over en laas som er $([int]$age.TotalMinutes) min gammel"
+    }
+    try { Set-Content $lock ([string]$PID) -Encoding utf8 } catch {}
+
+    $started = 0; $failed = 0
+    try {
+        foreach ($svc in $SERVICES) {
+            $alive = $false
+            try { $alive = [bool](& $svc.Health) } catch { $alive = $false }
+            if ($alive) { continue }
+
+            Note "$($svc.Name): NED - starter"
+            try { & $svc.Start } catch { Note "$($svc.Name): start feilet: $($_.Exception.Message)" }
+            $deadline = (Get-Date).AddSeconds($svc.Wait)
+            $ok = $false
+            while ((Get-Date) -lt $deadline) {
+                Start-Sleep -Seconds 3
+                try { if (& $svc.Health) { $ok = $true; break } } catch {}
+            }
+            if ($ok) { Note "$($svc.Name): OPP igjen"; $started++ }
+            else     { Note "$($svc.Name): SVARTE IKKE innen $($svc.Wait) s"; $failed++ }
+        }
+    } finally {
+        Remove-Item $lock -Force -ErrorAction SilentlyContinue
+    }
+
+    if ($started -or $failed) { Note "ferdig: $started startet, $failed feilet" }
+    # Exit-koden blir 'Last Result' i scheduled task, saa den skal si sant.
+    if ($failed) { return 1 } else { return 0 }
+}
 function Invoke-Up {
     Head 'DreamPage OS: up'
 
@@ -398,6 +456,7 @@ function Invoke-Test {
 }
 
 switch ($Command) {
+    'ensure'  { exit (Invoke-Ensure) }
     'up'      { Invoke-Up }
     'down'    { Invoke-Down }
     'restart' { Invoke-Down; Start-Sleep -Seconds 5; Invoke-Up }
