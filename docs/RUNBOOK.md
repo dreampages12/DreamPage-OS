@@ -29,7 +29,21 @@ Panelet: `http://127.0.0.1:8765/panel`, med et token fra `config/api.json`.
 
 ---
 
-## «Hvor stoppet ordre X?»
+## «Hvor står ordrene?»
+
+Oversikt over alle, fra payload til Gelato-utkast:
+
+```powershell
+python tools\order_status.py            # de 20 nyeste
+python tools\order_status.py --open     # BARE de som ikke er ferdige
+python tools\order_status.py --order 1517
+python tools\order_status.py --gelato   # bekreft mot Gelato (tregere)
+```
+
+`--open` er den du vil ha om morgenen: den viser ordre som har betalt og ikke
+er ferdige. Ordre 1517 lå i tre døgn uten at noen visste det.
+
+Én ordre i detalj, fra jobb-DB-en:
 
 ```powershell
 python flow\worker\cli.py status --job-key 1515
