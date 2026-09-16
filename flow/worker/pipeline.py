@@ -67,6 +67,13 @@ class Step:
 # (tekst -> prepare -> PDF -> guard -> Drive -> Gelato -> Telegram -> confirm).
 # ---------------------------------------------------------------------------
 PAGES_PIPELINE: tuple[Step, ...] = (
+    Step("check_assets", steps.check_assets,
+         "All delt kunst og alle fonter finnes. Staar FOERST fordi bade "
+         "line2-logoen (ordre 1510) og aapningssida (ordre 1506) er fail-soft "
+         "nedover i kjeden: mangler de, blir boka bygget med feil bilde uten "
+         "at noe sier fra.",
+         retries=0, timeout_s=120),
+
     Step("validate_job", steps.validate_job,
          "Payload -> bok, spraak og sideliste. Avviser en ubyggbar bok med en "
          "gang i stedet for aa doe stille (ordre 1517).",

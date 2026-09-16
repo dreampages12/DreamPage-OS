@@ -34,6 +34,10 @@ from books import JobError  # noqa: E402
 
 PYTHON = sys.executable
 
+# <rot>/tools, der check_assets.py bor. paths.TOOLS peker paa flow/tools,
+# som er noe annet - derfor utledes denne fra ROOT.
+TOOLS_DIR = Path(__file__).resolve().parent.parent.parent / "tools"
+
 
 @dataclass
 class Context:
@@ -51,6 +55,41 @@ class Context:
     def progress(self, done: int, total: int | None = None) -> None:
         if self.store:
             self.store.set_progress(self.job_key, done, total)
+
+
+# ---------------------------------------------------------------------------
+# 0. Er kunsten paa plass?
+# ---------------------------------------------------------------------------
+def check_assets(ctx: Context) -> dict:
+    """Alle delte kunst- og fontstier finnes FOER vi bygger noe.
+
+    Dette er tredje forsoek paa aa lukke samme feilklasse, og de to foerste
+    mislyktes paa samme maate: de fantes, men ingen kjoerte dem.
+
+      ordre 1510  line2-logoen hadde flyttet seg. Rendereren skrev "ADVARSEL:
+                  Fant ikke line2_image" og avsluttet med 0. Forsiden sa
+                  "Henry og det" og gikk til trykkeklart utkast.
+      ordre 1506  tekstscriptene pekte paa <rot>/flow/books/... etter
+                  flyttingen. Alle boeker i alle fem spraak falt stille
+                  tilbake paa den DELTE gamle aapningssida.
+
+    Begge var fail-soft med vilje: et oppsalg skal aldri stoppe en betalt
+    ordre. Da maa mangelen oppdages FOER rendringen, ikke under. Derfor staar
+    sjekken her, som steg nummer én, og ikke i et verktoey noen maa huske.
+
+    JobError, ikke en vanlig feil: en manglende fil blir ikke bedre av tre
+    forsoek. Noen maa rette stien.
+    """
+    sys.path.insert(0, str(TOOLS_DIR))
+    import check_assets as checker
+    found, missing = checker.audit()
+    if missing:
+        lines = "\n".join(f"  {where}: {p}" for where, p in missing)
+        raise JobError(
+            f"{len(missing)} kunst-/fontsti(er) mangler - bygger ikke:\n{lines}\n"
+            "Hele kunstkjeden er fail-soft og ville gaatt videre med feil "
+            "bilde. Rett stien og kjoer ordren om igjen.")
+    return {"paths": len(found), "missing": 0}
 
 
 # ---------------------------------------------------------------------------

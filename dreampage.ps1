@@ -1,4 +1,4 @@
-# DreamPage OS - én supervisor som eier alle prosessene.
+﻿# DreamPage OS - én supervisor som eier alle prosessene.
 #
 #   .\dreampage.ps1 up        sjekk modeller, start ComfyUI, flow, mockup, bot, tunnel
 #   .\dreampage.ps1 down      stopp alt vi eier (ikke midt i en ordre)
@@ -318,6 +318,7 @@ function Invoke-Ensure {
     try { Set-Content $lock ([string]$PID) -Encoding utf8 } catch {}
 
     $started = 0; $failed = 0
+    $startedNames = @(); $failedNames = @()
     try {
         foreach ($svc in $SERVICES) {
             $alive = $false
@@ -332,14 +333,27 @@ function Invoke-Ensure {
                 Start-Sleep -Seconds 3
                 try { if (& $svc.Health) { $ok = $true; break } } catch {}
             }
-            if ($ok) { Note "$($svc.Name): OPP igjen"; $started++ }
-            else     { Note "$($svc.Name): SVARTE IKKE innen $($svc.Wait) s"; $failed++ }
+            if ($ok) { Note "$($svc.Name): OPP igjen"; $started++; $startedNames += $svc.Name }
+            else     { Note "$($svc.Name): SVARTE IKKE innen $($svc.Wait) s"; $failed++; $failedNames += $svc.Name }
         }
     } finally {
         Remove-Item $lock -Force -ErrorAction SilentlyContinue
     }
 
     if ($started -or $failed) { Note "ferdig: $started startet, $failed feilet" }
+
+    # SI FRA. Fram til 16.09.2026 endte en mislykket restart her: en linje i
+    # state\watchdog.log og exit 1 til Task Scheduler - to steder ingen ser
+    # paa. En ComfyUI som ikke lot seg starte var usynlig til ordrene hadde
+    # hopet seg opp i RabbitMQ. Varselet er et sidespor: feiler det, skal
+    # vaktmesteren fortsatt rapportere riktig exit-kode.
+    if ($failed) {
+        try {
+            & $PY (Join-Path $ROOT 'flow\worker\notify.py') 'watchdog' `
+                ($failedNames -join ',') ($startedNames -join ',') | Out-Null
+        } catch { Note "kunne ikke varsle: $($_.Exception.Message)" }
+    }
+
     # Exit-koden blir 'Last Result' i scheduled task, saa den skal si sant.
     if ($failed) { return 1 } else { return 0 }
 }
@@ -480,10 +494,41 @@ function Invoke-Logs {
     Get-Content $path -Tail 40 -Wait
 }
 
+# Kjoerer ALLE testfilene, ikke en navngitt liste.
+#
+# Fram til 16.09.2026 stod det én sti her: test_flow.py. Da
+# tests/test_drive_upload.py kom til, var den usynlig fra dag én - ingen
+# hadde gjort noe galt, filen var bare ikke nevnt. En testkommando som maa
+# oppdateres hver gang noen skriver en test, blir ikke oppdatert.
+#
+# check_assets kjoeres til slutt fordi den sjekker EKTE filer paa denne
+# maskinen, ikke kode: den kan feile paa en riktig installasjon der kunsten
+# ikke er lastet ned enda, og da skal det staa tydelig hvilken av delene som
+# feilet.
 function Invoke-Test {
     Head 'tester'
-    & $PY (Join-Path $ROOT 'flow\worker\tests\test_flow.py')
-    exit $LASTEXITCODE
+    $testDir = Join-Path $ROOT 'flow\worker\tests'
+    $files = Get-ChildItem $testDir -Filter 'test_*.py' -File | Sort-Object Name
+    if (-not $files) { Say "  fant ingen testfiler i $testDir" Yellow; exit 1 }
+
+    $failed = @()
+    foreach ($f in $files) {
+        Say "`n--- $($f.Name)" Cyan
+        & $PY $f.FullName
+        if ($LASTEXITCODE -ne 0) { $failed += $f.Name }
+    }
+
+    Say "`n--- check_assets" Cyan
+    & $PY (Join-Path $ROOT 'tools\check_assets.py')
+    if ($LASTEXITCODE -ne 0) { $failed += 'check_assets.py' }
+
+    Write-Host ''
+    if ($failed) {
+        Say "FEILET: $($failed -join ', ')" Red
+        exit 1
+    }
+    Say "alle $($files.Count + 1) testene bestaatt" Green
+    exit 0
 }
 
 switch ($Command) {

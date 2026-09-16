@@ -35,22 +35,13 @@ STATE_DIR = "C:/DreamPage-OS/state/gelato_drafts"
 
 
 def gelato(method: str, path: str, body=None):
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request("https://order.gelatoapis.com/v4" + path,
-                                 data=data, method=method,
-                                 headers={"X-API-KEY": GELATO_KEY,
-                                          "Content-Type": "application/json",
-                                          "User-Agent": UA})
-    try:
-        with urllib.request.urlopen(req, timeout=120) as r:
-            raw = r.read().decode()
-            return r.status, (json.loads(raw) if raw.strip() else {})
-    except urllib.error.HTTPError as exc:
-        raw = exc.read().decode("utf-8", "replace")
-        try:
-            return exc.code, json.loads(raw)
-        except Exception:                # noqa: BLE001
-            return exc.code, {"raw": raw}
+    """Delegerer til flow/gelato_api.py. Tar en STI ("/orders"), ikke en URL.
+
+    Denne kopien var den eneste av de fire som leste feilkroppen fra Gelato,
+    og den ble brukt minst. Na gjor alle det.
+    """
+    import gelato_api
+    return gelato_api.call(method, path, body)
 
 
 def remote_size(url: str) -> int:

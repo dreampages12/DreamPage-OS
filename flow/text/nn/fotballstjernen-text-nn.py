@@ -8,6 +8,7 @@ import shutil
 
 import filecmp
 import os
+import sys
 import re
 import argparse
 from typing import List, Dict, Any
@@ -24,6 +25,46 @@ from dream_pdf_guard import (
 EXPECTED_INNER_PAGES = 31
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# DP_ROOT er DreamPage-roten: mappa som inneholder books/. Den ble regnet ut
+# som dirname(SCRIPT_ROOT_DIR) den gangen tekstscriptene laa i <rot>/script/<sprak>.
+# Etter flyttingen til <rot>/flow/text/<sprak> ga det <rot>/flow, og ALLE
+# bok-spesifikke sider (dreampage-first, blank-back) falt stille tilbake til
+# den delte gamle malen. Vi gaar oppover til vi finner books/ i stedet, slik at
+# en ny flytting ikke kan gjenskape feilen.
+def _dp_find_root(start):
+    cur = os.path.abspath(start)
+    while True:
+        if os.path.isdir(os.path.join(cur, "books")):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            raise RuntimeError(
+                "Fant ingen DreamPage-rot (mappe med books/) over " + str(start))
+        cur = parent
+
+
+DP_ROOT = _dp_find_root(SCRIPT_DIR)
+
+
+def _dp_first(book_page):
+    """Bokas EGEN aapningsside, med den delte gamle malen som naudloesning.
+
+    Fallbacket var stille foer: ordre 1506 ble bygget om med den delte malen
+    uten at noe sa fra, fordi stien til bokas egen side pekte feil. Naa ropes
+    det - en ombygging som skriver dette skal ikke sendes til trykk.
+    """
+    if os.path.exists(book_page):
+        return book_page
+    shared = os.path.join(SCRIPT_DIR, "dreampage-first.png")
+    sys.stderr.write(
+        "[FEIL] Bokas egen aapningsside mangler: %s\n"
+        "[FEIL] Faller tilbake til den DELTE gamle malen: %s\n"
+        "[FEIL] Denne boka skal IKKE trykkes med den sida.\n"
+        % (book_page, shared))
+    return shared
+
+
 SCRIPT_LOCALES = {"nb", "nn", "en-US", "en-GB"}
 SCRIPT_LOCALE = os.path.basename(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) in SCRIPT_LOCALES else "nb"
 SCRIPT_ROOT_DIR = os.path.dirname(SCRIPT_DIR) if SCRIPT_LOCALE in SCRIPT_LOCALES else SCRIPT_DIR
@@ -1232,7 +1273,7 @@ def render_page(page: Dict[str, Any], base_dir: str, out_dir: str) -> List[str]:
 
 
 FOTBALL_DREAMPAGE_FIRST = os.path.join(
-    os.path.dirname(SCRIPT_ROOT_DIR), "books", "fotballstjernen", "dreampage-first(fotballstjernen).png"
+    DP_ROOT, "books", "fotballstjernen", "dreampage-first(fotballstjernen).png"
 )
 DREAMPAGE_FIRST_TAGLINE = "Trykt med omtanke for\nkvalitet"
 
@@ -1242,7 +1283,7 @@ def render_dreampage_first(child_name: str, out_dir: str) -> str:
     Legger en personlig dedikasjon på den hvite øvre halvdelen av dreampage-first.png
     og lagrer resultatet til out_dir. Returnerer stien til den renderte filen.
     """
-    src = FOTBALL_DREAMPAGE_FIRST if os.path.exists(FOTBALL_DREAMPAGE_FIRST) else os.path.join(SCRIPT_DIR, "dreampage-first.png")
+    src = _dp_first(FOTBALL_DREAMPAGE_FIRST)
     dst = os.path.join(out_dir, "dreampage-first-rendered.png")
 
     img = Image.open(src).convert("RGBA")
@@ -1357,7 +1398,7 @@ def process_book(base_dir: str, out_dir: str, child_name: str, cover_type: str, 
 
     # Legg til dreampage-first.png først, blank-back.png deretter, og per-bok Lastpage(fotball).png aller sist.
     # Disse er enkelt-sider (4096x4096) som ikke skal splittes – bare inkluderes direkte.
-    dreampage_first = FOTBALL_DREAMPAGE_FIRST if os.path.exists(FOTBALL_DREAMPAGE_FIRST) else os.path.join(SCRIPT_DIR, "dreampage-first.png")
+    dreampage_first = _dp_first(FOTBALL_DREAMPAGE_FIRST)
     # Ordrens egen blank-back.png (f.eks. "Fortsett eventyret"-siden med QR)
     # har forrang; den delte malen er fallback for boker uten oppsalg.
     blank_back = os.path.join(base_dir, "blank-back.png")

@@ -7,6 +7,7 @@ from reportlab.lib.units import inch
 import shutil  
 
 import os
+import sys
 import re
 import argparse
 from typing import List, Dict, Any
@@ -20,6 +21,46 @@ from dream_pdf_guard import (
 )
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# DP_ROOT er DreamPage-roten: mappa som inneholder books/. Den ble regnet ut
+# som dirname(SCRIPT_ROOT_DIR) den gangen tekstscriptene laa i <rot>/script/<sprak>.
+# Etter flyttingen til <rot>/flow/text/<sprak> ga det <rot>/flow, og ALLE
+# bok-spesifikke sider (dreampage-first, blank-back) falt stille tilbake til
+# den delte gamle malen. Vi gaar oppover til vi finner books/ i stedet, slik at
+# en ny flytting ikke kan gjenskape feilen.
+def _dp_find_root(start):
+    cur = os.path.abspath(start)
+    while True:
+        if os.path.isdir(os.path.join(cur, "books")):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            raise RuntimeError(
+                "Fant ingen DreamPage-rot (mappe med books/) over " + str(start))
+        cur = parent
+
+
+DP_ROOT = _dp_find_root(SCRIPT_DIR)
+
+
+def _dp_first(book_page):
+    """Bokas EGEN aapningsside, med den delte gamle malen som naudloesning.
+
+    Fallbacket var stille foer: ordre 1506 ble bygget om med den delte malen
+    uten at noe sa fra, fordi stien til bokas egen side pekte feil. Naa ropes
+    det - en ombygging som skriver dette skal ikke sendes til trykk.
+    """
+    if os.path.exists(book_page):
+        return book_page
+    shared = os.path.join(SCRIPT_DIR, "dreampage-first.png")
+    sys.stderr.write(
+        "[FEIL] Bokas egen aapningsside mangler: %s\n"
+        "[FEIL] Faller tilbake til den DELTE gamle malen: %s\n"
+        "[FEIL] Denne boka skal IKKE trykkes med den sida.\n"
+        % (book_page, shared))
+    return shared
+
+
 SCRIPT_LOCALES = {"nb", "nn", "en-US", "en-GB", "sv"}
 SCRIPT_LOCALE = os.path.basename(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) in SCRIPT_LOCALES else "nb"
 SCRIPT_ROOT_DIR = os.path.dirname(SCRIPT_DIR) if SCRIPT_LOCALE in SCRIPT_LOCALES else SCRIPT_DIR
@@ -33,7 +74,7 @@ COVER_TITLE_FONT = os.path.join(SCRIPT_DIR, "Trebuchet MS Bold.ttf")
 INNER_FONT     = os.path.join(SCRIPT_DIR, "Georgia.ttf")
 
 DYREPARKEN_DREAMPAGE_FIRST = os.path.join(
-    os.path.dirname(SCRIPT_ROOT_DIR), "books", "dyreparken", "dreampage-first-dyrepark.png"
+    DP_ROOT, "books", "dyreparken", "dreampage-first-dyrepark.png"
 )
 DREAMPAGE_FIRST_TAGLINE = "Tryckt med omtanke för\nkvalitet"
 HIGHLIGHT_FONT = os.path.join(SCRIPT_DIR, "Georgia Bold.ttf")
@@ -1365,7 +1406,7 @@ def render_page(page: Dict[str, Any], base_dir: str, out_dir: str) -> List[str]:
 
     # ------------------------ blank side ------------------------
     if page.get("type") == "blank":
-        blank_path = DYREPARKEN_DREAMPAGE_FIRST if os.path.exists(DYREPARKEN_DREAMPAGE_FIRST) else os.path.join(SCRIPT_DIR, "dreampage-first.png")
+        blank_path = _dp_first(DYREPARKEN_DREAMPAGE_FIRST)
 
         if not os.path.exists(blank_path):
             print("Fant ikke dreampage-first.png:", blank_path)

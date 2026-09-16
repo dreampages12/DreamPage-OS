@@ -77,7 +77,17 @@ venv*/
 Thumbs.db
 *.tmp
 
-# Backupfilene kjeden lager selv foer den endrer noe (*.backup-before-<hva>-<dato>).
-# De er en sikkerhetsnett i filsystemet, ikke historikk - git er historikken.
-*.backup-before-*
-*.backup-reprint-*
+# Backupfilene kjeden lager selv foer den endrer noe.
+# De er et sikkerhetsnett i filsystemet, ikke historikk - git er historikken.
+#
+# De to reglene her daekket bare to av formene, og 234 backupfiler fra tiden
+# FOER git laa derfor fortsatt i indeksen (fjernet 16.09.2026 med
+# `git rm --cached`; de ligger uroert paa disk). De var ikke bare stoey:
+# tools/check_assets.py og steps.py maa eksplisitt hoppe over .backup/.bak
+# naar de gaar gjennom tekstscriptene, og flow/worker/ hadde to
+# .backup-before-notify-filer liggende rett ved siden av modulene de
+# skygget for. En glob som glemmer filteret plukker opp en av dem.
+*.backup
+*.backup-*
+*.bak
+*.bak-*

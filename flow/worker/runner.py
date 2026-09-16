@@ -33,6 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import comfy as comfy_mod  # noqa: E402
 import config as flow_config  # noqa: E402
 import jobs as jobs_mod  # noqa: E402
+import notify  # noqa: E402
 import pipeline as pipeline_mod  # noqa: E402
 from books import JobError  # noqa: E402
 from log import Log  # noqa: E402
@@ -188,6 +189,9 @@ class Runner:
                                                            "permanent": True})
             log.error("jobben feilet", feil=str(exc), kind="JobError")
             permanent = True
+            # Si fra. Uten dette blir en betalt ordre liggende som `failed` i
+            # SQLite til noen tilfeldigvis aapner panelet - se notify.py.
+            self._notify_failed(job_key, str(exc), "JobError", True, log)
             result = {"status": "failed", "job_key": job_key, "error": str(exc),
                       "kind": "JobError", "permanent": True}
 
@@ -198,6 +202,8 @@ class Runner:
                               "traceback": traceback.format_exc()[-4000:]})
             log.error("jobben feilet", feil=str(exc), kind=type(exc).__name__,
                       traceback=traceback.format_exc()[-4000:])
+            self._notify_failed(job_key, str(exc), type(exc).__name__,
+                                False, log)
             result = {"status": "failed", "job_key": job_key, "error": str(exc),
                       "kind": type(exc).__name__}
 
@@ -218,6 +224,23 @@ class Runner:
         result["progress"] = {"done": job.get("progress_done"),
                               "total": job.get("progress_total")}
         return result
+
+    def _notify_failed(self, job_key: str, error: str, kind: str,
+                       permanent: bool, log: Log) -> None:
+        """Varsle om en feilet jobb - og aldri la varslingen bli feilen.
+
+        notify.send fanger selv URLError og OSError, men den leser ogsaa
+        config/secrets.json og bygger JSON. Kaster noe av det, ville unntaket
+        propagert ut av except-grenen i run_job: jobben returnerer aldri, og
+        `on_finished` sin ack/nack til RabbitMQ forsvinner. Da ville et
+        varsel som ikke kom fram ha blitt en melding som ble liggende
+        uacket - altsaa et stoerre problem enn det vi proevde aa loese.
+        """
+        try:
+            notify.job_failed(job_key, self.store.job(job_key) or {}, error,
+                              kind, self.current_step, permanent, log)
+        except Exception as exc:                     # noqa: BLE001
+            log.warn(f"kunne ikke varsle om feilet jobb: {exc}")
 
     def _run_step(self, ctx: Context, step, settings: dict, log: Log) -> None:
         """Ett steg, med retry. Kaster videre naar forsoekene er brukt opp."""

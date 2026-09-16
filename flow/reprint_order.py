@@ -537,6 +537,19 @@ def upload_and_draft(info: dict, files: dict, make_draft: bool) -> dict:
     draft_id = res.get("id")
     print(f"    nytt utkast (HTTP {status}): {draft_id}")
     result["draft_id"] = draft_id
+    if not draft_id:
+        raise SystemExit(
+            f"Gelato svarte HTTP {status} uten ordre-id: {res}. "
+            "Utkastet finnes ikke, og det gamle skal derfor IKKE slettes.")
+
+    # Fikk Gelato faktisk tak i PDF-en? Ordre 1300 gikk til et utkast som sa
+    # seg ferdig mens item-et stod uten fil, fordi Drive svarte med en
+    # HTML-advarselside. Vi leser utkastet tilbake FOER vi sletter det gamle:
+    # feiler dette, er det gamle utkastet fortsatt det beste vi har.
+    import gelato_api
+    result["verified"] = gelato_api.verify_draft(draft_id)
+    print(f"    verifisert: Gelato har lest inn fila "
+          f"({result['verified']['items']} item)")
 
     for old_id in old:
         if str(old_id) == str(draft_id):

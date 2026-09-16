@@ -4,13 +4,14 @@ import shutil
 from pathlib import Path
 
 # === KONFIGURASJON ==========================
-# Scriptet ligger i <ComfyUI>/books/fotballstjernen/script.
+# Scriptet ligger i <DreamPage-rot>/books/fotballstjernen/script.
 BOOK_ROOT = Path(__file__).resolve().parents[1]
 COMFYUI_ROOT = BOOK_ROOT.parents[1]
 BASE_DIR = BOOK_ROOT / "base"
 ORDERS_DIR = BOOK_ROOT / "orders"
 COMFY_OUTPUT_ROOT = COMFYUI_ROOT / "output" / "fotballstjernen" / "orders"
-SHARED_SCRIPT_DIR = COMFYUI_ROOT / "script"
+# De delte input-filene ligger i flow/, ikke i den gamle script/-mappa.
+SHARED_SCRIPT_DIR = COMFYUI_ROOT / "flow"
 EXTRA_INPUT_FILES = [
     "dreampage-first.png",
     "blank-back.png",

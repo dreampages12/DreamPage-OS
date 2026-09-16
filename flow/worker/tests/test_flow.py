@@ -439,7 +439,12 @@ def test_pipeline_er_data(sb: Sandbox) -> None:
     import pipeline
     described = pipeline.describe()
     names = [s["name"] for s in described["steps"]]
-    assert names[0] == "validate_job"
+    # check_assets FOERST, og foer alt som rendrer eller bygger. Kunsten er
+    # fail-soft hele veien ned (ordre 1510 og 1506), saa en manglende fil
+    # maa stoppe jobben FOER den blir et bilde ingen ser paa igjen.
+    assert names[0] == "check_assets", names
+    assert names[1] == "validate_job", names
+    assert names.index("check_assets") < names.index("render_pages"), names
     assert "render_pages" in names
     by_name = {s["name"]: s for s in described["steps"]}
     # render_pages har 14 timers timeout, ikke step_defaults sin ene time.
@@ -669,6 +674,125 @@ def test_pipeline_override_endrer_ikke_standarden(sb: Sandbox) -> None:
     full = [st.name for st in pipeline_mod.by_name("full")]
     assert full[:len(pages)] == pages, (pages, full)
     assert "upload_and_draft" in full and "upload_and_draft" not in pages
+
+
+# ---------------------------------------------------------------------------
+# Varsling: en betalt ordre som stopper, skal si fra selv
+# ---------------------------------------------------------------------------
+@test
+def test_feilet_jobb_varsler(sb: Sandbox) -> None:
+    """En jobb som feiler sender ETT varsel, med ordre, steg og aarsak.
+
+    Kriteriet dette daekker er ordre 1517: boka fantes ikke, jobben stoppet,
+    og ingen fikk beskjed. Fram til 16.09.2026 fantes det to varsler i hele
+    workeren og BEGGE fyrte bare naar det gikk bra - feilen var flyttet fra
+    n8n sin `status = success` til en SQLite-rad ingen leser.
+    """
+    import notify
+    import runner as runner_mod
+
+    sent: list = []
+    original = notify.send
+    notify.send = lambda text, log=None, timeout=30: (
+        sent.append(text) or {"sent": True})
+    try:
+        store = fresh_store(sb, "varsel")
+        r = runner_mod.Runner(store)
+        r.comfy = FakeComfy(sb, render_seconds=0)
+        payload = sb.payload("V1")
+        payload["book_slug"] = "finnes-ikke"
+        store.enqueue("V1", payload)
+        res = r.run_job(runner_mod.QueuedJob("V1", payload))
+    finally:
+        notify.send = original
+
+    assert res["status"] == "failed", res
+    assert len(sent) == 1, f"ventet ETT varsel, fikk {len(sent)}: {sent}"
+    text = sent[0]
+    assert "V1" in text, text
+    # Permanent feil skal si at den ikke starter av seg selv - det er
+    # forskjellen operatoeren maa handle ulikt paa.
+    assert "starter ikke av seg selv" in text, text
+    assert "retry" in text, text
+
+
+@test
+def test_varsling_som_feiler_stopper_ingenting(sb: Sandbox) -> None:
+    """Telegram nede skal ikke gjoere en ferdig jobb til en feilet jobb."""
+    import notify
+    import runner as runner_mod
+
+    original = notify.send
+
+    def eksploder(text, log=None, timeout=30):
+        raise OSError("Telegram er nede")
+
+    notify.send = eksploder
+    try:
+        store = fresh_store(sb, "varsel2")
+        r = runner_mod.Runner(store)
+        r.comfy = FakeComfy(sb, render_seconds=0)
+        payload = sb.payload("V2")
+        payload["book_slug"] = "finnes-ikke"
+        store.enqueue("V2", payload)
+        # Skal ikke kaste videre: jobben er alt feilet, og varselet er et
+        # sidespor. Kaster den her, mister vi finished-callbacken og dermed
+        # ack-en til RabbitMQ.
+        res = r.run_job(runner_mod.QueuedJob("V2", payload))
+    finally:
+        notify.send = original
+
+    assert res["status"] == "failed", res
+    assert (store.job("V2") or {}).get("status") == "failed"
+
+
+# ---------------------------------------------------------------------------
+# check_assets som steg
+# ---------------------------------------------------------------------------
+@test
+def test_manglende_kunst_stopper_foer_rendring(sb: Sandbox) -> None:
+    """En manglende kunstfil stopper jobben FOER noe blir rendret.
+
+    Ordre 1510 (line2-logoen) og 1506 (aapningssida) naadde begge et
+    trykkeklart utkast fordi kunstkjeden er fail-soft: den advarer og gaar
+    videre. Da maa mangelen fanges foer rendringen, ikke under.
+    """
+    import steps as steps_mod
+    from books import JobError
+
+    ctx = steps_mod.Context(job_key="A1", payload=sb.payload("A1"),
+                            log=_NullLog())
+
+    sys.path.insert(0, str(steps_mod.TOOLS_DIR))
+    import check_assets as checker
+
+    original = checker.audit
+    checker.audit = lambda: ([("x", "a.png")], [("config/x.json", "flow/text/logo/borte.png")])
+    try:
+        raised = None
+        try:
+            steps_mod.check_assets(ctx)
+        except JobError as exc:
+            raised = exc
+        assert raised is not None, "manglende kunst gikk rett gjennom"
+        assert "borte.png" in str(raised), str(raised)
+    finally:
+        checker.audit = original
+
+    # Og med alt paa plass skal steget si hvor mange stier det sjekket.
+    checker.audit = lambda: ([("x", "a.png"), ("y", "b.png")], [])
+    try:
+        detail = steps_mod.check_assets(ctx)
+        assert detail == {"paths": 2, "missing": 0}, detail
+    finally:
+        checker.audit = original
+
+
+class _NullLog:
+    def info(self, *a, **k): pass
+    def warn(self, *a, **k): pass
+    def error(self, *a, **k): pass
+    def bind(self, *a, **k): pass
 
 
 def main() -> int:

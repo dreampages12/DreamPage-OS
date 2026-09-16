@@ -42,12 +42,15 @@ PRODUCT_UID = {
 
 
 def gelato(method: str, url: str, body=None):
-    data = json.dumps(body).encode() if body is not None else None
-    req = urllib.request.Request(url, data=data, method=method, headers={
-        "X-API-KEY": GELATO_KEY, "Content-Type": "application/json", "User-Agent": UA})
-    with urllib.request.urlopen(req, timeout=90) as r:
-        raw = r.read().decode()
-        return r.status, (json.loads(raw) if raw.strip() else {})
+    """Delegerer til flow/gelato_api.py.
+
+    Signaturen staar fordi reprint_order, dp_merge og cleanup_variants
+    importerer NOEYAKTIG denne. Innmaten er byttet ut slik at alle tre faar
+    retry paa 408/429/5xx og feilkroppen fra Gelato i meldingen - se
+    docstringen i gelato_api.py for hvorfor ingen av delene fantes for.
+    """
+    import gelato_api
+    return gelato_api.call(method, url, body)
 
 
 def load_payload(execution_id: int) -> dict:

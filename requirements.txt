@@ -1,0 +1,42 @@
+# Avhengighetene DreamPage-OS sin EGEN kode trenger (flow/, tools/).
+#
+# ComfyUI sine egne avhengigheter staar IKKE her - de ligger i
+# DreamPage-image/requirements.txt og eies av upstream. Den fila roerer vi
+# aldri, og torch installeres etter den, ikke etter denne.
+#
+#   python -m pip install -r requirements.txt
+#
+# Versjonene er pinnet, ikke sortert etter smak: de er NOEYAKTIG det som
+# kjorer i produksjon paa tobias-pc per 16.09.2026, lest ut av den kjorende
+# installasjonen. En ny maskin som installerer noe annet, kjorer noe annet -
+# og forskjellen viser seg foerst i en bok som er trykt.
+#
+# Python 3.10 (C:\Users\<bruker>\AppData\Local\Programs\Python\Python310).
+# IKKE 3.11+: drive_upload.py haandterer HTTP 308 fra Google sin
+# resumable-opplasting selv, fordi 3.11 sin HTTPRedirectHandler folger 308
+# automatisk og da forsvinner Range-headeren. Koden har en _NoRedirect-opener
+# for nettopp det, men resten av stacken er bare kjort paa 3.10.
+
+# --- PDF og bilder: hele bokproduksjonen ---------------------------------
+# reportlab bygger hver eneste side (183 importsteder i tekstscriptene).
+reportlab==4.4.7
+# pypdf teller sider. dream_pdf_guard krever noeyaktig 33 samlet og 30/31
+# innersider - en PDF med 14 innersider blir en trykt bok med 14 innersider.
+pypdf==6.13.3
+pillow==12.2.0
+numpy==1.26.4
+
+# --- Koe og API ----------------------------------------------------------
+# pika: RabbitMQ-konsumenten (prefetch=1, manuell ack).
+pika==1.3.2
+fastapi==0.109.2
+uvicorn==0.27.1
+
+# --- QR-koden paa "fortsett eventyret"-siden -----------------------------
+qrcode==8.2
+
+# torch importeres ett sted i vaar egen kode (upscale_2x_ultrasharp.py) og
+# ellers av ComfyUI. Den installeres MED CUDA-hjul fra pytorch.org, ikke
+# herfra - derfor staar den som kommentar og ikke som krav:
+#   pip install torch==2.5.1+cu121 torchvision==0.20.1+cu121 \
+#       --index-url https://download.pytorch.org/whl/cu121
