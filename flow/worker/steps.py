@@ -333,3 +333,70 @@ def verify_pages(ctx: Context) -> dict:
         raise RuntimeError(f"{len(missing)} sider mangler i {output_dir}: "
                            + ", ".join(missing))
     return {"sider": len(found), "output_dir": str(output_dir)}
+
+def notify_pages_ready(ctx: Context) -> dict:
+    """Si til operatoeren at sidene er klare til gjennomgang.
+
+    HVORFOR DETTE STEGET FINNES:
+
+    Den aktive pipelinen ("pages") stopper med vilje etter sidene - et
+    menneske skal se paa dem foer PDF-en bygges og et Gelato-utkast lages.
+    Men fram til 16.09.2026 var det INGEN som fikk beskjed naar de var
+    klare. Jobben ble staaende "done" i DB-en, ordren var halvferdig, og
+    kunden ventet.
+
+    Ordre 1522 (Lilly) og 1524 (Ida) laa slik samtidig. Det er noeyaktig
+    samme feilform som ordre 1517, der n8n skrev "success" etter 1,3
+    sekunder og ingen merket at boka aldri ble laget: arbeidet stopper et
+    sted der ingen ser det.
+
+    Steget er OPTIONAL og svelger sine egne feil. En ordre der sidene er
+    bygget, men varselet ikke kom fram, er ikke en feilet ordre - men den
+    skal synes i loggen.
+    """
+    import urllib.error
+    import urllib.request
+
+    import dp_secrets
+    import pipeline as pipeline_mod
+
+    # Steget staar i PAGES_PIPELINE, og FULL_PIPELINE er PAGES + resten - saa i
+    # full modus ville dette fyrt MIDT i kjoeringen og bedt operatoeren bygge
+    # noe pipelinen bygger selv fire steg senere. Da er varselet feil, ikke
+    # bare overfloedig.
+    if getattr(pipeline_mod, "ACTIVE", "pages") != "pages":
+        return {"sent": False, "reason": "ikke siste steg i aktiv pipeline"}
+
+    token = dp_secrets.get("worker_bot_token")
+    chat = dp_secrets.get("worker_chat_id")
+    if not token or chat in (None, ""):
+        ctx.log.warn("worker_bot_token/worker_chat_id mangler - ingen varsling")
+        return {"sent": False, "reason": "mangler token eller chat_id"}
+
+    job = ctx.job
+    pages = len(ctx.pages or [])
+    text = (
+        "Sidene er klare til gjennomgang.\n\n"
+        f"Ordre:   {ctx.job_key}\n"
+        f"Barn:    {job.get('child_name')}\n"
+        f"Bok:     {job.get('book_title') or job.get('book_slug')}\n"
+        f"Sider:   {pages}\n"
+        f"Omslag:  {job.get('cover_type')}\n\n"
+        "PDF og Gelato-utkast er IKKE laget enda - det er med vilje.\n"
+        f"Se sidene:      /vis {ctx.job_key}\n"
+        f"Bytt en side:   /fix {ctx.job_key} <sidenr>\n"
+        f"Bygg boka:      /bygg {ctx.job_key}"
+    )
+    body = json.dumps({"chat_id": chat, "text": text,
+                       "disable_web_page_preview": True}).encode()
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=body, method="POST",
+        headers={"Content-Type": "application/json",
+                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"})
+    try:
+        with urllib.request.urlopen(req, timeout=30) as res:
+            return {"sent": True, "http": res.status, "pages": pages}
+    except (urllib.error.URLError, OSError) as exc:
+        ctx.log.error(f"Telegram-varsel feilet: {exc}")
+        return {"sent": False, "error": str(exc)}

@@ -104,6 +104,14 @@ PAGES_PIPELINE: tuple[Step, ...] = (
          "Alle paakrevde sider ligger paa disk. Fanger den manglende siden HER "
          "i stedet for som 'Inner PDF page count ... got 14' fire steg senere.",
          retries=1, timeout_s=300),
+
+    # Siste steg, og det som gjoer at "stopp etter sidene" er en
+    # GJENNOMGANG og ikke en stillhet. Uten dette ble ordre staaende
+    # "done" i DB-en mens kunden ventet - se docstringen i steget.
+    Step("notify_pages_ready", steps.notify_pages_ready,
+         "Si til operatoeren paa Telegram at sidene er klare. Optional: en "
+         "ordre der varselet ikke kom fram er ikke en feilet ordre.",
+         retries=2, timeout_s=60, optional=True),
 )
 
 # ---------------------------------------------------------------------------
