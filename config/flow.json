@@ -2,7 +2,7 @@
   "_": "Kjorekonfigurasjon for flow. Standardverdiene staar i flow/worker/config.py, med referansen til n8n-noden de kommer fra. Her staar BARE det som skal vaere annerledes.",
   "comfy": {
     "_": "url leses av fire steder: paths.py, worker/config.py, dreampage.ps1 og regen_page.py. Standardverdiene for timeout og retry staar i flow/worker/config.py, med referansen til n8n-noden de kommer fra.",
-    "_port": "8189 fordi en ELEVERT ComfyUI fra den gamle C:\\ComfyUI fortsatt eier 8188. Den ser null modeller og kan ikke bygge en side; flow nekter den naa via comfy.identity(). Naar den er drept: sett url til 8188 og kjor dreampage.ps1 restart.",
+    "_port": "8189 er den PERMANENTE porten, ikke en midlertidig omvei. Den ble valgt fordi en gammel, elevert ComfyUI fra C:\\ComfyUI eide 8188 uten aa se modellene - men det er ingen grunn til aa flytte tilbake naar den er borte: alt (paths.py, worker/config.py, dreampage.ps1, regen_page.py) leser url herfra, og et bytte er bare ny risiko for at noe annet tar porten. Er du usikker paa om du snakker med RIKTIG instans: GET /api/status -> image.is_dreampage_image og image.models_visible.",
     "url": "http://127.0.0.1:8189"
   },
   "server": {
