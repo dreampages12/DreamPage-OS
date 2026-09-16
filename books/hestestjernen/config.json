@@ -1,7 +1,7 @@
 {
   "slug": "hestestjernen",
   "displayName": "Hestestjernen",
-  "_status": "UNDER ARBEID (2026-09-16): bilder, headmasker, tekstscript (5 sprak), config, prepare-script og driveFolderId er paa plass. Boka var registrert i DP Title Tester fra for (nb-noden heter fortsatt 'dyreparken1' - en udopt kopi). GJENSTAAR: EGEN RYGGRAD og BAKSIDE (bruker midlertidig den-magiske-bursdagen-jente sin), egen dreampage-first, og at forsidetypografien verifiseres mot en ekte render. Historien er skrevet etter illustrasjonene.",
+  "_status": "I PRODUKSJON. Foerste ordre bygget 16.09.2026: ordre 1517 (Ingvild), hele veien gjennom flow til Gelato-utkast 6cc71f21. Verifisert paa den ordren: forsidetypografien (tittel + gulllogo med hestesko sitter rent, ingen avkutting), egen ryggrad i alle fem sprak, egen bakside, egen dreampage-first, 33 sider samlet / 30 innersider, og at teksten lander paa motsatt side av barnet paa alle 14 oppslag. Boka var registrert i DP Title Tester fra foer (nb-noden heter fortsatt 'dyreparken1' - en udoept kopi, rent kosmetisk i en deaktivert workflow). Historien er skrevet etter illustrasjonene.",
   "textScript": "C:/DreamPage-OS/flow/text/nb/hestestjernen-text-nb.py",
   "textScripts": {
     "nb": "C:/DreamPage-OS/flow/text/nb/hestestjernen-text-nb.py",

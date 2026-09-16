@@ -30,6 +30,7 @@ _ENV = {
     "worker_bot_token": "DP_WORKER_BOT_TOKEN",
     "worker_chat_id": "DP_WORKER_CHAT_ID",
     "mockup_secret": "DP_MOCKUP_SECRET",
+    "wp_progress_secret": "DP_WP_PROGRESS_SECRET",
 }
 
 _cache: dict | None = None
@@ -71,3 +72,13 @@ def require(name: str):
 
 def gelato_api_key() -> str:
     return require("gelato_api_key")
+
+
+def wp_progress_secret() -> str | None:
+    """X-DreamPage-Secret for kundens fremdriftsvisning.
+
+    get(), ikke require(): fremdriftsvisningen er et sidespor som aldri skal
+    kunne stoppe en bok. Mangler den, logger steget en WARN og ordren gaar
+    videre - noeyaktig som naar nettstedet er nede.
+    """
+    return get("wp_progress_secret")

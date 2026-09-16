@@ -21,9 +21,16 @@ Historien er skrevet etter illustrasjonene: stall -> stell -> foerste ridetur
 -> hinder -> vennskap -> trener -> stevnedag -> seier. Erstattes hvis brukeren
 sender sin egen tekst.
 
-MERK om side 6: treneren staar omtrent paa cx 0.35, altsaa inne i
-tekstkolonnen paa venstre side. Teksten er holdt kort der, og
-`_dp_layout_offsets` i build-scriptet skyver blokkene klar av henne.
+MERK om side 6: treneren staar omtrent paa cx 0.35. Da denne fila ble
+skrevet sto det her at hun dermed er "inne i tekstkolonnen". Det er FEIL,
+og feilen var aa blande to koordinatsystemer: cx-tallene over er maalt paa
+hele OPPSLAGET, mens tekstkolonnen er definert per SIDE (LEFT_X1=140 til
+LEFT_X2=540 av INNER_WIDTH=1536). Venstre tekstkolonne dekker altsaa bare
+0.046-0.176 av oppslaget, og treneren paa 0.35 staar godt til hoeyre for
+den. Verifisert paa ordre 1517 (16.09.2026): ingen kollisjon.
+
+Naar du leser cx-tallene over: del paa 2 for aa finne hvor noe staar paa
+sin egen side.
 """
 
 COVER_NB = "(Navn) blir\nHestestjerne"

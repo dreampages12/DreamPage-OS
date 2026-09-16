@@ -129,16 +129,37 @@ def claim_post_comfy(ctx: Context) -> dict:
 # ---------------------------------------------------------------------------
 def _wp_progress(ctx: Context, status_value: str) -> dict:
     """POST til dreampage.store. Rent sidespor: kundens fremdriftsvisning skal
-    aldri kunne stoppe boka."""
+    aldri kunne stoppe boka.
+
+    Endepunktet krever `X-DreamPage-Secret`. Porteringen fra n8n hadde
+    droppet headeren, og siden steget svelger alle feil ble det bare en WARN
+    i loggen mens kunden satt og saa en fremdrift som aldri flyttet seg -
+    oppdaget da ordre 1517 kjoerte 16.09.2026 ("Invalid credentials", 403).
+    Hemmeligheten ligger i config/secrets.json, ikke her: repoet er i git.
+
+    Mangler hemmeligheten helt, sier vi det i loggen i stedet for aa sende en
+    forespoersel vi vet blir avvist.
+    """
     woo = ctx.job.get("woo_order_id") or ctx.job_key
     try:
         order_id = int(str(woo).split("-")[0])
     except ValueError:
         order_id = 0
+
+    sys.path.insert(0, str(FLOW))
+    import dp_secrets
+    secret = dp_secrets.wp_progress_secret()
+    if not secret:
+        ctx.log.warn("WP-fremdrift hoppet over: hemmeligheten "
+                     "'wp_progress_secret' mangler i config/secrets.json")
+        return {"status": status_value, "skipped": "mangler hemmelighet",
+                "order_id": order_id}
+
     body = json.dumps({"order_id": order_id, "status": status_value}).encode()
     req = urllib.request.Request(WP_PROGRESS_URL, data=body, method="POST",
                                  headers={"Content-Type": "application/json",
-                                          "User-Agent": UA})
+                                          "User-Agent": UA,
+                                          "X-DreamPage-Secret": secret})
     try:
         with urllib.request.urlopen(req, timeout=30) as res:
             return {"status": status_value, "http": res.status, "order_id": order_id}
