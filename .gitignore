@@ -76,3 +76,8 @@ venv*/
 .DS_Store
 Thumbs.db
 *.tmp
+
+# Backupfilene kjeden lager selv foer den endrer noe (*.backup-before-<hva>-<dato>).
+# De er en sikkerhetsnett i filsystemet, ikke historikk - git er historikken.
+*.backup-before-*
+*.backup-reprint-*

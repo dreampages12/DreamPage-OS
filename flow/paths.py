@@ -34,7 +34,6 @@ IMAGE = ROOT / "DreamPage-image"
 FLOW = ROOT / "flow"
 BOOKS = ROOT / "books"
 NODES = ROOT / "nodes"
-ASSETS = ROOT / "assets"
 PANEL = ROOT / "panel"
 TUNNEL = ROOT / "tunnel"
 ARCHIVE = ROOT / "archive"
@@ -71,10 +70,27 @@ TEXT = FLOW / "text"
 FACE_VARIANTS = FLOW / "face_variants"
 TOOLS = FLOW / "tools"
 
-LOGO = ASSETS / "logo"
-BAKSIDE = ASSETS / "bakside"
-RYGGRAD = ASSETS / "ryggrad"
-LASTPAGES = ASSETS / "lastpages"
+# Delt kunst: logoer, bakside, ryggrad og lastpage-bilder.
+#
+# Disse laa en periode i `assets/` paa rota. Det var feil, og det brakk
+# produksjonen to ganger:
+#
+#   1. Tekstscriptene finner dem RELATIVT til sin egen fil
+#      (`os.path.dirname(__file__)` -> `flow/text/`), ikke gjennom denne
+#      modulen. Flyttingen ga «Cover PDF ble IKKE laget. Mangler: ryggrad.png»
+#      paa hver eneste bok.
+#   2. `config/next_book_titles.json` pekte paa `assets/logo/...` med absolutt
+#      sti. Da `assets/` ble ryddet bort igjen, forsvant line2-logoen fra
+#      neste-bok-forsiden i stillhet - rendereren advarer og fortsetter med
+#      exit 0. Ordre 1510 fikk en trykkeklar forside som bare sa «Henry og
+#      det», uten boktittelen.
+#
+# Kunsten ligger derfor DER SCRIPTENE LETER, og disse konstantene peker dit.
+# Flytt dem ikke uten aa kjoere `tools/check_assets.py` etterpaa.
+LOGO = TEXT / "logo"
+BAKSIDE = TEXT / "bakside"
+RYGGRAD = TEXT / "ryggrad"
+LASTPAGES = TEXT / "lastpages"
 
 # ComfyUI, for de som maa snakke med prosessen eller lese loggen.
 #

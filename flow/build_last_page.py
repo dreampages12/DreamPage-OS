@@ -358,6 +358,24 @@ def mode_cover(args) -> int:
         return 0
 
     logo = (params.get("line2_image") or "").strip()
+    if logo and not os.path.isfile(logo):
+        # For flere boeker ER logoen hele andre linje ("line2": ""). Da blir
+        # tittelen staaende som en halv setning - ordre 1510 fikk en
+        # trykkeklar forside som bare sa "Henry og det".
+        #
+        # render-title-line2logo.py skriver "ADVARSEL: Fant ikke line2_image"
+        # og avslutter med 0, saa ingenting oppstroems merket det. Vi roper
+        # her i stedet, med samme "!!!"-markoer som resten av kjeden bruker.
+        # Fortsatt fail-soft: et oppsalg skal aldri stoppe en betalt ordre.
+        fallback = (params.get("line2") or "").strip()
+        warn("!!! line2-logoen mangler: %s"
+             "\n    Konfigurert for %s i config/next_book_titles.json."
+             "\n    %s"
+             "\n    Sjekk alle stiene med: python tools/check_assets.py"
+             % (logo, args.next_slug,
+                ("Faller tilbake paa tekstlinja '%s'." % fallback) if fallback
+                else "Boka har ingen tekst-fallback ('line2' er tom), saa "
+                     "tittelen blir en halv setning. SE OVER FORSIDEN."))
     renderer = "render-title-line2logo.py" if logo else "render-title.py"
     fs = font_scale(args.raw, args.next_slug)
     cmd = [

@@ -322,6 +322,30 @@ def resolve(order_id: str, refresh: bool = False) -> dict:
                                "payload": payload,
                                "overrides": overrides})
 
+    # --------------------------------------------------------------------
+    # Adresserettinger
+    #
+    # Samme grunn som child_name: kunden skriver av og til feil, og rettingen
+    # maa gjelde ALT som bygger og sender boka - ikke bare det ene stedet den
+    # ble oppdaget. Payloaden selv roeres IKKE: den er kvitteringen for hva
+    # kunden faktisk sendte, og den skal kunne leses etterpaa.
+    #
+    # Konkret tilfelle 16.09.2026: ordre 1510 og 1513 er samme kunde (samme
+    # e-post, to soesken, 28 minutter mellom bestillingene), men hun skrev
+    # husnummeret ulikt - Revesandveien 85 i den foerste, 81 i den andre.
+    # Begge finnes i Kartverket, saa ingen maskin kan avgjoere hvilken som er
+    # hjemme hos henne. Sammenslaaingen ble derfor riktig blokkert av
+    # adresse-guarden i dp_merge.check(), og maatte avgjoeres av et menneske.
+    #
+    # `overrides["shipping"]` flettes INN i payloadens shipping, saa man kan
+    # rette ett felt uten aa skrive hele adressen paa nytt.
+    # --------------------------------------------------------------------
+    if overrides.get("shipping"):
+        payload = dict(payload)
+        merged = dict(payload.get("shipping") or {})
+        merged.update(overrides["shipping"])
+        payload["shipping"] = merged
+
     slug = resolve_slug(order_id, payload)
 
     config_path = os.path.join(BOOKS_DIR, slug, "config.json")
@@ -354,6 +378,7 @@ def resolve(order_id: str, refresh: bool = False) -> dict:
         "child_name": overrides.get("child_name") or payload.get("child_name") or "",
         "child_name_payload": payload.get("child_name") or "",
         "overrides": overrides,
+        "shipping": payload.get("shipping") or {},
         "cover_type": payload.get("cover_type") or "hardcover",
         "continue_code": str(payload.get("continue_code") or "").strip(),
         "next_book_slug": next_book_slug(config, payload),
