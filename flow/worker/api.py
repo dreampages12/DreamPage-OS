@@ -42,6 +42,7 @@ from paths import BOOKS, CONFIG, PANEL, TEXT  # noqa: E402
 import config as flow_config  # noqa: E402
 import jobs as jobs_mod  # noqa: E402
 import pipeline as pipeline_mod  # noqa: E402
+import status as status_mod  # noqa: E402
 from log import job_log_lines  # noqa: E402
 
 API_CONFIG_PATH = CONFIG / "api.json"
@@ -51,11 +52,28 @@ _bearer = HTTPBearer(auto_error=False)
 # ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
+# Rettigheter. "full" naar alt; "status" naar BARE /api/status*.
+#
+# Grunnen til at dette finnes: /api/status er det eneste endepunktet som er
+# ment aa naa ut av maskinen. /api/jobs og /api/queue inneholder barnenavn og
+# ordrenummer, og /api/health inneholder hele filsystemstier. Et
+# overvaakingssystem som skal se om serveren lever, skal ikke kunne lese noe
+# av det - og hvis dets token laekker, skal det ikke vaere en kundedatalekkasje.
+SCOPE_FULL = "full"
+SCOPE_STATUS = "status"
+
+
 def _tokens() -> dict:
-    """{token: navn}. config/api.json staar i .gitignore.
+    """{token: {"name": ..., "scope": ...}}. config/api.json staar i .gitignore.
 
     Navnet er hvem-feltet i handlingsloggen, saa dashbordet og en operatoer
     med curl kan skilles fra hverandre i ettertid.
+
+    To former godtas, og den gamle betyr fortsatt det samme:
+        "tokens": {"<token>": "dashbord"}                      -> full
+        "tokens": {"<token>": {"name": "flaate", "scope": "status"}}
+    Et token uten scope er "full" - ellers ville en oppgradering av denne
+    filen stille tatt fra dashbordet tilgangen det hadde i gaar.
     """
     try:
         with open(API_CONFIG_PATH, encoding="utf-8-sig") as fh:
@@ -64,11 +82,22 @@ def _tokens() -> dict:
         return {}
     except json.JSONDecodeError:
         return {}
-    if isinstance(data.get("tokens"), dict):
-        return {str(k): str(v) for k, v in data["tokens"].items()}
-    if data.get("token"):
-        return {str(data["token"]): str(data.get("name") or "dashboard")}
-    return {}
+    raw = data.get("tokens")
+    if not isinstance(raw, dict):
+        raw = ({str(data["token"]): str(data.get("name") or "dashboard")}
+               if data.get("token") else {})
+    out = {}
+    for token, value in raw.items():
+        if isinstance(value, dict):
+            scope = str(value.get("scope") or SCOPE_FULL).lower()
+            name = str(value.get("name") or "ukjent")
+        else:
+            scope, name = SCOPE_FULL, str(value)
+        if scope not in (SCOPE_FULL, SCOPE_STATUS):
+            # Ukjent scope er ikke "alt lov". Snevreste rettighet vinner.
+            scope = SCOPE_STATUS
+        out[str(token)] = {"name": name, "scope": scope}
+    return out
 
 
 def _cors_origins() -> list[str]:
@@ -82,7 +111,7 @@ def _cors_origins() -> list[str]:
     return list(flow_config.api()["cors_origins"])
 
 
-def caller(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> str:
+def _authenticate(creds: HTTPAuthorizationCredentials | None) -> dict:
     tokens = _tokens()
     if not tokens:
         # Ingen tokens konfigurert betyr ikke "aapent for alle". Det betyr at
@@ -94,10 +123,25 @@ def caller(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> str
         raise HTTPException(status.HTTP_401_UNAUTHORIZED,
                             "mangler Authorization: Bearer <token>",
                             headers={"WWW-Authenticate": "Bearer"})
-    name = tokens.get(creds.credentials)
-    if not name:
+    entry = tokens.get(creds.credentials)
+    if not entry:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "ukjent token")
-    return name
+    return entry
+
+
+def caller(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> str:
+    """Full tilgang. Alt som kan se kundedata henger paa denne."""
+    entry = _authenticate(creds)
+    if entry["scope"] != SCOPE_FULL:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "dette tokenet har bare tilgang til /api/status")
+    return entry["name"]
+
+
+def status_caller(creds: HTTPAuthorizationCredentials | None = Depends(_bearer)) -> str:
+    """Statusendepunktene. Bade "full" og "status" slipper inn."""
+    return _authenticate(creds)["name"]
 
 
 # ---------------------------------------------------------------------------
@@ -152,6 +196,26 @@ def create_app(runner=None, consumer=None) -> FastAPI:
             "finished_at": row.get("finished_at"),
             "error": row.get("error"),
         }
+
+    # -- status: det ENESTE som er ment aa naa ut av maskinen -------------
+    #
+    # Lettvekt og lese-only. Alt caches i status.CACHE_TTL sekunder, saa en
+    # flaatevisning kan polle saa ofte den vil uten aa koste GPU, disk eller
+    # en ComfyUI-forespoersel per kall. Ingen job_key, ingen ordrenummer,
+    # ingen navn, ingen filstier - se flow/worker/status.py for filteret.
+    @app.get("/api/status")
+    def status_full(who: str = Depends(status_caller)):
+        return status_mod.snapshot(runner, consumer, store)
+
+    @app.get("/api/status/summary")
+    def status_summary(who: str = Depends(status_caller)):
+        """En linje per server. Bruk denne naar du poller mange maskiner."""
+        return status_mod.summary(runner, consumer, store)
+
+    @app.get("/api/status/id")
+    def status_id(who: str = Depends(status_caller)):
+        """Hvem er dette. Ingen probing i det hele tatt - svarer fra minne."""
+        return {"schema": 1, "at": jobs_mod.now(), "server": status_mod.server()}
 
     # -- helse ------------------------------------------------------------
     @app.get("/api/health")

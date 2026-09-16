@@ -1,7 +1,12 @@
 {
   "_": "Kopier til api.json. api.json staar i .gitignore - et token i git-historikk maa roteres, ikke slettes.",
+  "_scope": "scope 'full' naar alt, inkludert /api/jobs og /api/queue som inneholder barnenavn og ordrenummer, og /api/health som inneholder filsystemstier. scope 'status' naar BARE /api/status, /api/status/summary og /api/status/id - tall og tilstander, ingen kundedata. Gi overvaaking, og alt som skal naa inn utenfra, et 'status'-token og aldri et 'full'. Et token skrevet som ren streng er 'full', slik at en eldre api.json fortsetter aa virke uendret.",
   "tokens": {
-    "<generer med: python -c \"import secrets;print(secrets.token_urlsafe(32))\">": "dashboard"
+    "<generer med: python -c \"import secrets;print(secrets.token_urlsafe(32))\">": "dashboard",
+    "<eget token til overvaaking>": {
+      "name": "flaate-overvaaking",
+      "scope": "status"
+    }
   },
   "cors_origins": [
     "https://admin.dreampage.store"

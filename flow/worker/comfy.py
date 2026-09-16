@@ -88,9 +88,13 @@ def _request(url: str, payload: dict | None, timeout: float) -> dict:
 
 
 class Comfy:
+    # Hvor lenge modell-tellingen gjenbrukes. Se _unet_count().
+    UNET_TTL = 60.0
+
     def __init__(self, conf: dict | None = None):
         self.conf = conf or flow_config.comfy()
         self.url = self.conf["url"].rstrip("/")
+        self._unet_cache = {"at": 0.0, "value": None}
 
     # -- helse ------------------------------------------------------------
     def alive(self) -> bool:
@@ -125,17 +129,37 @@ class Comfy:
             "from_image": expected.lower() in joined.lower(),
             "version": stats.get("system", {}).get("comfyui_version"),
         }
+        # Raadataen videre, saa status.py kan lese GPU og versjoner uten aa
+        # gjoere sitt eget kall. Den plukker ENKELTFELT - argv foelger med
+        # her, og det skal aldri ut av maskinen.
+        out["stats"] = stats
         # Modellene er den andre halvdelen: en instans kan godt kjoere fra
         # riktig sted og likevel mangle --extra-model-paths-config.
+        #
+        # /object_info/UNETLoader er det tyngste kallet i denne klassen, og
+        # modell-listen endrer seg bare naar noen legger en fil i models/.
+        # Derfor caches tallet: statusendepunktet kan polles saa ofte det vil
+        # uten aa koste ComfyUI noe maalbart.
+        out["unet_models"] = self._unet_count()
+        out["ok"] = bool(out["from_image"]) and bool(out.get("unet_models"))
+        return out
+
+    def _unet_count(self):
+        now = time.monotonic()
+        if (self._unet_cache["value"] is not None
+                and now - self._unet_cache["at"] < self.UNET_TTL):
+            return self._unet_cache["value"]
         try:
             info = _request(f"{self.url}/object_info/UNETLoader", None, 30)
             names = (info.get("UNETLoader", {}).get("input", {})
                      .get("required", {}).get("unet_name") or [[]])[0]
-            out["unet_models"] = len(names)
+            value = len(names)
         except ComfyError:
-            out["unet_models"] = None
-        out["ok"] = bool(out["from_image"]) and bool(out.get("unet_models"))
-        return out
+            # Ikke cache en feil: en kort nettverksglipp ville ellers staatt
+            # som "ingen modeller" i et helt minutt.
+            return None
+        self._unet_cache = {"at": now, "value": value}
+        return value
 
     def queue(self) -> dict:
         return _request(f"{self.url}/queue", None, 10)

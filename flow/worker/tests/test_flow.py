@@ -466,6 +466,87 @@ def test_avbrudd_stopper_mellom_sider(sb: Sandbox) -> None:
     assert "avbrutt" in (res.get("error") or "").lower(), res
 
 
+@test
+def test_status_lekker_ikke_kundedata(sb: Sandbox) -> None:
+    """/api/status skal ikke inneholde navn, ordrenummer, job_key eller stier.
+
+    Dette er det ENESTE endepunktet som er ment aa naa ut av maskinen. Vi
+    legger en jobb med gjenkjennelige verdier i DB-en og krever at ingen av
+    dem dukker opp i statusen. `/api/health` inneholder derimot hele argv,
+    og `/api/queue` inneholder barnenavn - de skal aldri eksponeres.
+    """
+    import json as _json
+    import status as status_mod
+
+    store = fresh_store(sb, "status")
+    payload = dict(sb.payload("9911"))
+    payload["child_name"] = "Gjenkjennelig-Barnenavn"
+    payload["order_id"] = "9911"
+    store.enqueue("9911", payload)
+
+    # Tving forbi cachen: den er delt paa modulnivaa mellom testene.
+    status_mod._cache.update(at=0.0, value=None)
+    snap = status_mod.snapshot(runner=None, consumer=None, store=store)
+    blob = _json.dumps(snap, ensure_ascii=False)
+
+    for needle in ("Gjenkjennelig-Barnenavn", "9911", str(sb.root),
+                   sb.slug, "Testbok"):
+        assert needle not in blob, (
+            f"statusen inneholder {needle!r}. /api/status naar ut av maskinen; "
+            f"kundedata og filstier skal aldri vaere med.")
+
+    # ... men tallene MAA vaere der, ellers er endepunktet ubrukelig.
+    assert snap["jobs"]["pending"] == 1, snap["jobs"]
+    assert snap["server"]["id"], "serveren maa kunne identifisere seg"
+    assert snap["schema"] == 1, snap
+
+
+@test
+def test_status_token_naar_ikke_kundedata(sb: Sandbox) -> None:
+    """Et token med scope "status" skal avvises paa alt annet enn status.
+
+    Poenget med scopet: laekker overvaakingstokenet, skal det ikke vaere en
+    kundedatalekkasje. Testen gaar mot avhengighetene direkte, saa den
+    trenger ingen kjoerende server.
+    """
+    import json as _json
+    import api as api_mod
+    from fastapi import HTTPException
+    from fastapi.security import HTTPAuthorizationCredentials
+
+    cfg = sb.root / "config" / "api.json"
+    cfg.parent.mkdir(parents=True, exist_ok=True)
+    cfg.write_text(_json.dumps({"tokens": {
+        "T-full": "dashbord",
+        "T-status": {"name": "overvaaking", "scope": "status"},
+        "T-rart": {"name": "ukjent scope", "scope": "tull"},
+    }}), encoding="utf-8")
+    api_mod.API_CONFIG_PATH = cfg
+
+    def creds(token):
+        return HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+
+    assert api_mod.caller(creds("T-full")) == "dashbord"
+    assert api_mod.status_caller(creds("T-full")) == "dashbord"
+    assert api_mod.status_caller(creds("T-status")) == "overvaaking"
+
+    for token, why in (("T-status", "status-token"), ("T-rart", "ukjent scope")):
+        try:
+            api_mod.caller(creds(token))
+        except HTTPException as exc:
+            assert exc.status_code == 403, (why, exc.status_code)
+        else:
+            raise AssertionError(f"{why} slapp inn paa full tilgang")
+
+    # Ukjent token og manglende token skal fortsatt avvises.
+    for bad, code in ((creds("T-finnes-ikke"), 403), (None, 401)):
+        try:
+            api_mod.status_caller(bad)
+        except HTTPException as exc:
+            assert exc.status_code == code, (bad, exc.status_code)
+        else:
+            raise AssertionError("ugyldig legitimasjon slapp inn")
+
 def main() -> int:
     sandbox = Sandbox()
     # Importene maa skje ETTER at DP_ROOT er satt.
