@@ -167,9 +167,13 @@ $SERVICES = @(
                 -RedirectStandardOutput $out -RedirectStandardError $err
         }
         Health = {
+            # 8766 er status-lytteren, og den kjoerer i en TRAAD inne i denne
+            # prosessen. Doer traaden, lever prosessen videre og 8765 svarer
+            # fint - da er tunnelen utenfor nede uten at noe annet merker det.
+            # Derfor sjekkes begge portene.
             $token = Get-ApiToken
-            if (-not $token) { return (Test-Port 8765) }
-            $null -ne (Get-Json 'http://127.0.0.1:8765/api/health' $token)
+            if (-not $token) { return ((Test-Port 8765) -and (Test-Port 8766)) }
+            ($null -ne (Get-Json 'http://127.0.0.1:8765/api/health' $token)) -and (Test-Port 8766)
         }
         Wait   = 60
     },

@@ -7,7 +7,7 @@
   },
   "server": {
     "_": "Hvem denne serveren er i flaaten. `id` staar IKKE her - den ligger i state/server_id.json og foelger maskinen, ikke vertsnavnet, slik at et navnebytte ikke gjor serveren til en ny server i overvaakingen. label og role er det mennesker leser i en flaatevisning.",
-    "label": "dp-01",
+    "label": "tobias-pc",
     "role": "production",
     "region": "no-hjemme"
   }

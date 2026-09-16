@@ -91,6 +91,26 @@ def main() -> int:
     app = create_app(runner, consumer)
     api_conf = conf["api"]
     port = args.port or api_conf["port"]
+
+    # Status-lytteren, i en egen traad i SAMME prosess. Egen prosess ville
+    # betydd en ny kopi av jobb-DB-handtaket og en ny ting for watchdogen aa
+    # passe paa; her deler den runner/consumer/store med API-et og svarer fra
+    # den samme 5-sekunders cachen, saa polling utenfra koster ingenting.
+    #
+    # Den har BARE /api/status* i seg - det er hele poenget, se status_api.py.
+    status_port = api_conf.get("status_port")
+    if status_port:
+        from status_api import create_status_app
+        status_app = create_status_app(runner, consumer)
+        status_conf = uvicorn.Config(
+            status_app, host=api_conf.get("status_host") or "127.0.0.1",
+            port=int(status_port), log_level="warning", access_log=False)
+        status_server = uvicorn.Server(status_conf)
+        threading.Thread(target=status_server.run, name="status-api",
+                         daemon=True).start()
+        log.info("status-API lytter", host=status_conf.host,
+                 port=status_conf.port, ruter="/api/status*")
+
     log.info("API lytter", host=api_conf["host"], port=port)
     try:
         uvicorn.run(app, host=api_conf["host"], port=port,

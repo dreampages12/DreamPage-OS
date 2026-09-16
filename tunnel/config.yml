@@ -1,45 +1,57 @@
 # cloudflared named tunnel: BARE status-API-et for denne serveren.
 #
-# Vertsnavn:  dp-01.hageai.com   (matcher server.label i config/flow.json)
+# Vertsnavn:  dp-01.hageai.com   (se "Flyttingen" nedenfor)
 # Tunnel:     dp-01-status / c6ecc2db-f411-4dec-949e-5e55cc0e99f7
+# Origin:     127.0.0.1:8766 - status-porten, IKKE 8765
 #
 # ---------------------------------------------------------------------------
-# HVORFOR hageai.com og ikke dreampage.store
+# HVA SOM SLIPPER UT - og hvorfor det er saa lite
 # ---------------------------------------------------------------------------
-# Origin-sertifikatet i ~/.cloudflared/cert.pem er scopet til ÉN sone, og det
-# er hageai.com. Den kjørende Cloudflared-tjenesten bruker en `--token` for
-# tunnel d9b1ec20 i en ANNEN konto, med ingress styrt fra Cloudflare-dashbordet
-# - den kan altså ikke få nye ruter herfra. hageai.com er samme domene som
-# apex/godseye/hq/remote/ring alt tunnelerer gjennom, altså infrastruktur.
+# Bare `/api/status`, `/api/status/summary` og `/api/status/id`.
 #
-# Skal statusen ligge på dreampage.store i stedet, er det ett dashbord-steg;
-# se README.md i denne mappa.
+# Det er fire lag, og hvert av dem er nok alene:
 #
-# ---------------------------------------------------------------------------
-# HVA SOM SLIPPER UT - og hvorfor det er så lite
-# ---------------------------------------------------------------------------
-# Bare `/api/status`, `/api/status/summary` og `/api/status/id`. Ingenting
-# annet, heller ikke på samme port.
-#
-# Det er tre lag, og hvert av dem er nok alene:
-#
-#   1. Denne ingress-lista. `path` er et regex, og alt som ikke matcher blir
-#      404 FØR forespørselen når maskinen. /api/jobs, /api/queue, /api/health
-#      og /panel er derfor ikke nåbare utenfra i det hele tatt.
-#   2. Bearer-token. API-et krever det uansett hvor kallet kommer fra -
+#   1. PORTEN. Origin er 8766, som er en egen lytter der bare de tre
+#      statusrutene er montert (flow/worker/status_api.py). /api/jobs,
+#      /api/queue, /api/health og /panel FINNES ikke paa den porten. Dette er
+#      det viktigste laget, fordi det er det eneste som ikke kan konfigureres
+#      feil: en ingress som peker hit kan i verste fall gi 404.
+#   2. Denne ingress-lista. `path` er et regex med anker, saa alt som ikke er
+#      de tre rutene blir 404 FOER forespoerselen naar maskinen.
+#   3. Bearer-token. API-et krever det uansett hvor kallet kommer fra -
 #      tunnelen er TRANSPORT, ikke autentisering.
-#   3. Token-scope. Tokenet som skal brukes utenfra har scope "status" og får
-#      403 på alt annet enn statusrutene. Lekker det, er det ikke en
-#      kundedatalekkasje.
+#   4. Token-scope. Tokenet som brukes utenfra har scope "status" og faar 403
+#      paa alt annet. Lekker det, er det ikke en kundedatalekkasje.
 #
-# Grunnen til at /api/health IKKE er med, selv om den ser ut som et
-# helsesjekkepunkt: den returnerer hele ComfyUI-argv, altså filsystemstier.
-# /api/queue og /api/jobs inneholder barnenavn og ordrenummer. Statusen er
-# skilt ut i flow/worker/status.py nettopp for å ha ett sted som er trygt å
-# eksponere.
+# Lag 1 er nytt (16.09.2026) og kom av flyttingen nedenfor. Fram til da laa
+# hele forsvaret i lag 2, altsaa i et regex i DENNE fila. Det holdt bare saa
+# lenge tunnelen var vaar egen.
 #
-# ComfyUI (8189), n8n (5678), mockup-serveren (8790) og RabbitMQ har ingen
-# regel her og skal ALDRI få en.
+# ---------------------------------------------------------------------------
+# FLYTTINGEN til tobias-pc.dreampage.store
+# ---------------------------------------------------------------------------
+# `dreampage.store` ligger i en ANNEN Cloudflare-konto. Origin-sertifikatet i
+# ~/.cloudflared/cert.pem er scopet til hageai.com alene - verifisert mot
+# API-et 16.09.2026: tokenet ser ett eneste zone, hageai.com. En CNAME i
+# dreampage.store kan heller ikke peke paa denne tunnelen, fordi tunnel og
+# zone maa ligge i samme konto.
+#
+# `tobias-pc.dreampage.store` maa derfor legges paa den tunnelen som ALLEREDE
+# staar i den kontoen (d9b1ec20, den som betjener admin.dreampage.store). Den
+# kjoerer med `--token`, altsaa fjernstyrt ingress: rutene ligger i
+# dashbordet, og en `config.yml` paa disk blir ignorert. Dashbord-ingress har
+# INGEN sti-filter - bare "hostname -> service".
+#
+# Det er nettopp derfor 8766 finnes. Ruten i dashbordet skal peke paa
+# http://127.0.0.1:8766, og da er den trygg selv uten lag 2. Pekte den paa
+# 8765, ville barnenavn og ordrenummer fulgt med ut.
+#
+# Denne fila blir staaende til tobias-pc.dreampage.store er verifisert. Da kan
+# dp-01.hageai.com ryddes bort - se README.md. Rekkefoelgen er med vilje: den
+# som virker rives ikke foer den nye svarer.
+#
+# ComfyUI (8189), n8n (5678), mockup-serveren (8790), RabbitMQ og det fulle
+# API-et (8765) har ingen regel her og skal ALDRI faa en.
 
 tunnel: c6ecc2db-f411-4dec-949e-5e55cc0e99f7
 credentials-file: C:\Users\tobia\.cloudflared\c6ecc2db-f411-4dec-949e-5e55cc0e99f7.json
@@ -53,7 +65,7 @@ originRequest:
   connectTimeout: 30s
   # Statusen svarer fra en 5-sekunders cache, så den er alltid rask. Korte
   # timeouts er riktig her: et kall som henger er et kall som er galt.
-  httpHostHeader: 127.0.0.1:8765
+  httpHostHeader: 127.0.0.1:8766
   keepAliveTimeout: 30s
 
 ingress:
@@ -62,11 +74,11 @@ ingress:
   # "/api/status/../jobs" kunne matche.
   - hostname: dp-01.hageai.com
     path: ^/api/status$
-    service: http://127.0.0.1:8765
+    service: http://127.0.0.1:8766
 
   - hostname: dp-01.hageai.com
     path: ^/api/status/(summary|id)$
-    service: http://127.0.0.1:8765
+    service: http://127.0.0.1:8766
 
   # Alt annet paa vaart eget vertsnavn -> 404. Uten denne ville en feil i en
   # senere regel kunne eksponere resten av porten.

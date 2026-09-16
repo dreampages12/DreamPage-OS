@@ -4,50 +4,93 @@ Tunnelen er det eneste som slipper trafikk **inn** til maskinen. Alt utgående
 — RabbitMQ over Tailscale, Gelato, Google Drive, Telegram — fungerer uten den
 og skal ikke røres.
 
-## Status: i drift, og eksponerer bare status
+## Status: i drift på hageai, venter på ett dashbord-steg for dreampage.store
 
 ```
-https://dp-01.hageai.com/api/status           <- Bearer-token med scope "status"
+https://dp-01.hageai.com/api/status           <- VIRKER NÅ
 https://dp-01.hageai.com/api/status/summary
 https://dp-01.hageai.com/api/status/id
 alt annet                                     -> 404 i Cloudflares kant
+
+https://tobias-pc.dreampage.store/api/status  <- mangler public hostname
 ```
+
+Origin er **`127.0.0.1:8766`**, ikke 8765. Se neste avsnitt — det er hele
+grunnen til at flyttingen er trygg.
 
 Tunnel `dp-01-status` / `c6ecc2db-f411-4dec-949e-5e55cc0e99f7`, konfigurert i
 `config.yml`, startet som egen prosess og holdt i live av
 `dreampage.ps1 ensure` (tjenesten `tunnel-status`).
 
-## Hvorfor hageai.com og ikke dreampage.store
+## Porten er grensen, ikke regexet
 
-Origin-sertifikatet i `~/.cloudflared/cert.pem` er scopet til **én** sone, og
-det er `hageai.com` (zoneID `d8ca3e90…`). Det er samme domene som `apex`,
-`godseye`, `hq`, `remote` og `ring` allerede tunnelerer gjennom — altså
-infrastruktur, ikke kundeflate.
+Fram til 16.09.2026 lå forsvaret mot at kundedata slapp ut i et **sti-regex**
+i `config.yml`. Det holdt så lenge tunnelen var vår egen, med ingress i en fil
+vi eier.
 
-`dreampage.store` ligger i en **annen konto**. Den kjørende Windows-tjenesten
-«Cloudflared» bruker en `--token` for tunnel `d9b1ec20…` der, og `--token`
-betyr fjernstyrt ingress: rutene ligger i Cloudflare-dashbordet, ikke i en
-lokal fil. En `config.yml` på disk blir fullstendig ignorert av en slik
-tunnel, så statusruten kunne ikke legges der herfra.
+`tobias-pc.dreampage.store` er det ikke. Den må ligge på tunnelen som allerede
+står i `dreampage.store`-kontoen, og den kjører med `--token` — altså
+**fjernstyrt ingress**, der en rute bare er «hostname → service», uten
+sti-filter. Pekt mot 8765 ville `/api/jobs` og `/api/queue` (barnenavn,
+ordrenummer) og `/api/health` (filsystemstier) fulgt med ut.
 
-Vil du ha statusen på `dreampage.store` i stedet, er det ett dashbord-steg:
+Svaret er ikke et strammere regex, men at porten som eksponeres **ikke har noe
+annet å nå**:
 
-> Zero Trust → Networks → Tunnels → tunnelen for `admin.dreampage.store` →
-> **Public hostname** → Add: `dp-01.dreampage.store` → service
-> `http://127.0.0.1:8765`.
+| port | innhold | tunnel? |
+|---|---|---|
+| 8765 | hele API-et: jobs, queue, health, panel | **aldri** |
+| 8766 | bare `/api/status*` | ja, trygt |
+
+8766 er `flow/worker/status_api.py` — en egen uvicorn-lytter i en tråd i
+worker-prosessen, med tre ruter montert og resten av API-et fraværende. En
+feilkonfigurert ingress mot 8766 kan i verste fall gi 404. Grensen er en
+egenskap ved konstruksjonen, ikke en regel noen må huske å skrive riktig.
+
+Løftet holdes av `test_status_api_har_bare_statusruter` i
+`flow/worker/tests/test_flow.py`, som sjekker rutelista, at ingen rute tar
+annet enn GET, og at hver rute har `status_caller`. Legger noen en rute til,
+feiler testen. Ikke utvid `ALLOWED_PATHS` for å få den grønn — flytt ruten til
+`api.py`.
+
+## Det som mangler: ett steg i dashbordet
+
+`dreampage.store` ligger i en annen Cloudflare-konto. Verifisert mot API-et
+16.09.2026: tokenet i `~/.cloudflared/cert.pem` ser **ett eneste** zone,
+`hageai.com` (`d8ca3e90…`, konto `318433…`). En CNAME i `dreampage.store` kan
+heller ikke peke på tunnelen vår, fordi tunnel og zone må ligge i samme konto.
+
+> Zero Trust → Networks → Tunnels → tunnelen for `admin.dreampage.store`
+> (`d9b1ec20…`) → **Public hostname** → Add
 >
-> Men merk: dashbord-ingress har **ikke** sti-filteret denne fila har. Da
-> ville hele port 8765 vært nåbar, inkludert `/api/jobs` og `/api/queue` som
-> inneholder barnenavn og ordrenummer. Legg i så fall Cloudflare Access foran,
-> eller behold `dp-01.hageai.com` for status og la dashbordet gå over
-> Tailscale.
+> * Subdomain: `tobias-pc`
+> * Domain: `dreampage.store`
+> * Service: `http://127.0.0.1:8766`   ← **8766, ikke 8765**
 
-To cloudflared-prosesser side om side er helt normalt, og det er det som
-kjører nå: Windows-tjenesten for `admin.dreampage.store`, og vår egen for
-statusen.
+Verifiser etterpå, med et token med scope `status`:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}
+'   -H "Authorization: Bearer <status-token>"   https://tobias-pc.dreampage.store/api/status          # 200
+
+for p in /api/jobs /api/queue /api/health /panel; do    # alle 404
+  curl -s -o /dev/null -w "$p %{http_code}
+"     -H "Authorization: Bearer <status-token>"     https://tobias-pc.dreampage.store$p
+done
+```
+
+Først når den svarer kan `dp-01.hageai.com` ryddes bort (se nederst). Den som
+virker rives ikke før den nye svarer.
+
+Alternativet, hvis du heller vil ha sti-filteret med: `cloudflared tunnel
+login` på `dreampage.store`-kontoen og en egen named tunnel der. Det krever
+nettleser, og `--origincert` til en annen fil enn `cert.pem`, ellers mister du
+muligheten til å administrere hageai-rutene.
 
 ## Tre lag, hvert av dem nok alene
 
+0. **Porten.** Origin er 8766, der bare statusrutene finnes. Se over.
+   Dette laget kan ikke konfigureres feil, og er derfor det viktigste.
 1. **Ingress-filteret** i `config.yml`. `path` er et regex med anker, så
    `/api/statusXYZ` og `/api/status/../jobs` matcher ikke. Alt som ikke er de
    tre rutene blir 404 **før** forespørselen når maskinen.
@@ -79,14 +122,16 @@ er trygt å sende ut. Svaret er ~1,2 kB og inneholder ingen stier, ingen navn
 og ingen ordrenummer — det er dekket av en test i
 `flow/worker/tests/test_flow.py`.
 
-ComfyUI (8189), n8n (5678), mockup-serveren (8790) og RabbitMQ har ingen regel
-i `config.yml` og skal aldri få en.
+ComfyUI (8189), n8n (5678), mockup-serveren (8790), RabbitMQ og det fulle
+API-et (8765) har ingen regel i `config.yml` og skal aldri få en.
 
 ## Flere servere
 
-`server.label` i `config/flow.json` er `dp-01`, og vertsnavnet følger samme
-mønster. Neste maskin blir `dp-02.hageai.com` med sin egen tunnel og sitt eget
-`status`-token. `server.id` i svaret er en UUID i `state/server_id.json` som
+`server.label` i `config/flow.json` er `tobias-pc`, og vertsnavnet følger
+samme mønster: neste maskin får sin egen label, sitt eget vertsnavn under
+`dreampage.store` og sitt eget `status`-token. Labelen er det MENNESKER leser
+— den ble endret fra `dp-01` da statusen flyttet, og det endret ingenting
+annet, fordi ingenting utenom `status.py` leser den. `server.id` i svaret er en UUID i `state/server_id.json` som
 følger maskinen, ikke vertsnavnet — så et navnebytte lager ikke en ny server i
 flåtevisningen, og to PC-er som tilfeldigvis heter det samme smelter ikke
 sammen til én.

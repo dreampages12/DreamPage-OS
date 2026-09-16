@@ -76,6 +76,15 @@ DEFAULTS: dict = {
     "api": {
         "host": "127.0.0.1",
         "port": 8765,
+
+        # Status-API-et lytter i TILLEGG paa sin egen port, med bare de tre
+        # /api/status-rutene i seg (flow/worker/status_api.py). Det er DENNE
+        # porten en tunnel skal peke paa - 8765 har ogsaa /api/jobs og
+        # /api/queue, og en fjernstyrt ingress har ikke noe sti-filter.
+        # Sett status_port til null for aa slaa den av.
+        "status_port": 8766,
+        "status_host": "127.0.0.1",
+
         # CORS-origin for admin-dashbordet. Aldri "*".
         "cors_origins": ["https://admin.dreampage.store"],
         "rate_limit_per_minute": 30,

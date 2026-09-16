@@ -547,6 +547,43 @@ def test_status_token_naar_ikke_kundedata(sb: Sandbox) -> None:
         else:
             raise AssertionError("ugyldig legitimasjon slapp inn")
 
+
+@test
+def test_status_api_har_bare_statusruter(sb: Sandbox) -> None:
+    """Porten som eksponeres utenfra skal ikke HA noe annet aa naa.
+
+    Dette er loeftet som gjoer det trygt aa peke en fjernstyrt tunnel-ingress
+    (uten sti-filter) mot status-porten: appen inneholder tre ruter, og
+    /api/jobs, /api/queue, /api/health og /panel er ikke montert i den.
+    Grensen er konstruksjonen, ikke et regex i tunnel/config.yml.
+
+    Feiler denne, har noen montert en rute i status-appen, og da kan
+    `tobias-pc.dreampage.store` naa mer enn status. Ikke "fiks" den ved aa
+    utvide ALLOWED_PATHS - flytt ruten til api.py i stedet.
+    """
+    import status_api
+
+    app = status_api.create_status_app(runner=None, consumer=None)
+    got = sorted(r.path for r in app.routes)
+    assert got == sorted(status_api.ALLOWED_PATHS), (
+        f"status-appen har rutene {got}. Bare {sorted(status_api.ALLOWED_PATHS)} "
+        f"er lov - alt annet blir naabart utenfra.")
+
+    # Ingen skriving. En tunnel utenfra skal ikke kunne endre noe.
+    for route in app.routes:
+        methods = set(getattr(route, "methods", ()) or ())
+        assert methods <= {"GET", "HEAD"}, (route.path, methods)
+
+    # Hver rute MAA ha auth. Tunnelen er transport, ikke autentisering.
+    import api as api_mod
+    for route in app.routes:
+        deps = getattr(getattr(route, "dependant", None), "dependencies", [])
+        calls = [d.call for d in deps]
+        assert api_mod.status_caller in calls, (
+            f"{route.path} mangler status_caller. En rute uten auth paa den "
+            f"eksponerte porten er aapen for hele internett.")
+
+
 def main() -> int:
     sandbox = Sandbox()
     # Importene maa skje ETTER at DP_ROOT er satt.
