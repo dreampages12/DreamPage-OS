@@ -109,7 +109,26 @@ $SERVICES = @(
             Start-Process -FilePath $PY -ArgumentList $args `
                 -WorkingDirectory $IMAGE -WindowStyle Minimized
         }
-        Health = { $null -ne (Get-Json "$(Get-ComfyUrl)/system_stats") }
+        # Ikke "svarer noe paa porten" - men "svarer VAAR instans".
+        #
+        # 16.09.2026 svarte en ComfyUI startet fra den gamle C:\ComfyUI paa
+        # 8188, elevert og uten mappe-flaggene. Den saa null modeller, saa
+        # hver bokside ville feilet - og en helsesjekk som bare spurte om noe
+        # svarte, sa OK. Supervisoren ville dessuten sett "lever allerede" og
+        # aldri startet den riktige.
+        Health = {
+            $stats = Get-Json "$(Get-ComfyUrl)/system_stats" $null 15
+            if ($null -eq $stats) { return $false }
+            $argv = ($stats.system.argv -join ' ').Replace('', '/')
+            $want = $IMAGE.Replace('', '/')
+            if ($argv -notlike "*$want*") {
+                Say "  ADVARSEL: ComfyUI paa $(Get-ComfyUrl) kjorer IKKE fra $IMAGE" Red
+                Say "            argv: $argv" Red
+                Say '            Den ser sannsynligvis ingen modeller. Stopp den.' Red
+                return $false
+            }
+            return $true
+        }
         Wait   = 300
     },
     @{

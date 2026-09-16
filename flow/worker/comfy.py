@@ -103,6 +103,40 @@ class Comfy:
     def system_stats(self) -> dict:
         return _request(f"{self.url}/system_stats", None, 10)
 
+    def identity(self) -> dict:
+        """ER dette vaar ComfyUI, eller bare EN ComfyUI?
+
+        At noe svarer paa 8188 beviser ingenting. 16.09.2026 svarte en ComfyUI
+        startet fra den GAMLE C:\ComfyUI paa porten, elevert og uten
+        mappe-flaggene. Den saa NULL modeller, saa hver eneste bokside ville
+        feilet med "unet_name not in []" - og helsesjekken sa "ok", fordi den
+        bare spurte om noe svarte.
+
+        Her sjekkes hvem det er: kjoerer den main.py fra DreamPage-image, og
+        finner den modellene boekene trenger?
+        """
+        stats = self.system_stats()
+        argv = [str(a) for a in (stats.get("system", {}).get("argv") or [])]
+        joined = " ".join(argv).replace("\\", "/")
+        from paths import IMAGE
+        expected = str(IMAGE).replace("\\", "/")
+        out = {
+            "argv": argv,
+            "from_image": expected.lower() in joined.lower(),
+            "version": stats.get("system", {}).get("comfyui_version"),
+        }
+        # Modellene er den andre halvdelen: en instans kan godt kjoere fra
+        # riktig sted og likevel mangle --extra-model-paths-config.
+        try:
+            info = _request(f"{self.url}/object_info/UNETLoader", None, 30)
+            names = (info.get("UNETLoader", {}).get("input", {})
+                     .get("required", {}).get("unet_name") or [[]])[0]
+            out["unet_models"] = len(names)
+        except ComfyError:
+            out["unet_models"] = None
+        out["ok"] = bool(out["from_image"]) and bool(out.get("unet_models"))
+        return out
+
     def queue(self) -> dict:
         return _request(f"{self.url}/queue", None, 10)
 

@@ -38,7 +38,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from paths import BOOKS, CONFIG, PANEL  # noqa: E402
+from paths import BOOKS, CONFIG, PANEL, TEXT  # noqa: E402
 import config as flow_config  # noqa: E402
 import jobs as jobs_mod  # noqa: E402
 import pipeline as pipeline_mod  # noqa: E402
@@ -158,12 +158,15 @@ def create_app(runner=None, consumer=None) -> FastAPI:
     def health(who: str = Depends(caller)):
         comfy_ok = comfy_version = None
         comfy_queue = None
+        comfy_identity: dict = {}
         if runner is not None:
             try:
-                stats = runner.comfy.system_stats()
-                comfy_ok = True
-                comfy_version = stats["system"]["comfyui_version"]
+                comfy_identity = runner.comfy.identity()
+                comfy_version = comfy_identity.get("version")
                 comfy_queue = runner.comfy.queue_depth()
+                # "ok" krever at det er VAAR instans, med modeller. At noe
+                # svarer paa porten er ikke nok - se comfy.identity().
+                comfy_ok = bool(comfy_identity.get("ok"))
             except Exception as exc:                 # noqa: BLE001
                 comfy_ok = False
                 comfy_version = str(exc)[:200]
@@ -176,7 +179,10 @@ def create_app(runner=None, consumer=None) -> FastAPI:
                        else {"alive": False, "note": "API-et kjoerer uten runner"}),
             "comfy": {"ok": comfy_ok, "version": comfy_version,
                       "queue_depth": comfy_queue,
-                      "url": flow_config.comfy()["url"]},
+                      "url": flow_config.comfy()["url"],
+                      "from_image": comfy_identity.get("from_image"),
+                      "unet_models": comfy_identity.get("unet_models"),
+                      "argv": comfy_identity.get("argv")},
             "rabbitmq": ({**consumer.snapshot(), "broker_depth": broker_depth}
                          if consumer is not None else {"connected": False}),
             # Tunnelen kan ikke sjekkes innenfra uten aa gaa ut og inn igjen;
@@ -363,6 +369,17 @@ def create_app(runner=None, consumer=None) -> FastAPI:
             if missing_scripts:
                 item["missing"].append(
                     "tekstskript mangler paa disk: " + ", ".join(sorted(missing_scripts)))
+
+            # Ryggraden (bokryggen). Den ligger i flow/text/ryggrad/<slug>/ og
+            # er ikke nevnt i config.json noe sted, saa den er lett aa glemme
+            # naar en bok legges inn. Mangler den, bygges INNERSIDENE fint og
+            # forsiden feiler med "Mangler: ryggrad.png" - altsaa ingen bok,
+            # oppdaget flere steg for sent. kongerikets-hemmelighet mangler
+            # den i dag; den har aldri blitt bygget.
+            spine = TEXT / "ryggrad" / path.name
+            if languages and not spine.is_dir():
+                item["missing"].append(f"ryggrad ({spine.name}/) - forsiden "
+                                       f"kan ikke bygges")
             item["buildable"] = not item["missing"]
             out.append(item)
         return {"at": jobs_mod.now(), "count": len(out),
