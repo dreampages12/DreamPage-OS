@@ -479,7 +479,22 @@ def known_draft_ids(order_id: str) -> list[str]:
     try:
         _, res = gelato("POST", "https://order.gelatoapis.com/v4/orders:search",
                         {"orderReferenceIds": [str(order_id)]})
-        ids.extend(str(o["id"]) for o in res.get("orders", []))
+        for found in res.get("orders", []):
+            # BARE utkast. Søket returnerer ALT med denne referansen, også
+            # ordre kunden har bekreftet og betalt - og listen herfra går rett
+            # inn i DELETE-løkka i upload_and_draft.
+            #
+            # 16.09.2026: ordre 1530 sto i upload_and_draft mens brukeren
+            # bekreftet utkastet til en betalt ordre. Feilet steget og prøvde
+            # igjen - det har retries=2 - ville neste forsøk funnet den
+            # betalte ordren i dette søket og slettet den. Et duplikatutkast
+            # er et irritasjonsmoment; en slettet betalt ordre er en kunde
+            # som ikke får boka si, og den kan ikke angres.
+            if found.get("orderType") != "draft":
+                print(f"    lar {found.get('id')} staa: orderType="
+                      f"{found.get('orderType')} ({found.get('financialStatus')})")
+                continue
+            ids.append(str(found["id"]))
     except Exception as error:
         print(f"    (Gelato-søk feilet: {error})")
     return list(dict.fromkeys(ids))
@@ -553,6 +568,22 @@ def upload_and_draft(info: dict, files: dict, make_draft: bool) -> dict:
 
     for old_id in old:
         if str(old_id) == str(draft_id):
+            continue
+        # Andre lag: slå opp hva dette faktisk ER før vi sletter. known_draft_ids
+        # filtrerer alt på orderType, men ID-er kommer også fra vår egen
+        # kvitteringsfil, og et utkast der kan ha blitt bekreftet til en betalt
+        # ordre siden sist. Klarer vi ikke å slå det opp, sletter vi IKKE -
+        # ukjent tilstand er ikke en grunn til å slette noe hos Gelato.
+        try:
+            _, existing = gelato("GET",
+                                 f"https://order.gelatoapis.com/v4/orders/{old_id}")
+            kind = existing.get("orderType")
+        except Exception as error:
+            print(f"    lar {old_id} staa: kunne ikke slaa den opp ({error})")
+            continue
+        if kind != "draft":
+            print(f"    lar {old_id} staa: orderType={kind} "
+                  f"({existing.get('financialStatus')}) - ikke et utkast")
             continue
         try:
             code, _ = gelato("DELETE", f"https://order.gelatoapis.com/v4/orders/{old_id}")
