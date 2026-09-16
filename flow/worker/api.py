@@ -377,20 +377,44 @@ def create_app(runner=None, consumer=None) -> FastAPI:
                 "at": jobs_mod.now()}
 
     @app.post("/api/jobs/{job_key}/retry")
-    def retry_job(job_key: str, who: str = Depends(rate_limit)):
+    def retry_job(job_key: str, who: str = Depends(rate_limit),
+                  pipeline: str | None = Query(
+                      None, description="pipeline for DENNE kjoeringen "
+                                        "(pages/full). Utelatt = den aktive.")):
+        """Kjoer en jobb om igjen. Virker ogsaa paa en jobb som er `done`.
+
+        `pipeline` gjelder bare denne ene kjoeringen og endrer IKKE
+        pipeline.ACTIVE. Grunnen den finnes: fase 5 ("full") maa kunne
+        proeves paa en ekte ordre foer den blir standard for alle, og
+        alternativet - aa flippe ACTIVE - endrer hvordan hver framtidige
+        ordre behandles paa et system med betalende kunder.
+
+        Stegene er idempotente, saa en full kjoering av en ordre som alt har
+        sidene sine hopper over renderingen ("already-on-disk") og gaar
+        videre til PDF og utkast.
+        """
         row = store.job(job_key)
         if row is None:
             raise HTTPException(404, f"ingen jobb med job_key {job_key!r}")
         if row["status"] == "running":
             raise HTTPException(409, "jobben kjoerer allerede")
+        if pipeline is not None:
+            # Valider FOER jobben settes til pending: et ukjent navn skal
+            # gi 400 her, ikke en jobb som staar pending og aldri kjoerer.
+            try:
+                pipeline_mod.by_name(pipeline)
+            except KeyError as exc:
+                raise HTTPException(400, str(exc)) from exc
         if not store.retry(job_key):
             raise HTTPException(409, "kunne ikke settes til pending")
         store.action(who, "retry", job_key,
-                     {"forrige_status": row["status"], "feil": row.get("error")})
+                     {"forrige_status": row["status"], "feil": row.get("error"),
+                      "pipeline": pipeline or pipeline_mod.ACTIVE})
         if runner is not None:
             from runner import QueuedJob
-            runner.submit(QueuedJob(job_key, row["payload"]))
+            runner.submit(QueuedJob(job_key, row["payload"], pipeline=pipeline))
         return {"job_key": job_key, "status": "pending", "requested_by": who,
+                "pipeline": pipeline or pipeline_mod.ACTIVE,
                 "at": jobs_mod.now()}
 
     @app.post("/api/jobs/{job_key}/cancel")

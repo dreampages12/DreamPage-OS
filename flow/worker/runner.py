@@ -49,6 +49,11 @@ class QueuedJob:
     #   on_finished(job_key, checkpoint_reached, permanent)
     on_checkpoint: object = None
     on_finished: object = None
+    # Navnet paa en pipeline fra pipeline.PIPELINES, eller None for den
+    # aktive. Finnes for aa kunne kjoere ÉN ordre gjennom "full" uten aa
+    # flippe pipeline.ACTIVE for alle framtidige ordre - fase 5 maa kunne
+    # proeves paa en ekte ordre foer den blir standard.
+    pipeline: str | None = None
 
 
 class Runner:
@@ -109,7 +114,9 @@ class Runner:
             if item is None:
                 break
             try:
-                self.run_job(item)
+                chosen = (pipeline_mod.by_name(item.pipeline)
+                          if getattr(item, "pipeline", None) else None)
+                self.run_job(item, pipeline=chosen)
             except Exception:                       # noqa: BLE001
                 # En feil her er en feil i runneren selv, ikke i jobben.
                 # Traaden maa overleve den, ellers stopper hele koeen.

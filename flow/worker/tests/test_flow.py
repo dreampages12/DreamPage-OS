@@ -635,6 +635,42 @@ def test_cors_slipper_bare_tailnettet(sb: Sandbox) -> None:
         "config/flow.json, ellers blir neste server naabar uten at noen ba om det.")
 
 
+@test
+def test_pipeline_override_endrer_ikke_standarden(sb: Sandbox) -> None:
+    """En kjoering kan velge pipeline uten aa endre den for alle andre.
+
+    Dette finnes fordi alternativet - aa flippe pipeline.ACTIVE til "full"
+    for aa proeve fase 5 paa én ordre - endrer hvordan HVER framtidige ordre
+    behandles paa et system med betalende kunder. Overstyringen skal gjelde
+    én kjoering og ingenting mer.
+    """
+    import pipeline as pipeline_mod
+    from runner import QueuedJob
+
+    # Standarden er uendret, og et ukjent navn er en feil - ikke et stille
+    # fall tilbake til den aktive.
+    assert pipeline_mod.ACTIVE == "pages", pipeline_mod.ACTIVE
+    for navn in ("pages", "full"):
+        assert pipeline_mod.by_name(navn), navn
+    try:
+        pipeline_mod.by_name("tull")
+    except KeyError:
+        pass
+    else:
+        raise AssertionError("ukjent pipelinenavn burde gitt KeyError")
+
+    # QueuedJob baerer valget, og standarden er None = den aktive.
+    assert QueuedJob("K", {}).pipeline is None
+    assert QueuedJob("K", {}, pipeline="full").pipeline == "full"
+
+    # "full" er "pages" pluss etter-stegene, i den rekkefoelgen. Hvis noen
+    # bygger om pipelinen skal en full kjoering fortsatt gjoere sidene foerst.
+    pages = [st.name for st in pipeline_mod.by_name("pages")]
+    full = [st.name for st in pipeline_mod.by_name("full")]
+    assert full[:len(pages)] == pages, (pages, full)
+    assert "upload_and_draft" in full and "upload_and_draft" not in pages
+
+
 def main() -> int:
     sandbox = Sandbox()
     # Importene maa skje ETTER at DP_ROOT er satt.
