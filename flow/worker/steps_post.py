@@ -163,6 +163,25 @@ def _wp_progress(ctx: Context, status_value: str) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=30) as res:
             return {"status": status_value, "http": res.status, "order_id": order_id}
+    except urllib.error.HTTPError as exc:
+        # 400 dreampage_progress_regression er endepunktet som gjoer jobben
+        # sin: kunden skal ikke se "boken settes sammen" etter at hun har
+        # faatt "kvalitetskontroll". Den kommer hver gang en ferdig ordre
+        # kjoeres om, og er IKKE en feil. Den skilles ut fordi det var en
+        # WARN ingen leste som skjulte at headeren manglet i det hele tatt.
+        body = ""
+        try:
+            body = exc.read()[:400].decode("utf-8", "replace")
+        except OSError:
+            pass
+        if exc.code == 400 and "progress_regression" in body:
+            ctx.log.info(f"WP-fremdrift '{status_value}' hoppet over: ordren "
+                         f"har alt kommet lenger (omkjoering)")
+            return {"status": status_value, "skipped": "alt lenger fremme",
+                    "order_id": order_id}
+        ctx.log.warn(f"WP-fremdrift '{status_value}' feilet: {exc}"
+                     + (f" - {body}" if body else ""))
+        return {"status": status_value, "error": str(exc), "order_id": order_id}
     except (urllib.error.URLError, OSError) as exc:
         ctx.log.warn(f"WP-fremdrift '{status_value}' feilet: {exc}")
         return {"status": status_value, "error": str(exc), "order_id": order_id}
