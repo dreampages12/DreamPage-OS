@@ -263,7 +263,14 @@ def build_pages(job: dict) -> list[dict]:
             "mask_image": page.get("mask_image"),
             "face_image": face_for(job["face_filename"], page.get("face_expression")),
             "workflow_role": "page",
-            "workflow_api_file": workflow_file,
+            # Per side, med bokens fil som standard. build_prompt leste alt
+            # denne noekkelen, men ingenting satte den - saa en bok kunne ikke
+            # gi ÉN side en annen workflow. Hestestjernen trenger det:
+            # forsiden bruker en variant som oppskalerer malen FOER inpaint,
+            # og den varianten er maalt DAARLIGERE paa sidene der hodet er
+            # lite. Se _workflow_note i den bokas config.
+            "workflow_api_file": (page.get("workflow_api_file")
+                                  or workflow_file),
             "patch_nodes": dict(patch_nodes),
         })
     if not pages:

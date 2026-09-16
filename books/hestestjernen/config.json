@@ -42,7 +42,8 @@
       "page_key": "page00",
       "template_image": "forside(hestestjernen).png",
       "mask_image": "forside-headmask(hestestjernen).png",
-      "face_expression": "smil"
+      "face_expression": "smil",
+      "workflow_api_file": "workflow_api_upscalefirst.json"
     },
     {
       "page_key": "page01",
@@ -128,5 +129,6 @@
       "mask_image": "14-headmask(hestestjernen).png",
       "face_expression": "noytral"
     }
-  ]
+  ],
+  "_workflow_note": "page00 bruker workflow_api_upscalefirst.json: UltraSharp kjoeres paa MALEN foer inpaint-croppen, i stedet for paa det sammensatte bildet etterpaa. Da genererer FLUX ansiktet paa ekte opploesning istedenfor at 4x-UltraSharp gjetter det opp fra 209 px - det var aarsaken til moerke ringer under oeynene og doede graa iriser paa ordre 1517. Maalt: skarphet UTENFOR masken uendret (9.41 foer og etter), ansiktet klart bedre. GJELDER BARE FORSIDEN, med vilje: varianten krever at maskeutvidelsen skaleres med malen, og noden kapper mask_blend_pixels paa 64 (trengte 128). Paa sider der hodet er lite (side 04 er 7.7% av bredden, 157 px) ble resultatet DAARLIGERE enn standardworkflowen - moerke hule oeyne. Forsiden har bokas stoerste hode (20.4%) og er den eneste siden der gevinsten er verifisert. Den egentlige loesningen er aa beskjaere illustrasjonene tettere; se _status."
 }

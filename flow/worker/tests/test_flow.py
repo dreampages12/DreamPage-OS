@@ -795,6 +795,37 @@ class _NullLog:
     def bind(self, *a, **k): pass
 
 
+@test
+def test_workflow_per_side(sb: Sandbox) -> None:
+    """En side kan ha sin egen workflow, og standarden er bokens.
+
+    Hestestjernens forside trenger en variant som oppskalerer malen foer
+    inpaint-croppen. Den varianten er MAALT daarligere paa sider der hodet er
+    lite, saa den maa kunne gjelde én side - ikke hele boka.
+
+    build_prompt leste alt workflow_api_file, men build_pages hardkodet
+    bokens fil for hver side, saa noekkelen var doed. Testen holder den i
+    live, og krever at en side UTEN noekkelen er uendret.
+    """
+    import books as B
+
+    job = B.build_job(sb.payload("W1"))
+    cfg = job["config"]
+    cfg["pages"][0]["workflow_api_file"] = "spesial.json"
+    pages = B.build_pages(job)
+
+    assert pages[0]["workflow_api_file"] == "spesial.json", pages[0]
+    for page in pages[1:]:
+        assert page["workflow_api_file"] != "spesial.json", (
+            f"{page['page_key']} arvet forsidens workflow. Overstyringen skal "
+            f"gjelde ÉN side.")
+
+    # Uten noekkelen: bokens egen fil, som foer endringen.
+    del cfg["pages"][0]["workflow_api_file"]
+    plain = B.build_pages(job)
+    assert len({p["workflow_api_file"] for p in plain}) == 1, plain
+
+
 def main() -> int:
     sandbox = Sandbox()
     # Importene maa skje ETTER at DP_ROOT er satt.
