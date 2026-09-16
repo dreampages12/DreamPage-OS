@@ -50,6 +50,28 @@ function Get-Json($url, $token = $null, $timeout = 8) {
     } catch { return $null }
 }
 
+# ComfyUI-porten staar ETT sted: config/flow.json -> comfy.url. Baade flow og
+# denne supervisoren leser den derfra. Under overgangen kjoerte den nye ComfyUI
+# paa 8189 mens den gamle elevette prosessen fortsatt eide 8188, og to steder
+# med samme port hadde betydd at supervisoren startet én instans og workeren
+# snakket med en annen.
+function Get-ComfyUrl {
+    $path = Join-Path $ROOT 'config/flow.json'
+    if (Test-Path $path) {
+        try {
+            $conf = Get-Content $path -Raw -Encoding utf8 | ConvertFrom-Json
+            if ($conf.comfy.url) { return [string]$conf.comfy.url }
+        } catch {}
+    }
+    return 'http://127.0.0.1:8188'
+}
+
+function Get-ComfyPort {
+    $url = Get-ComfyUrl
+    if ($url -match ':(\d+)') { return [int]$Matches[1] }
+    return 8188
+}
+
 function Get-ApiToken {
     $path = Join-Path $ROOT 'config\api.json'
     if (-not (Test-Path $path)) { return $null }
@@ -69,15 +91,15 @@ function Get-ApiToken {
 $SERVICES = @(
     @{
         Name  = 'comfyui'
-        Match = 'DreamPage-image.main\.py|ComfyUI.main\.py'
-        Port  = 8188
+        Match = 'DreamPage-image.main\.py'
+        Port  = (Get-ComfyPort)
         # --output/--input/--models utenfor DreamPage-image er selve grunnen
         # til at mappa aldri maa redigeres: vi endrer ComfyUI ved aa gi den
         # andre stier, ikke ved aa endre filene dens.
         Start = {
             $args = @(
                 (Join-Path $IMAGE 'main.py'),
-                '--listen', '0.0.0.0', '--port', '8188', '--disable-auto-launch',
+                '--listen', '0.0.0.0', '--port', "$(Get-ComfyPort)", '--disable-auto-launch',
                 '--output-directory', (Join-Path $ROOT 'output'),
                 '--input-directory', (Join-Path $ROOT 'input'),
                 '--temp-directory', (Join-Path $ROOT 'tmp\comfy')
@@ -87,7 +109,7 @@ $SERVICES = @(
             Start-Process -FilePath $PY -ArgumentList $args `
                 -WorkingDirectory $IMAGE -WindowStyle Minimized
         }
-        Health = { $null -ne (Get-Json 'http://127.0.0.1:8188/system_stats') }
+        Health = { $null -ne (Get-Json "$(Get-ComfyUrl)/system_stats") }
         Wait   = 300
     },
     @{
@@ -173,7 +195,7 @@ function Get-BusyReason {
     if ($health -and $health.worker.running) {
         return "flow jobber med ordre $($health.worker.running) (steg: $($health.worker.running_step))"
     }
-    $queue = Get-Json 'http://127.0.0.1:8188/queue'
+    $queue = Get-Json "$(Get-ComfyUrl)/queue"
     if ($queue) {
         $n = @($queue.queue_running).Count + @($queue.queue_pending).Count
         if ($n -gt 0) { return "ComfyUI har $n jobber i koeen" }

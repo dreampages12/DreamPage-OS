@@ -77,7 +77,29 @@ RYGGRAD = ASSETS / "ryggrad"
 LASTPAGES = ASSETS / "lastpages"
 
 # ComfyUI, for de som maa snakke med prosessen eller lese loggen.
-COMFY_URL = os.environ.get("DP_COMFY_URL", "http://127.0.0.1:8188")
+#
+# Adressen staar ETT sted: config/flow.json -> comfy.url. Baade workeren,
+# supervisoren (dreampage.ps1) og regen_page.py leser den herfra.
+#
+# Under overgangen kjoerte den nye ComfyUI paa 8189 mens den gamle elevette
+# prosessen fortsatt eide 8188. Da regen_page hadde porten hardkodet, ville
+# operatoerbotten stille snakket med en instans som ikke hadde modellene
+# lenger - den ville svart, og laget en tom side.
+def _comfy_url() -> str:
+    if os.environ.get("DP_COMFY_URL"):
+        return os.environ["DP_COMFY_URL"]
+    try:
+        import json
+        with open(ROOT / "config" / "flow.json", encoding="utf-8-sig") as fh:
+            url = (json.load(fh).get("comfy") or {}).get("url")
+        if url:
+            return str(url)
+    except (OSError, ValueError):
+        pass
+    return "http://127.0.0.1:8188"
+
+
+COMFY_URL = _comfy_url()
 COMFY_USER = IMAGE / "user"
 COMFY_CUSTOM_NODES = IMAGE / "custom_nodes"
 

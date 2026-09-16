@@ -42,12 +42,18 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-COMFY = "http://127.0.0.1:8188"
+# Porten staar ett sted: flow/paths.py, som leser DP_COMFY_URL fra
+# miljoeet. Under overgangen til DreamPage OS kjoerte den nye ComfyUI
+# paa 8189 mens den gamle fortsatt eide 8188, og da var en hardkodet
+# port forskjellen paa at boten virket og at den stille snakket med
+# feil instans.
+# Porten staar ett sted: config/flow.json -> comfy.url, lest av paths.py.
+# En hardkodet port her var forskjellen paa at botten virket og at den stille
+# snakket med feil ComfyUI-instans under overgangen.
+from paths import COMFY_URL as COMFY  # noqa: E402
 
 
 OUTPUT_ROOT = r"C:\DreamPage-OS\output"
-LOCK_PATH = r"C:\DreamPage-OS\DreamPage-image\.dreampage-comfy.lock"
-LOCK_TTL = 2 * 60 * 60          # samme som workeren
 RENDER_TIMEOUT = 15 * 60
 
 
@@ -56,56 +62,113 @@ class Cancelled(Exception):
 
 
 # --------------------------------------------------------------------------
-# ComfyUI-låsen: deles med n8n-workeren, så en betalt ordre og en reprint
-# aldri sloss om GPU-en.
+# Serialisering mot flow-workeren.
+#
+# Her laa en laasefil (.dreampage-comfy.lock) som ble delt med n8n-workeren.
+# Den er borte, og erstatningen er BEDRE enn den var:
+#
+# Laasefila serialiserte bare mot noen som frivillig tok samme fil. Etter
+# migreringen tok ingen den lenger, saa regen_page ville fritt sendt en prompt
+# til ComfyUI midt i en betalt ordre - to samtidige prompts, noeyaktig
+# feilmodusen fra 14.09.2026, bare i ny forkledning.
+#
+# Naa spoerres flow-workeren i stedet, som ER sannheten om hva som kjoerer:
+# den har én arbeidstraad og vet presis hvilken ordre og hvilket steg den
+# holder paa med. Ingen fil aa glemme aa slippe, ingen TTL aa gjette paa, og
+# ingen doed laas som kan blokkere en uskyldig ordre i 50 minutter.
+#
+# Naar flow ikke svarer, faller vi tilbake paa ComfyUI sin egen koe. Da vet vi
+# mindre, men vi vet nok: er den tom, er det ingen aa kollidere med.
 # --------------------------------------------------------------------------
-def read_lock() -> dict | None:
+def _flow_status() -> dict | None:
+    """flow sin /api/health, eller None hvis workeren ikke svarer."""
     try:
-        with open(LOCK_PATH, encoding="utf-8") as fh:
-            return json.load(fh)
-    except (OSError, json.JSONDecodeError):
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "..", "config", "api.json"),
+                  encoding="utf-8-sig") as fh:
+            conf = json.load(fh)
+        token = next(iter(conf.get("tokens") or {}), None) or conf.get("token")
+    except (OSError, json.JSONDecodeError, StopIteration):
+        return None
+    if not token:
+        return None
+    url = os.environ.get("DP_FLOW_API", "http://127.0.0.1:8765") + "/api/health"
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}"})
+    try:
+        with urllib.request.urlopen(req, timeout=10) as res:
+            return json.loads(res.read().decode("utf-8", "replace"))
+    except Exception:                               # noqa: BLE001
         return None
 
 
-def acquire_lock(order_id: str, page_key: str, wait_seconds: int = 3600) -> bool:
-    payload = json.dumps({
-        "token": f"reprint:{order_id}:{page_key}:{int(time.time() * 1000)}",
-        "createdAt": int(time.time() * 1000),
-        "executionId": "reprint",
-        "order_id": order_id,
-        "page_key": page_key,
-        "owner": "regen_page.py",
-    }, indent=2)
+def busy_reason() -> str | None:
+    """Hva som eventuelt jobber mot ComfyUI akkurat naa."""
+    health = _flow_status()
+    if health is not None:
+        worker = health.get("worker") or {}
+        if worker.get("running"):
+            return (f"flow bygger ordre {worker['running']} "
+                    f"(steg: {worker.get('running_step') or '?'})")
+        depth = (health.get("comfy") or {}).get("queue_depth")
+        if depth:
+            return f"ComfyUI har {depth} jobber i koeen"
+        return None
+    # flow svarer ikke - spoer ComfyUI direkte.
+    try:
+        with urllib.request.urlopen(f"{COMFY}/queue", timeout=10) as res:
+            queue = json.loads(res.read().decode("utf-8", "replace"))
+        n = len(queue.get("queue_running") or []) + len(queue.get("queue_pending") or [])
+        return f"ComfyUI har {n} jobber i koeen" if n else None
+    except Exception:                               # noqa: BLE001
+        return None
 
+
+def comfy_owner() -> str | None:
+    """Hvem bruker ComfyUI naa: "flow", "bot" eller None.
+
+    Dette er distinksjonen laasefila ga, og som maa bevares: botten sin
+    stopp-kommando skal avbryte ComfyUI hvis det er botten selv som jobber,
+    men ALDRI hvis det er en betalt ordre.
+
+    Skillet leses av flow sin egen tilstand, ikke av en fil:
+        flow-workeren kjoerer en jobb  -> "flow"   (rør den ikke)
+        flow er ledig, ComfyUI opptatt -> "bot"    (det er vaart eget arbeid)
+        begge ledige                   -> None
+    """
+    health = _flow_status()
+    if health is None:
+        # Uten flow vet vi ikke hvem det er. Da antar vi det verste, altsaa
+        # at det er en ordre - en reprint er alltid mindre viktig enn en
+        # betalt bok.
+        try:
+            with urllib.request.urlopen(f"{COMFY}/queue", timeout=10) as res:
+                queue = json.loads(res.read().decode("utf-8", "replace"))
+            n = len(queue.get("queue_running") or []) + len(queue.get("queue_pending") or [])
+            return "flow" if n else None
+        except Exception:                           # noqa: BLE001
+            return None
+    if (health.get("worker") or {}).get("running"):
+        return "flow"
+    if (health.get("comfy") or {}).get("queue_depth"):
+        return "bot"
+    return None
+
+
+def wait_until_free(wait_seconds: int = 3600) -> bool:
+    """Vent til ingen andre bruker ComfyUI. False hvis tiden loep ut."""
     deadline = time.time() + wait_seconds
+    told = None
     while True:
-        try:
-            fd = os.open(LOCK_PATH, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                fh.write(payload)
+        reason = busy_reason()
+        if reason is None:
             return True
-        except FileExistsError:
-            existing = read_lock()
-            age = time.time() - (existing or {}).get("createdAt", 0) / 1000
-            if existing is None or age > LOCK_TTL:
-                # Foreldet lås - workeren bruker samme TTL.
-                try:
-                    os.unlink(LOCK_PATH)
-                except OSError:
-                    pass
-                continue
-            if time.time() >= deadline:
-                return False
-            time.sleep(5)
+        if reason != told:
+            print(f"    venter: {reason}", flush=True)
+            told = reason
+        if time.time() >= deadline:
+            return False
+        time.sleep(5)
 
-
-def release_lock() -> None:
-    lock = read_lock()
-    if lock and lock.get("owner") == "regen_page.py":
-        try:
-            os.unlink(LOCK_PATH)
-        except OSError:
-            pass
 
 
 # --------------------------------------------------------------------------
@@ -303,10 +366,9 @@ def render_variants(info: dict, page_key: str, count: int = 3,
     os.makedirs(out_dir, exist_ok=True)
 
     results = []
-    if not acquire_lock(info["order_id"], page_key, wait_seconds=wait_lock):
-        lock = read_lock() or {}
-        raise SystemExit("ComfyUI er opptatt med ordre "
-                         f"{lock.get('order_id', '?')} ({lock.get('page_key', '?')}). Prøv igjen senere.")
+    if not wait_until_free(wait_seconds=wait_lock):
+        blocker = busy_reason() or "noe annet"
+        raise SystemExit(f"ComfyUI er opptatt: {blocker}. Prøv igjen senere.")
     try:
         for index in range(count):
             if should_cancel and should_cancel():
@@ -348,7 +410,10 @@ def render_variants(info: dict, page_key: str, count: int = 3,
                     results.append(path)
                     print(f"      -> {path}", flush=True)
     finally:
-        release_lock()
+        # Ingenting aa slippe: serialiseringen er flow sin arbeidstraad, ikke
+        # en fil vi maa huske aa rydde. Det var nettopp en glemt fil som
+        # blokkerte en uskyldig ordre i 50 minutter 15.09.2026.
+        pass
 
     if not results:
         raise SystemExit("ingen bilder ble produsert")

@@ -13,8 +13,9 @@ stoppe en ordre - det avslutter med 0 uansett hva som gaar galt.
 Motor: Flux.2 Klein (workflows/trist.json) - samme UNET og text encoder som
 sidegenereringen, saa modellene blir staaende i VRAM.
 
-Scriptet tar SAMME laas som sideloopen (C:/DreamPage-OS/DreamPage-image/.dreampage-comfy.lock), slik
-at det aldri sender jobb til ComfyUI mens en annen ordre genererer sider.
+Serialisering: ingen. Scriptet kalles som ett steg inne i flow sin jobb, og
+flow kjoerer én jobb om gangen - saa det KAN ikke kollidere med sideloopen.
+Her stod det en laasefil foer; se kommentaren ved "serialisering" nedenfor.
 
 Bruk:
     python build_trist_variant.py <job_key> [--book SLUG] [--force]
@@ -33,9 +34,6 @@ sys.path.insert(0, HERE)
 import build_face_variants as BFV
 
 WORKFLOW = os.path.join(HERE, "workflows", "trist.json")
-LOCK = "C:/DreamPage-OS/DreamPage-image/.dreampage-comfy.lock"
-LOCK_TTL = 2 * 60 * 60          # samme 2 timer som n8n-noden
-LOCK_WAIT = 45 * 60             # hvor lenge vi venter paa lasen
 TIMEOUT = 900
 
 # Boker som faktisk bruker en trist-variant. Staar boka ikke her, gjor
@@ -49,59 +47,25 @@ def log(msg):
     sys.stdout.flush()
 
 
-# --- lassen ------------------------------------------------------------------
-
-def _lock_stale():
-    try:
-        with io.open(LOCK, encoding="utf-8") as fh:
-            created = float(json.load(fh).get("createdAt") or 0) / 1000.0
-        return created <= 0 or (time.time() - created) > LOCK_TTL
-    except Exception:
-        return True
-
-
-def acquire(token, job_key, book):
-    """Samme lasefil og samme form som 'Acquire Comfy Lock' i n8n."""
-    deadline = time.time() + LOCK_WAIT
-    while True:
-        try:
-            fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
-            try:
-                os.write(fd, json.dumps({
-                    "token": token,
-                    "createdAt": int(time.time() * 1000),
-                    "executionId": "build_trist_variant",
-                    "order_id": job_key,
-                    "book_slug": book,
-                    "page_key": "face-trist",
-                    "pageOutputDir": "",
-                }, indent=2).encode("utf-8"))
-            finally:
-                os.close(fd)
-            return True
-        except OSError:
-            if os.path.isfile(LOCK) and _lock_stale():
-                log("laasen er foreldet - fjerner den")
-                try:
-                    os.remove(LOCK)
-                    continue
-                except OSError:
-                    pass
-            if time.time() > deadline:
-                return False
-            time.sleep(5)
-
-
-def release(token):
-    """Fjerner lasen kun hvis den fortsatt er var."""
-    try:
-        with io.open(LOCK, encoding="utf-8") as fh:
-            if json.load(fh).get("token") != token:
-                log("laasen tilhorer noen andre naa - rorer den ikke")
-                return
-        os.remove(LOCK)
-    except Exception:
-        pass
+# --- serialisering ------------------------------------------------------------
+#
+# Her stod det en laas: samme `.dreampage-comfy.lock` som n8n sin side-loekke
+# brukte, med samme TTL, samme token og 45 minutters venting. Den er fjernet,
+# og ikke erstattet med noe.
+#
+# Grunnen er at DreamPage OS ikke har noen aa serialisere mot. Scriptet kalles
+# som ETT STEG inne i flow sin jobb (`face_variants` i pipelinen), og flow er
+# én prosess med én arbeidstraad som tar én jobb om gangen. Det er allerede
+# umulig for dette scriptet aa kjoere samtidig med side-loekka.
+#
+# Beholdt man laasen, ville den vaert direkte skadelig: ingen tar eller
+# slipper den lenger, saa scriptet ville ventet 45 minutter paa en fil som
+# aldri kommer, hver eneste ordre. Steget er valgfritt, saa ordren hadde
+# overlevd - den hadde bare tatt tre kvarter lenger.
+#
+# Kjoerer du scriptet for haand mens en ordre gaar, konkurrerer du om GPU-en.
+# Det gjorde du foer ogsaa; laasen beskyttet mot samtidige ComfyUI-prompts,
+# ikke mot en operatoer med hastverk. Sjekk `.\dreampage.ps1 status` foerst.
 
 
 # --- selve jobben ------------------------------------------------------------
@@ -153,23 +117,19 @@ def main():
 
     BFV.normalize_orientation(source)        # EXIF bakes inn foer alt annet
 
-    token = "trist:%s:%s:%d" % (book, job_key, time.time() * 1000)
-    if not acquire(token, job_key, book):
-        log("fikk ikke Comfy-laasen paa %d min - hopper over" % (LOCK_WAIT // 60))
-        return 0
     try:
         t0 = time.time()
         generate(source, dest, job_key)
         log("%s ferdig paa %.0fs" % (os.path.basename(dest), time.time() - t0))
     except Exception as exc:
+        # Dette scriptet skal ALDRI stoppe en ordre: mangler filen, bruker
+        # sideloopen originalbildet. Derfor svelges alt, og vi avslutter med 0.
         log("FEILET (%s) - sidene bruker originalbildet" % exc)
         try:
             if os.path.isfile(dest) and os.path.getsize(dest) == 0:
                 os.remove(dest)
         except OSError:
             pass
-    finally:
-        release(token)
     return 0
 
 

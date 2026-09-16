@@ -415,21 +415,24 @@ def ui_loop() -> None:
 
 
 def clear_stale_lock() -> None:
-    """Rydd bort ComfyUI-låsen hvis den er vår egen fra en drept prosess.
+    """Si hva som eventuelt bruker ComfyUI når boten starter.
 
-    Boten er det eneste som lager låser med denne eieren, og den starter jo
-    akkurat nå - så en slik lås er per definisjon foreldreløs. Blir den
-    liggende, blokkerer den n8n-workeren i inntil to timer, altså en BETALT
-    ordre.
+    Her ryddet den før bort en foreldreløs `.dreampage-comfy.lock` som boten
+    selv hadde lagt fra en drept prosess. Den låsen finnes ikke lenger, og
+    derfor finnes ikke problemet: serialiseringen er flow-workerens ene
+    arbeidstråd, og en drept prosess etterlater ingenting å rydde. Det var
+    nettopp en glemt låsefil som blokkerte en uskyldig ordre i 50 minutter
+    15.09.2026.
+
+    Funksjonen er beholdt fordi den kalles ved oppstart, og fordi den nå gjør
+    noe nyttigere: den forteller i loggen om noe pågår.
     """
-    lock = regen_page.read_lock()
-    if lock and lock.get("owner") == "regen_page.py":
-        try:
-            os.unlink(regen_page.LOCK_PATH)
-            log(f"ryddet foreldreløs ComfyUI-lås fra ordre "
-                f"{lock.get('order_id')} ({lock.get('page_key')})")
-        except OSError as error:
-            log(f"klarte ikke å rydde låsen: {error}")
+    try:
+        busy = regen_page.busy_reason()
+    except Exception as error:                      # noqa: BLE001
+        log(f"kunne ikke sjekke om ComfyUI er opptatt: {error}")
+        return
+    log(f"ComfyUI: {busy}" if busy else "ComfyUI er ledig")
 
 
 def build_marker_path(order_id: str) -> str:
@@ -628,24 +631,25 @@ def stop_everything(chat_id, reset: bool = False) -> None:
             except queue.Empty:
                 break
 
-    # ComfyUI avbrytes BARE hvis låsen er vår. Er den n8n sin, kjører det en
-    # betalt ordre der inne, og den skal ikke stoppes av en reprint-kommando.
-    lock = regen_page.read_lock()
-    ours = bool(lock and lock.get("owner") == "regen_page.py")
+    # ComfyUI avbrytes BARE hvis det er VÅRT arbeid som kjører. Er det
+    # flow-workeren, bygger den en betalt ordre, og den skal ikke stoppes av
+    # en reprint-kommando.
+    #
+    # Skillet kom før fra eieren i låsefila. Nå spørres flow: kjører workeren
+    # en jobb, er det en ordre; er workeren ledig mens ComfyUI er opptatt, er
+    # det oss. Det er en bedre kilde - flow VET hvilken ordre den holder på
+    # med, mens låsefila bare visste hvem som skrev den sist.
+    owner = regen_page.comfy_owner()
+    ours = owner == "bot"
     if ours:
         regen_page.interrupt()
-        try:
-            os.unlink(regen_page.LOCK_PATH)
-        except OSError:
-            pass
-    elif lock:
-        log(f"stopp: rorte ikke ComfyUI - låsen tilhorer {lock.get('executionId')} "
-            f"(ordre {lock.get('order_id')})")
+    elif owner == "flow":
+        log("stopp: rorte ikke ComfyUI - flow-workeren bygger en ordre")
 
     lines = [f"🛑 Stoppet. {dropped} jobb(er) fjernet fra køen."]
     lines.append("ComfyUI avbrutt." if ours
-                 else "ComfyUI ble ikke rort — den jobber ikke for meg nå."
-                      if lock else "ComfyUI var ledig.")
+                 else "ComfyUI ble ikke rort — flow bygger en ordre."
+                      if owner else "ComfyUI var ledig.")
 
     if reset:
         count = 0
