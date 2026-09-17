@@ -30,6 +30,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 
 import dp_order
+import page_files
 
 # Windows-konsollen her er cp1252 og kan ikke skrive æøå. Uten dette krasjer
 # et hvilket som helst print med norsk tekst i en UnicodeEncodeError.
@@ -158,31 +159,18 @@ def manual_edits(info: dict) -> list[str]:
             if tuple(_fingerprint(path)) not in known]
 
 
-_PAGE_MAP_CACHE: dict[str, dict] = {}
-
-
 def page_input_map(info: dict) -> dict:
     """page_key -> filnavn-stem i input/ ("page03" -> "03(Prinsessen)").
 
     Mappingen finnes BARE i bokas prepare-script; config.json kjenner den
     ikke. Vi trenger den når prepare hoppes over: da må en godkjent variant
     inn i input/ på egen hånd, ellers bygges boka med den gamle siden.
+
+    Selve lesingen bor i page_files, som henter tabellen med AST i stedet for
+    å kjøre bokas script. Denne leste den ved å importere modulen - og et
+    prepare-script som gjør noe på toppnivå ville da gjort det her.
     """
-    prepare = info["config"].get("prepareScript")
-    if not prepare or not os.path.isfile(prepare):
-        return {}
-    if prepare in _PAGE_MAP_CACHE:
-        return _PAGE_MAP_CACHE[prepare]
-    import importlib.util
-    name = "dp_prepare_" + info["book_slug"].replace("-", "_")
-    spec = importlib.util.spec_from_file_location(name, prepare)
-    if not spec or not spec.loader:
-        return {}
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)          # main() er __main__-beskyttet
-    mapping = dict(getattr(module, "PAGE_TO_BASE_STEM", {}) or {})
-    _PAGE_MAP_CACHE[prepare] = mapping
-    return mapping
+    return page_files.base_stem_map(info.get("book_slug") or "")
 
 
 def input_file_for(info: dict, page_key: str) -> str | None:
@@ -348,8 +336,21 @@ def build_continue_page(info: dict, callback: bool = True) -> dict:
 
 
 # --------------------------------------------------------------------------
-def assert_comfy_complete(info: dict) -> int:
-    """Alle sidene i config.json er rendret FOER prepare far kopiere.
+def assert_comfy_complete(info: dict) -> dict:
+    """Skal prepare kjoere? -> {"total", "skip_prepare", "reason"}.
+
+    Er comfy/ ufullstendig, er prepare ALDRI det riktige trekket. Enten
+    ligger de ferdige sidene i input/ - og da skal de staa i fred - eller de
+    gjoer det ikke, og da hjelper ingen prepare: sidene maa rendres paa nytt
+    paa GPU.
+
+    Foerste utgave av guarden stoppet i BEGGE tilfellene og ba operatoren
+    legge til `--skip-prepare` selv. Det var riktig svar paa feil spoersmaal:
+    guarden kan avgjoere dette selv, og ventetiden paa et menneske stanset
+    hele koeen (1536, 1537 og 1538 sto samtidig 17.09.2026).
+
+    Alle sidene i config.json skal altsaa vaere rendret FOER prepare far
+    kopiere.
 
     prepare_order_<bok>.py kopierer forst ALLE base-malene over input/, og
     henter sa de faceswappede sidene fra comfy/. Mangler en side i comfy/,
@@ -368,7 +369,7 @@ def assert_comfy_complete(info: dict) -> int:
     comfy_dir = info.get("comfy_dir")
     pages = (info.get("config") or {}).get("pages") or []
     if not comfy_dir or not pages:
-        return 0
+        return {"total": 0, "skip_prepare": False, "reason": ""}
 
     if not os.path.isdir(comfy_dir):
         funnet = set()
@@ -379,19 +380,43 @@ def assert_comfy_complete(info: dict) -> int:
     mangler = [p["page_key"] for p in pages
                if p.get("page_key") and p["page_key"] not in funnet]
 
-    if mangler:
-        raise SystemExit(
-            f"{len(mangler)} av {len(pages)} sider er IKKE rendret:\n"
-            f"  {', '.join(mangler)}\n"
-            f"  comfy-mappe: {comfy_dir}\n\n"
-            "Kjorer vi prepare naa, kopieres RAA MALER inn i boka for disse "
-            "sidene, og hverken prepare eller PDF-guarden stopper det "
-            "(ordre 1528).\n\n"
-            "Sidene ligger som regel ikke i comfy/ fordi de ble ryddet bort "
-            "etter at Gelato-utkastet ble laget. Er de riktige sidene "
-            "fortsatt i input/, bygg med --skip-prepare - da rores input/ "
-            "ikke. Ellers maa sidene rendres paa nytt.")
-    return len(pages)
+    if not mangler:
+        return {"total": len(pages), "skip_prepare": False,
+                "reason": f"alle {len(pages)} sider er rendret"}
+
+    # comfy/ er ufullstendig. Sidene ligger som regel ikke der fordi
+    # cleanup_comfy_folder ryddet dem bort da det forste Gelato-utkastet ble
+    # laget - de ferdige sidene ligger fortsatt i ordrens input/.
+    rows = page_files.audit_input(info)
+    ubrukelige = page_files.unusable(rows)
+
+    if not ubrukelige:
+        usikre = [r["page_key"] for r in rows if r["status"] == "usikker"]
+        note = (f"\n    ({len(usikre)} delte sider har ingen hel mal aa "
+                f"sammenligne med: {', '.join(usikre)})" if usikre else "")
+        return {
+            "total": len(pages),
+            "skip_prepare": True,
+            "reason": (
+                f"\n--- comfy/ har bare {len(pages) - len(mangler)} av "
+                f"{len(pages)} sider, men alle {len(rows)} ligger ferdige og "
+                f"personaliserte i input/.\n"
+                f"    Hopper over prepare - den ville lagt RAA MALER inn for "
+                f"{', '.join(mangler)} (ordre 1528).{note}"),
+        }
+
+    raise SystemExit(
+        f"{len(ubrukelige)} av {len(pages)} sider maa rendres paa nytt:\n"
+        + "\n".join(f"  {r['page_key']:<8} {r['stem']}  "
+                    + ("finnes ikke i input/" if r["status"] == "mangler"
+                       else f"er RAA MAL (identisk med {r['raw_as']})")
+                    for r in ubrukelige)
+        + f"\n\n  comfy-mappe: {comfy_dir}\n"
+          f"  input-mappe: {info['input_dir']}\n\n"
+        "Sidene mangler BEGGE steder, saa verken prepare eller "
+        "--skip-prepare kan redde boka - de maa gjennom ComfyUI igjen.\n"
+        "Kjor jobben paa nytt (POST /api/jobs/<key>/retry) eller render "
+        "sidene fra Telegram.")
 
 
 def rebuild_pdfs(info: dict, skip_prepare: bool = False,
@@ -408,13 +433,20 @@ def rebuild_pdfs(info: dict, skip_prepare: bool = False,
             raise SystemExit(f"config for {info['book_slug']} mangler prepareScript")
         # FOER prepare: den overskriver input/ med base-maler, og kan ikke
         # angre. Er comfy/ ufullstendig, er raa maler i boka resultatet.
-        n = assert_comfy_complete(info)
-        print(f"\n--- Sjekk: alle {n} sider er rendret")
-        run([sys.executable, prepare, info["order_id"]], "Prepare Pages")
-        # Fasit for hva input/ inneholdt rett etter prepare. Uten den kan vi
-        # ikke skille en manuell endring fra en fil prepare selv la der.
-        write_prepared_manifest(info)
-    else:
+        decision = assert_comfy_complete(info)
+        # Guarden kan konkludere at input/ alt er riktig. Da hopper vi over
+        # prepare av seg selv i stedet for aa stoppe og vente paa et menneske.
+        skip_prepare = decision["skip_prepare"]
+        if skip_prepare:
+            print(decision["reason"])
+        else:
+            print(f"\n--- Sjekk: {decision['reason']}")
+            run([sys.executable, prepare, info["order_id"]], "Prepare Pages")
+            # Fasit for hva input/ inneholdt rett etter prepare. Uten den kan
+            # vi ikke skille en manuell endring fra en fil prepare selv la der.
+            write_prepared_manifest(info)
+
+    if skip_prepare:
         # Brukt når du har redigert input/ for hånd (f.eks. upscalet sider).
         # prepare_order ville kopiert base/ + comfy/ over dem igjen.
         print("\n--- Prepare Pages hoppet over (input/ brukes som den er)")

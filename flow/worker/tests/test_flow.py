@@ -49,6 +49,12 @@ def test(fn):
 # ---------------------------------------------------------------------------
 # Sandkasse: et helt DP_ROOT i en midlertidig mappe
 # ---------------------------------------------------------------------------
+# Et PNG-hode uten omveier: testene trenger bare at fila SER ut som
+# et bilde. Skrevet med bytes() og ikke escape-sekvenser, saa den
+# taaler aa bli flyttet mellom verktoy som tolker backslash.
+PNG_STUB = bytes([0x89]) + b"PNG" + bytes([13, 10, 26, 10]) + b"0" * 64
+
+
 class Sandbox:
     """Et komplett, falskt DreamPage-rot med én bok og tre sider.
 
@@ -803,7 +809,7 @@ def test_manglende_kunst_stopper_foer_rendring(sb: Sandbox) -> None:
 # ---------------------------------------------------------------------------
 @test
 def test_ufullstendig_comfy_stopper_bygging(sb: Sandbox) -> None:
-    """prepare far ikke kjore naar sider mangler i comfy/.
+    """prepare far ikke kjore naar sider mangler BEGGE steder.
 
     Ordre 1528 (Lion, den-skjulte-styrken) fikk 12 raa maler i en bok som gikk
     til Gelato. cleanup_comfy_folder hadde slettet de rendrede sidene da det
@@ -814,6 +820,9 @@ def test_ufullstendig_comfy_stopper_bygging(sb: Sandbox) -> None:
 
     PDF-guarden fanget det ikke: den teller SIDER, ikke om de er
     personaliserte. 33 sider var riktig. Innholdet var det ikke.
+
+    Guarden skal bare stoppe naar sidene mangler i input/ OGSAA - da hjelper
+    ingen prepare, og de maa gjennom ComfyUI paa nytt.
     """
     # reprint_order henter Gelato-nokkelen ved IMPORT (finish_order gjor det
     # paa modulniva). Sandkassa har ingen secrets.json, saa vi bruker den
@@ -825,39 +834,103 @@ def test_ufullstendig_comfy_stopper_bygging(sb: Sandbox) -> None:
 
     comfy = sb.comfy_dir("C1")
     comfy.mkdir(parents=True, exist_ok=True)
+    tom_input = sb.root / "books" / sb.slug / "orders" / "C1" / "input"
+    tom_input.mkdir(parents=True, exist_ok=True)
+    keys = ("page00", "page01", "page02")
     info = {
         "comfy_dir": str(comfy),
-        "config": {"pages": [{"page_key": "page00"}, {"page_key": "page01"},
-                             {"page_key": "page02"}]},
+        "input_dir": str(tom_input),
+        "book_slug": sb.slug,
+        "config": {"pages": [{"page_key": k, "template_image": f"{k}(test).png"}
+                             for k in keys]},
     }
 
-    # Ingenting rendret enda -> alle tre mangler.
+    # Ingenting rendret, og input/ er tom -> maa rendres paa nytt.
     try:
         reprint_order.assert_comfy_complete(info)
     except SystemExit as exc:
         assert "3 av 3" in str(exc), str(exc)
-        assert "skip-prepare" in str(exc), "maa si hva operatoren skal gjore"
+        assert "ComfyUI" in str(exc), "maa si at sidene maa rendres paa nytt"
+        # Den skal IKKE be operatoren bygge med --skip-prepare her: det
+        # ville gitt en bok med tre manglende sider.
+        assert "bygg med --skip-prepare" not in str(exc), str(exc)
     else:
-        raise AssertionError("tom comfy/ slapp igjennom")
+        raise AssertionError("tom comfy/ og tom input/ slapp igjennom")
 
     # To av tre - noyaktig formen ordre 1528 hadde.
-    for key in ("page00", "page01"):
-        (comfy / f"{key}_00001_.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+    for key in keys[:2]:
+        (comfy / f"{key}_00001_.png").write_bytes(PNG_STUB)
     try:
         reprint_order.assert_comfy_complete(info)
     except SystemExit as exc:
-        assert "1 av 3" in str(exc), str(exc)
+        assert "3 av 3" in str(exc), "input/ er tom, saa alle tre er ubrukelige"
         assert "page02" in str(exc), str(exc)
     else:
         raise AssertionError("delvis rendret comfy/ slapp igjennom")
 
-    # Alle tre -> slipper gjennom.
-    (comfy / "page02_00001_.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
-    assert reprint_order.assert_comfy_complete(info) == 3
+    # Alle tre i comfy/ -> prepare skal kjore som normalt.
+    (comfy / "page02_00001_.png").write_bytes(PNG_STUB)
+    decision = reprint_order.assert_comfy_complete(info)
+    assert decision["total"] == 3, decision
+    assert decision["skip_prepare"] is False, decision
 
     # En bok uten pages i config skal ikke stoppes av denne guarden.
     assert reprint_order.assert_comfy_complete(
-        {"comfy_dir": str(comfy), "config": {}}) == 0
+        {"comfy_dir": str(comfy), "config": {}})["total"] == 0
+
+
+@test
+def test_ryddet_comfy_hopper_over_prepare(sb: Sandbox) -> None:
+    """Ligger sidene ferdige i input/, velger guarden skip-prepare selv.
+
+    Dette er normaltilstanden for enhver ordre som alt har fatt et
+    Gelato-utkast: `cleanup_comfy_folder` har slettet comfy/, mens de
+    ferdige sidene staar i input/. Skal vi bare rette en tittel eller en
+    font, er det ingenting a rendre - og prepare er det ENESTE som kan gjore
+    skade, fordi den kopierer raa maler over sidene.
+
+    Forste utgave av guarden stoppet ogsa her og ba operatoren legge til
+    --skip-prepare for hand. 1536, 1537 og 1538 sto samtidig og ventet pa det
+    17.09.2026, og hele koeen stod stille sa lenge.
+    """
+    os.environ.setdefault("DP_GELATO_API_KEY", "test-ikke-en-ekte-nokkel")
+    sys.path.insert(0, str(FLOW))
+    import reprint_order
+
+    comfy = sb.comfy_dir("C2")          # finnes ikke - ryddet bort
+    order_input = sb.root / "books" / sb.slug / "orders" / "C2" / "input"
+    order_input.mkdir(parents=True, exist_ok=True)
+
+    keys = ("page00", "page01", "page02")
+    pages = [{"page_key": k, "template_image": f"{k}(test).png"} for k in keys]
+    info = {"comfy_dir": str(comfy), "input_dir": str(order_input),
+            "book_slug": sb.slug, "config": {"pages": pages}}
+
+    # Malene, slik de ligger i books/<slug>/base og rot-input.
+    base = sb.root / "books" / sb.slug / "base"
+    base.mkdir(parents=True, exist_ok=True)
+    for k in keys:
+        (base / f"{k}(test).png").write_bytes(b"MAL-" + k.encode())
+
+    # Ferdige, personaliserte sider i input/ - forskjellige fra malene.
+    for k in keys:
+        (order_input / f"{k}(test).png").write_bytes(b"FACESWAPPET-" + k.encode())
+
+    decision = reprint_order.assert_comfy_complete(info)
+    assert decision["skip_prepare"] is True, decision
+    assert "input/" in decision["reason"], decision
+
+    # ... men en side som er byte-identisk med malen er IKKE personalisert,
+    # og da skal den fortsatt stoppe. Det er hele 1528 i en enkelt fil.
+    (order_input / "page01(test).png").write_bytes(b"MAL-page01")
+    try:
+        reprint_order.assert_comfy_complete(info)
+    except SystemExit as exc:
+        assert "page01" in str(exc), str(exc)
+        assert "RAA MAL" in str(exc), str(exc)
+        assert "page00" not in str(exc), "de to gode sidene skal ikke meldes"
+    else:
+        raise AssertionError("raa mal i input/ slapp igjennom")
 
 
 class _NullLog:

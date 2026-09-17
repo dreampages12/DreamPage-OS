@@ -28,72 +28,31 @@ fantes.
 
 HVORDAN
 
-`template_image` i config.json navngir malen. Er ordrens
-`input/<template_image>` byte-identisk med malen, er siden ALDRI blitt
-faceswappet. Malen sjekkes BEGGE steder den finnes - `books/<slug>/base/`
-(det prepare kopierer fra) og rot-`input/` (det ComfyUI laster) - fordi de
-to ikke alltid er like.
+Selve sjekken bor i `flow/page_files.py`, som ogsaa `reprint_order` bruker:
+er ordrens fil byte-identisk med malen, ble siden ALDRI faceswappet. Malen
+sjekkes begge steder den finnes (`books/<slug>/base/` og rot-`input/`) og i
+alle hud- og haarvarianter.
 
-Hud- og haarvarianter (`…mixed.png`, `…mork.png`, `…kort.png`) sjekkes ogsaa,
-slik at en bok bygget med en variantmal ikke gir falsk alarm.
+Filnavnet kommer fra bokas `PAGE_TO_BASE_STEM`, ikke fra `template_image`:
+de delte sidene heter `04-right(bok).png` paa disk. Foerste utgave brukte
+`template_image` og meldte derfor hver delte side som MANGLER - tre falske
+alarmer per fotball-ordre, og stoy er nettopp det som skjulte de tolv ekte
+advarslene i 1528.
 """
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
 import os
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TEMPLATE_DIR = os.path.join(ROOT, "input")
-
-# Varianter av samme mal. En bok bygget for et morkt barn bruker
-# "01(styrken)mork.png" som mal, og den skal ikke regnes som "raa mal" bare
-# fordi den ikke er identisk med standardmalen.
-VARIANT_SUFFIXES = ("", "mixed", "mork", "kort", "kortmixed", "kortmork")
-
-
-def md5(path: str) -> str:
-    h = hashlib.md5()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def template_hashes(filename: str, book_base: str) -> dict[str, str]:
-    """{sti: md5} for malen og variantene, fra BEGGE kildene.
-
-    Malen finnes to steder, og de er ikke alltid like:
-
-      books/<slug>/base/     det `prepare_order` faktisk kopierer fra
-      <rot>/input/           det ComfyUI laster naar den rendrer
-
-    For den-skjulte-styrken er `01(styrken).png` identisk i begge, mens
-    `forside(styrken).png` er ULIK. Sjekker vi bare den ene, gaar de fleste
-    raa malene rett igjennom - det gjorde forste utgave av dette verktoyet,
-    som fant 1 av 10.
-
-    Begge maa derfor med. En side som er byte-identisk med NOEN av dem er
-    ikke faceswappet.
-    """
-    stem, ext = os.path.splitext(filename)
-    out = {}
-    for folder in (book_base, TEMPLATE_DIR):
-        if not folder or not os.path.isdir(folder):
-            continue
-        for suffix in VARIANT_SUFFIXES:
-            cand = os.path.join(folder, f"{stem}{suffix}{ext}")
-            if os.path.isfile(cand):
-                out[cand] = md5(cand)
-    return out
 
 
 def check(order_id: str) -> tuple[int, list[str]]:
     """(antall sider, liste med problemer)."""
     sys.path.insert(0, os.path.join(ROOT, "flow"))
     import dp_order
+    import page_files
 
     try:
         info = dp_order.resolve(order_id)
@@ -101,38 +60,19 @@ def check(order_id: str) -> tuple[int, list[str]]:
         return 0, [f"kunne ikke slaa opp ordren: {exc}"]
 
     pages = (info.get("config") or {}).get("pages") or []
-    input_dir = info["input_dir"]
-    book_base = os.path.join(ROOT, "books", info.get("book_slug") or "", "base")
-    problems: list[str] = []
-
     if not pages:
         return 0, [f"{info.get('book_slug')} har ingen pages i config.json"]
-    if not os.path.isdir(input_dir):
-        return 0, [f"ingen input-mappe: {input_dir}"]
+    if not os.path.isdir(info["input_dir"]):
+        return 0, [f"ingen input-mappe: {info['input_dir']}"]
 
-    for page in pages:
-        name = page.get("template_image")
-        key = page.get("page_key", "?")
-        if not name:
-            continue
-        dst = os.path.join(input_dir, name)
-        if not os.path.isfile(dst):
-            problems.append(f"{key:<8} {name} MANGLER i ordrens input/")
-            continue
-
-        templates = template_hashes(name, book_base)
-        if not templates:
-            problems.append(f"{key:<8} {name} - fant ingen mal aa sammenligne "
-                            f"med i {book_base} eller {TEMPLATE_DIR} "
-                            f"(kan ikke avgjores)")
-            continue
-
-        digest = md5(dst)
-        if digest in templates.values():
-            which = next(os.path.basename(p) for p, h in templates.items()
-                         if h == digest)
-            problems.append(f"{key:<8} {name} er RAA MAL (identisk med {which})")
-
+    problems: list[str] = []
+    for row in page_files.audit_input(info):
+        key, stem = row["page_key"], row["stem"]
+        if row["status"] == "mangler":
+            problems.append(f"{key:<8} {stem} MANGLER i ordrens input/")
+        elif row["status"] == "raa":
+            problems.append(f"{key:<8} {stem} er RAA MAL "
+                            f"(identisk med {row['raw_as']})")
     return len(pages), problems
 
 

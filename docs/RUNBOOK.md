@@ -116,13 +116,21 @@ ingenting — den teller sider, ikke om de er personaliserte.
 `comfy/` er som regel tom fordi `cleanup_comfy_folder` sletter den når
 Gelato-utkastet er laget.
 
-Siden 17.09.2026 stopper `assert_comfy_complete()` dette i `rebuild_pdfs`, på
-begge veier (botten og pipelinen). Får du den feilmeldingen:
+Siden 17.09.2026 avgjør `assert_comfy_complete()` dette selv i `rebuild_pdfs`,
+på begge veier (botten og pipelinen). Er `comfy/` ufullstendig, sjekker den
+`input/`:
 
-* **Er de riktige sidene fortsatt i `input/`?** Bygg med `--skip-prepare` —
-  da røres `input/` ikke.
-* **Er de ikke det?** Se etter `orders/<id>/backup-reprint-*/input/` — den
-  lages før hver ombygging. Ellers må sidene rendres på nytt.
+* **Ligger alle sidene ferdige og personaliserte der?** Da hopper den over
+  `prepare` av seg selv og bygger videre. Dette er normaltilstanden for enhver
+  ordre som alt har et Gelato-utkast, og krever ingenting av deg.
+* **Mangler en side, eller er en av dem byte-identisk med malen?** Da stopper
+  den — og da hjelper ingen `--skip-prepare` heller: sidene må gjennom ComfyUI
+  igjen (`retry`, eller render fra Telegram). Se også
+  `orders/<id>/backup-reprint-*/input/`, som lages før hver ombygging.
+
+Den første utgaven stoppet i *begge* tilfellene og ba operatøren skrive
+`--skip-prepare` selv. 17.09.2026 sto 1536, 1537 og 1538 samtidig og ventet på
+det, og hele flyten stoppet. En guard som vet nok til å velge, skal velge.
 
 Slik ser du om en ordres `input/` er personalisert:
 

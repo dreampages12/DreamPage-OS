@@ -1521,6 +1521,7 @@ def job_build(order_id: str, chat_id, extra: dict) -> None:
         session = load_state(order_id)
     info = dp_order.resolve(order_id)
     skip_prepare = bool(extra.get("skip_prepare"))
+    committed: list[str] = []
 
     # Ingen sperre her. Aa bygge en PDF paa disk kan ikke lage et duplikat hos
     # Gelato - det er publiseringen som kan det, og den sperren staar i
@@ -1541,17 +1542,25 @@ def job_build(order_id: str, chat_id, extra: dict) -> None:
 
     if session:
         missing = []
+        committed = []
         for page_key, page in session["pages"].items():
             chosen = page.get("chosen")
             if page["status"] in ("approved", "uploaded") and chosen:
                 reprint_order.commit_variant(info, page_key, chosen)
-                if skip_prepare:
-                    # Uten prepare er det ingen som kopierer comfy/ -> input/.
-                    # Da må den godkjente varianten inn i input/ selv, ellers
-                    # bygges boka med den gamle siden.
-                    if not reprint_order.commit_variant_to_input(
-                            info, page_key, chosen):
-                        missing.append(page_key)
+                # Varianten legges i BADE comfy/ og input/, uansett om vi tror
+                # prepare skal kjore. Kjorer den, kopierer den den samme fila
+                # fra comfy/ og resultatet er identisk; kjorer den ikke, er
+                # dette den eneste veien inn i boka.
+                #
+                # Dette var betinget av `skip_prepare` for. Da guarden begynte
+                # a velge skip-prepare selv (comfy/ ryddet, sidene ferdige i
+                # input/), betydde det at nettopp de sidene operatoren hadde
+                # godkjent var de eneste som IKKE kom med.
+                if reprint_order.commit_variant_to_input(
+                        info, page_key, chosen):
+                    committed.append(page_key)
+                else:
+                    missing.append(page_key)
         if missing:
             send(chat_id, "⚠️ Fant ikke hvilken input-fil disse hører til: "
                           f"<b>{', '.join(missing)}</b>. De ligger i comfy/, "
@@ -1560,10 +1569,27 @@ def job_build(order_id: str, chat_id, extra: dict) -> None:
     reprint_order.backup(info)
     files = reprint_order.rebuild_pdfs(info, skip_prepare=skip_prepare)
 
+    note = (f"Med dine valgte sider: <b>{', '.join(sorted(committed))}</b>"
+            if committed else "")
+    announce_built(order_id, chat_id, files, session, note=note)
+
+
+def announce_built(order_id, chat_id, files: dict, session: dict | None = None,
+                   note: str = "") -> None:
+    """«Bygget — hva vil du nå?» med knappene som fører flyten videre.
+
+    Egen funksjon fordi en ordre også bygges utenfor botten: reprint_order
+    fra kommandolinja, eller en opprydding etter en feil. Skjedde det, sto
+    operatøren igjen uten knapper og måtte finne fram til ordren på nytt for
+    å laste opp - og en ordre som ikke ble lastet opp, ble ikke trykt.
+    """
     size = os.path.getsize(files["gelato"]) / 1e6
+    group = dp_merge.merged_group(order_id)
     text = (f"✅ <b>{order_id}</b> bygget.\n"
             f"Innersider: {files['inner_pages']}  |  Gelato-PDF: "
-            f"{files['total_pages']} sider, {size:.1f} MB\n\n"
+            f"{files['total_pages']} sider, {size:.1f} MB\n"
+            + (note + "\n" if note else "")
+            + "\n"
             + ("Slå sammen på nytt for å oppdatere det samlede utkastet?"
                if group else "Last opp til Drive og lag Gelato-utkast?"))
     if session:
