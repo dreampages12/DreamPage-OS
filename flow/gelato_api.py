@@ -51,6 +51,22 @@ MAX_ATTEMPTS = 5
 DEFAULT_TIMEOUT = 120
 
 
+class GelatoError(RuntimeError):
+    """Gelato svarte ikke som forventet.
+
+    RuntimeError, IKKE SystemExit. Det er ikke en stilistisk detalj:
+    SystemExit arver BaseException, og runner-loopen fanger `Exception`.
+    17.09.2026 kastet verify_draft SystemExit for ordre 1532-b1, den gikk
+    rett gjennom `except Exception` i baade _run_step, run_job OG _loop, og
+    drepte arbeidstraaden. Jobben stod som "running" for alltid, to andre
+    ordre laa fast i koeen, og /api/status meldte worker_alive: false. Ingen
+    ordre ble behandlet paa 47 minutter.
+
+    Modulen brukes baade som bibliotek i workeren og fra kommandolinje-
+    skript. SystemExit passer det siste og er katastrofalt for det foerste.
+    """
+
+
 def _key() -> str:
     import dp_secrets
     return dp_secrets.gelato_api_key()
@@ -109,7 +125,7 @@ def call(method: str, url_or_path: str, body=None,
         if attempt < MAX_ATTEMPTS - 1:
             _sleep(attempt)
 
-    raise SystemExit(
+    raise GelatoError(
         f"Gelato-kallet {method} {url} feilet etter {MAX_ATTEMPTS} forsoek. "
         f"Siste feil: {last}")
 
@@ -153,7 +169,7 @@ def verify_draft(draft_id: str, expect_items: int = 1) -> dict:
         if attempt < MAX_ATTEMPTS - 1:
             _sleep(attempt)
 
-    raise SystemExit(
+    raise GelatoError(
         f"Gelato-utkast {draft_id}: {last_state}.\n"
         "Det betyr nesten alltid at Gelato ikke fikk lastet ned PDF-en fra "
         "Drive. Sjekk at URL-en er en drive.usercontent-lenke og at fila er "

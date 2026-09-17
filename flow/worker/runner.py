@@ -123,6 +123,37 @@ class Runner:
                 # Traaden maa overleve den, ellers stopper hele koeen.
                 self.log.error("runner-traaden fanget en uventet feil",
                                traceback=traceback.format_exc())
+            except BaseException:                   # noqa: BLE001
+                # BaseException, ikke bare Exception. SystemExit og
+                # KeyboardInterrupt arver BaseException og gikk foer rett
+                # gjennom alle tre except-lagene.
+                #
+                # 17.09.2026: gelato_api.verify_draft kastet SystemExit for
+                # ordre 1532-b1. Traaden doede stille. Jobben stod som
+                # "running" for alltid, 1537 og 1532-b2 laa fast i koeen, og
+                # /api/status meldte worker_alive: false i 47 minutter uten at
+                # noe varslet. Aarsaken er fikset i gelato_api (GelatoError),
+                # men denne vakten staar fordi ETHVERT bibliotek kan kalle
+                # sys.exit(): en arbeidstraad som kan drepes av en tredjeparts
+                # feilhaandtering er ikke en holdbar konstruksjon.
+                #
+                # Vi svelger den IKKE - jobben markeres som feilet og
+                # operatoeren varsles - men koeen faar leve.
+                self.log.error("runner-traaden fanget en TRAADDREPENDE feil "
+                               "(BaseException) - koeen lever videre",
+                               traceback=traceback.format_exc())
+                try:
+                    key = getattr(item, "job_key", None)
+                    if key and (self.store.job(key) or {}).get("status") == "running":
+                        self.store.finish(key, "failed",
+                                          "avbrutt av en traaddrepende feil "
+                                          "i et steg - se loggen")
+                        self._notify_failed(
+                            key, self.store.job(key) or {},
+                            "traaddrepende feil (BaseException) i et steg",
+                            "BaseException", self.current_step, False, self.log)
+                except Exception:                    # noqa: BLE001
+                    pass
             finally:
                 self.queue.task_done()
 
@@ -206,6 +237,27 @@ class Runner:
                                 False, log)
             result = {"status": "failed", "job_key": job_key, "error": str(exc),
                       "kind": type(exc).__name__}
+
+        except BaseException as exc:                 # noqa: BLE001
+            # SystemExit og KeyboardInterrupt arver BaseException og gikk foer
+            # rett gjennom except-en over. 17.09.2026 kastet gelato_api
+            # SystemExit for ordre 1532-b1: jobben stod som "running" for
+            # alltid, to andre ordre laa fast i koeen, og worker_alive ble
+            # false i 47 minutter uten at noe varslet.
+            #
+            # Jobben MAA markeres feilet her, i koden som eier jobbstatusen -
+            # ellers ser den ut som en evig kjoerende ordre. Feilen logges og
+            # varsles som alle andre, men den slippes IKKE videre.
+            kind = type(exc).__name__
+            self.store.finish(job_key, "failed", f"{kind}: {exc}")
+            self.store.event("failed", f"{kind}: {exc}", job_key,
+                             {"kind": kind, "thread_killing": True,
+                              "traceback": traceback.format_exc()[-4000:]})
+            log.error("jobben feilet paa en TRAADDREPENDE feil", feil=str(exc),
+                      kind=kind, traceback=traceback.format_exc()[-4000:])
+            self._notify_failed(job_key, f"{kind}: {exc}", kind, False, log)
+            result = {"status": "failed", "job_key": job_key,
+                      "error": f"{kind}: {exc}", "kind": kind}
 
         finally:
             self.current = None

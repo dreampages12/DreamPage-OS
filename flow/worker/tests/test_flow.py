@@ -939,6 +939,58 @@ def test_bildehenting_taaler_kort_nettverksbrudd(sb: Sandbox) -> None:
                 f"ComfyUI lokalt og skal vente kort.")
 
 
+@test
+def test_systemexit_dreper_ikke_koeen(sb: Sandbox) -> None:
+    """Et steg som kaster SystemExit skal feile JOBBEN, ikke traaden.
+
+    17.09.2026 kastet gelato_api.verify_draft SystemExit for ordre 1532-b1.
+    SystemExit arver BaseException, saa den gikk rett gjennom `except
+    Exception` i _run_step, run_job OG _loop. Arbeidstraaden doede stille:
+    jobben stod som "running" for alltid, ordre 1537 og 1532-b2 laa fast i
+    koeen, og /api/status meldte worker_alive: false i 47 minutter uten at
+    noe varslet.
+
+    Testen kjoerer en pipeline med ETT steg som kaster SystemExit, og krever
+    at runneren lever og at en jobb etterpaa fortsatt kjoerer.
+    """
+    import pipeline as pipeline_mod
+    import runner as runner_mod
+
+    store = fresh_store(sb, "sysexit")
+    r = runner_mod.Runner(store)
+    r.comfy = FakeComfy(sb, render_seconds=0)
+
+    def sprenger(ctx):
+        raise SystemExit("gelato_api gjorde dette")
+
+    boom = (pipeline_mod.Step("sprenger", sprenger, "kaster SystemExit"),)
+
+    sb.child_photo("S1")
+    store.enqueue("S1", sb.payload("S1"))
+    store.start("S1")
+    try:
+        res = r.run_job(runner_mod.QueuedJob("S1", sb.payload("S1")), pipeline=boom)
+    except BaseException as exc:                     # noqa: BLE001
+        raise AssertionError(
+            f"run_job slapp {type(exc).__name__} ut til kalleren. I _loop "
+            f"betyr det at arbeidstraaden doer og koeen stopper for godt.")
+
+    assert res["status"] == "failed", res
+    row = store.job("S1") or {}
+    assert row.get("status") == "failed", (
+        f"jobben staar som {row.get('status')!r}. En jobb som staar 'running' "
+        f"for alltid blokkerer koeen og ser ut som en hengende ordre.")
+
+    # Og det viktigste: runneren tar neste jobb.
+    sb.child_photo("S2")
+    store.enqueue("S2", sb.payload("S2"))
+    store.start("S2")
+    res2 = r.run_job(runner_mod.QueuedJob("S2", sb.payload("S2")),
+                     pipeline=pipeline_mod.by_name("pages"))
+    assert res2["status"] in ("done", "failed"), res2
+    assert (store.job("S2") or {}).get("status") != "running", store.job("S2")
+
+
 def main() -> int:
     sandbox = Sandbox()
     # Importene maa skje ETTER at DP_ROOT er satt.

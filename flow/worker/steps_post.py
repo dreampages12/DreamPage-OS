@@ -198,6 +198,31 @@ def wp_quality_check(ctx: Context) -> dict:
 # ---------------------------------------------------------------------------
 # Tekst, PDF og QR-siste-side
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Grensen mot reprint_order
+# ---------------------------------------------------------------------------
+def _as_runtime_error(fn, *args, **kwargs):
+    """Kall reprint_order og gjoer SystemExit til en vanlig feil.
+
+    reprint_order er foerst og fremst et kommandolinjeskript, og der er
+    `raise SystemExit("forklaring")` helt riktig - den skriver meldingen og
+    setter exit-koden. Men den brukes ogsaa som BIBLIOTEK herfra, og da er
+    SystemExit en BaseException som gaar rett gjennom `except Exception` i
+    alle tre lagene i runneren.
+
+    17.09.2026 drepte noeyaktig det arbeidstraaden: gelato_api kastet
+    SystemExit for ordre 1532-b1, jobben stod som "running" for alltid og to
+    andre ordre laa fast i koeen i 47 minutter. gelato_api er rettet, men
+    reprint_order har ti slike raise-setninger, og de er riktige DER. Derfor
+    konverteres de her, ved grensen, i stedet for aa endre ti kallsteder i et
+    skript som ogsaa brukes manuelt.
+    """
+    try:
+        return fn(*args, **kwargs)
+    except SystemExit as exc:
+        raise RuntimeError(str(exc) or "reprint_order avsluttet uten melding") from exc
+
+
 def build_pdfs(ctx: Context) -> dict:
     """Prepare -> fortsett-side -> tekstscript -> QR-stempel -> Gelato-PDF.
 
@@ -217,7 +242,8 @@ def build_pdfs(ctx: Context) -> dict:
     # callback=True laster fortsett-forsiden opp til landingssiden, som i n8n
     # ("Upload Continue Cover"). Uten continue_code hopper rebuild_pdfs over
     # hele QR-siden selv.
-    files = reprint_order.rebuild_pdfs(info, skip_prepare=False, callback=True)
+    files = _as_runtime_error(reprint_order.rebuild_pdfs, info,
+                              skip_prepare=False, callback=True)
     out = {k: str(v) for k, v in files.items()}
     for key in ("cover", "inner", "gelato"):
         path = Path(files[key])
@@ -286,7 +312,8 @@ def upload_and_draft(ctx: Context) -> dict:
 
     sys.path.insert(0, str(FLOW))
     import reprint_order
-    result = reprint_order.upload_and_draft(info, files, make_draft=True)
+    result = _as_runtime_error(reprint_order.upload_and_draft, info, files,
+                               make_draft=True)
     draft_id = result.get("draft_id")
     if not draft_id:
         raise RuntimeError("Gelato svarte uten utkast-id")
