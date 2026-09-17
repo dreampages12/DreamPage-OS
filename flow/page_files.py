@@ -71,7 +71,9 @@ def base_stem_map(book_slug: str) -> dict[str, str]:
         with open(path, "r", encoding="utf-8") as fh:
             tree = ast.parse(fh.read(), path)
     except (OSError, SyntaxError):
-        _STEM_CACHE[book_slug] = out
+        # Ikke cachet: et tomt kart er et FUNN om at noe er galt, ikke et
+        # svar. Cachet vi det, ville en bok som fikk prepare-scriptet sitt
+        # paa plass etterpaa fortsatt sett tomt ut resten av prosessens liv.
         return out
 
     for node in tree.body:
@@ -87,7 +89,8 @@ def base_stem_map(book_slug: str) -> dict[str, str]:
                 if isinstance(key.value, str) and isinstance(value.value, str):
                     out[key.value] = value.value
 
-    _STEM_CACHE[book_slug] = out
+    if out:
+        _STEM_CACHE[book_slug] = out
     return out
 
 

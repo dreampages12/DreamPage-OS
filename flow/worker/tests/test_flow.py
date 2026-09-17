@@ -933,6 +933,115 @@ def test_ryddet_comfy_hopper_over_prepare(sb: Sandbox) -> None:
         raise AssertionError("raa mal i input/ slapp igjennom")
 
 
+@test
+def test_raa_mal_stopper_pdf_bygget(sb: Sandbox) -> None:
+    """Sluttsjekken paa input/ staar UANSETT hvilken vei bygget tok.
+
+    `assert_comfy_complete` velger vei ut fra comfy/. Men et bygg kan ogsaa
+    starte med `--skip-prepare` valgt for hand, eller prepare kan ha lagt
+    igjen en raa mal. Ordre 1528 naadde Gelato med 12 raa maler fordi ingen
+    stilte spoersmaalet til slutt - prepare advarer og fortsetter, og
+    PDF-guarden teller sider og ikke innhold.
+
+    Denne sjekken er derfor det siste som skjer foer teksten legges paa.
+    """
+    os.environ.setdefault("DP_GELATO_API_KEY", "test-ikke-en-ekte-nokkel")
+    sys.path.insert(0, str(FLOW))
+    import reprint_order
+
+    keys = ("page00", "page01", "page02")
+    order_input = sb.root / "books" / sb.slug / "orders" / "R1" / "input"
+    order_input.mkdir(parents=True, exist_ok=True)
+    base = sb.root / "books" / sb.slug / "base"
+    base.mkdir(parents=True, exist_ok=True)
+    for k in keys:
+        (base / f"{k}(test).png").write_bytes(b"MAL-" + k.encode())
+        (order_input / f"{k}(test).png").write_bytes(b"FACESWAPPET-" + k.encode())
+
+    info = {"comfy_dir": str(sb.comfy_dir("R1")), "input_dir": str(order_input),
+            "book_slug": sb.slug,
+            "config": {"pages": [{"page_key": k, "template_image": f"{k}(test).png"}
+                                 for k in keys]}}
+
+    assert reprint_order.assert_input_personalized(info) == 3
+
+    # En raa mal -> stopp, med sidenoekkelen og hvilken mal den er lik.
+    (order_input / "page01(test).png").write_bytes(b"MAL-page01")
+    try:
+        reprint_order.assert_input_personalized(info)
+    except SystemExit as exc:
+        assert "page01" in str(exc), str(exc)
+        assert "RAA MAL" in str(exc), str(exc)
+    else:
+        raise AssertionError("raa mal slapp gjennom sluttsjekken")
+
+    # En side som mangler helt er like alvorlig.
+    (order_input / "page01(test).png").write_bytes(b"FACESWAPPET-page01")
+    (order_input / "page02(test).png").unlink()
+    try:
+        reprint_order.assert_input_personalized(info)
+    except SystemExit as exc:
+        assert "page02" in str(exc), str(exc)
+    else:
+        raise AssertionError("manglende side slapp gjennom sluttsjekken")
+
+
+@test
+def test_valgte_sider_verifiseres_paa_fila(sb: Sandbox) -> None:
+    """Sidene operatoren godkjenner i Telegram maa ligge i input/.
+
+    17.09.2026 ble 12 godkjente sider bygget bort i stillhet paa tre ordre
+    (1536, 1537, 1538): kopieringen til input/ var betinget av at
+    `skip_prepare` var satt, og meldingen sa likevel «bygget». En \u2705 som
+    ikke er kontrollert er verre enn ingen melding - da tror du boka er
+    riktig.
+
+    Sjekken maa gjoeres paa FILA. At kopieringen returnerte en sti beviser
+    ingenting om hva som endte opp i boka.
+    """
+    os.environ.setdefault("DP_GELATO_API_KEY", "test-ikke-en-ekte-nokkel")
+    sys.path.insert(0, str(FLOW))
+    import dp_bot
+    import reprint_order
+
+    # Filnavnet en side har i input/ staar i bokas prepare-script, ikke i
+    # config.json. Uten den tabellen vet ingen hvilken fil page01 ER.
+    script_dir = sb.root / "books" / sb.slug / "script"
+    script_dir.mkdir(parents=True, exist_ok=True)
+    (script_dir / f"prepare_order_{sb.slug}.py").write_text(
+        'PAGE_TO_BASE_STEM = {"page01": "01(test)"}\n', encoding="utf-8")
+
+    order_input = sb.root / "books" / sb.slug / "orders" / "V1" / "input"
+    order_input.mkdir(parents=True, exist_ok=True)
+    (order_input / "01(test).png").write_bytes(b"GAMMEL-SIDE")
+
+    variants = sb.root / "output" / sb.slug / "orders" / "V1" / "variants"
+    variants.mkdir(parents=True, exist_ok=True)
+    valgt = variants / "page01-s123_00001_.png"
+    valgt.write_bytes(b"DEN-OPERATOREN-VALGTE")
+
+    info = {"input_dir": str(order_input), "book_slug": sb.slug,
+            "config": {"prepareScript": "",
+                       "pages": [{"page_key": "page01",
+                                  "template_image": "01(test).png"}]}}
+    session = {"order_id": "V1",
+               "pages": {"page01": {"status": "approved", "chosen": str(valgt)}}}
+
+    # input/ har fortsatt den gamle sida -> feil skal meldes.
+    assert dp_bot.verify_chosen_pages(info, session) == ["page01"], \
+        "et valgt bilde som ikke ligger i input/ maa oppdages"
+
+    # Legg den valgte sida inn, slik et riktig bygg gjoer.
+    reprint_order.commit_variant_to_input(info, "page01", str(valgt))
+    assert dp_bot.verify_chosen_pages(info, session) == [], \
+        "riktig bygget ordre skal ikke gi falsk alarm"
+
+    # En side uten valg skal ikke sjekkes i det hele tatt.
+    assert dp_bot.verify_chosen_pages(
+        info, {"pages": {"page02": {"status": "pending", "chosen": None}}}) == []
+    assert dp_bot.verify_chosen_pages(info, None) == []
+
+
 class _NullLog:
     def info(self, *a, **k): pass
     def warn(self, *a, **k): pass

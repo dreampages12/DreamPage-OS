@@ -419,6 +419,32 @@ def assert_comfy_complete(info: dict) -> dict:
         "sidene fra Telegram.")
 
 
+def assert_input_personalized(info: dict) -> int:
+    """Ingen side i input/ far vaere en raa mal. Returnerer antall sider.
+
+    `assert_comfy_complete` ser paa comfy/ og velger vei; denne ser paa
+    RESULTATET, uansett hvilken vei vi tok - ogsaa naar prepare kjorte, og
+    ogsaa naar operatoren ba om --skip-prepare selv.
+
+    Ordre 1528 gikk til Gelato med 12 raa maler fordi ingen sjekket dette til
+    slutt: prepare advarer og fortsetter, og PDF-guarden teller sider og ikke
+    om de er personaliserte.
+    """
+    rows = page_files.audit_input(info)
+    raa = page_files.unusable(rows)
+    if raa:
+        raise SystemExit(
+            f"{len(raa)} side(r) i input/ er ikke personaliserte - boka "
+            f"ville vist malebarnet:\n"
+            + "\n".join(f"  {r['page_key']:<8} {r['stem']}  "
+                         + ("finnes ikke" if r["status"] == "mangler"
+                            else f"er RAA MAL (identisk med {r['raw_as']})")
+                         for r in raa)
+            + f"\n\n  input-mappe: {info['input_dir']}\n"
+              "Sidene maa rendres paa nytt for boka kan bygges.")
+    return len(rows)
+
+
 def rebuild_pdfs(info: dict, skip_prepare: bool = False,
                  callback: bool = True) -> dict:
     payload = info["payload"]
@@ -450,6 +476,8 @@ def rebuild_pdfs(info: dict, skip_prepare: bool = False,
         # Brukt når du har redigert input/ for hånd (f.eks. upscalet sider).
         # prepare_order ville kopiert base/ + comfy/ over dem igjen.
         print("\n--- Prepare Pages hoppet over (input/ brukes som den er)")
+
+    assert_input_personalized(info)
 
     if code:
         build_continue_page(info, callback=callback)

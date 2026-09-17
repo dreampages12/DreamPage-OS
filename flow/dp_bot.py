@@ -51,6 +51,7 @@ import dp_order
 import dp_testbook
 import regen_page
 import render_next_cover
+import page_files
 import reprint_order
 
 CONFIG_PATH = r"C:\DreamPage-OS\config\dp_bot.json"
@@ -687,10 +688,26 @@ def worker_loop() -> None:
             elif kind == "nextapply":
                 job_next_apply(order_id, chat_id, extra)
         except SystemExit as error:
+            # Loggen ogsaa, ikke bare Telegram. SystemExit er den VANLIGE
+            # maaten et steg stopper paa - guardene og underscriptene
+            # bruker den - og den etterlot ikke et spor. 17.09.2026
+            # stoppet 1536, 1537 og 1538 slik, og ingen logg kunne
+            # fortelle hvorfor i ettertid. En feil som naar operatoeren
+            # skal vaere like synlig for den som feilsoeker etterpaa.
+            log(f"{kind} {order_id} stoppet: {error}")
             send(chat_id, f"❌ <b>{order_id}</b>: {esc(error)}")
         except Exception as error:
             log(traceback.format_exc())
             send(chat_id, f"❌ <b>{order_id}</b> feilet: {esc(error)}")
+        except BaseException as error:               # noqa: BLE001
+            # Siste skanse. Doer denne traaden, blir «Bygger ...» staaende
+            # som siste melding for alltid og botten tar ingen nye jobber -
+            # utenfra ser alt levende. Det er noyaktig slik SystemExit laaste
+            # flow-koeen i 47 minutter (f6b2085).
+            log(traceback.format_exc())
+            send(chat_id, f"❌ <b>{order_id}</b> stoppet paa en "
+                          f"traaddrepende feil: {esc(type(error).__name__)}: "
+                          f"{esc(error)}")
         finally:
             if kind == "build":
                 clear_build_marker(order_id)
@@ -1569,9 +1586,40 @@ def job_build(order_id: str, chat_id, extra: dict) -> None:
     reprint_order.backup(info)
     files = reprint_order.rebuild_pdfs(info, skip_prepare=skip_prepare)
 
+    # Kom de sidene du valgte faktisk med i boka? Sjekkes paa fila, ikke paa
+    # at kopieringen returnerte noe.
+    #
+    # 17.09.2026 ble 12 godkjente sider bygget bort i stillhet paa tre ordre.
+    # Kopieringen til input/ var betinget av et flagg, og meldingen sa
+    # likevel «bygget». En ✅ som ikke er kontrollert er verre enn ingen
+    # melding: da tror du boka er riktig.
+    feil = verify_chosen_pages(info, session)
+    if feil:
+        raise RuntimeError(
+            "sidene du valgte kom IKKE med i boka: " + ", ".join(feil)
+            + ". Boka er bygget, men med de gamle sidene - ikke last den opp.")
+
     note = (f"Med dine valgte sider: <b>{', '.join(sorted(committed))}</b>"
             if committed else "")
     announce_built(order_id, chat_id, files, session, note=note)
+
+
+def verify_chosen_pages(info: dict, session: dict | None) -> list[str]:
+    """Sidenoekler der operatorens valgte bilde IKKE ligger i input/."""
+    if not session:
+        return []
+    feil = []
+    for page_key, page in (session.get("pages") or {}).items():
+        chosen = page.get("chosen")
+        if page.get("status") not in ("approved", "uploaded") or not chosen:
+            continue
+        dst = reprint_order.input_file_for(info, page_key)
+        if not dst or not os.path.isfile(chosen):
+            feil.append(page_key)
+            continue
+        if page_files.md5(chosen) != page_files.md5(dst):
+            feil.append(page_key)
+    return feil
 
 
 def announce_built(order_id, chat_id, files: dict, session: dict | None = None,
