@@ -50,6 +50,23 @@ RETRY_STATUS = {408, 429, 500, 502, 503, 504}
 MAX_ATTEMPTS = 5
 DEFAULT_TIMEOUT = 120
 
+# verify_draft venter paa noe HELT annet enn call(): ikke at en nettverksfeil
+# skal gi seg, men at Gelato skal rekke aa LASTE NED PDF-en fra Drive. Derfor
+# egne tall.
+#
+# En samlet bok er 85-90 MB. Maalt 17.09.2026: den samme drive.usercontent-
+# lenka tok 33,7 sekunder aa hente herfra. verify_draft ventet da 1+2+4+8 =
+# 15 sekunder foer den ga opp - altsaa under halve tiden nedlastingen
+# plausibelt tar. Det var ikke en Gelato-feil; vi spurte for tidlig.
+#
+# Konsekvensen var ikke bare en feilmelding: steget har retries=2, og hvert
+# nye forsoek laster opp 170 MB til Drive paa nytt foer det spoer igjen.
+# Ordre 1530 (89,5 MB) og 1532-b1 (89,4 MB) traff dette begge.
+#
+# 1+2+4+8+16+32+45+45 = ca 2,5 minutter, med god margin over de maalte 34 s.
+VERIFY_ATTEMPTS = 8
+VERIFY_SLEEP_CAP = 45
+
 
 class GelatoError(RuntimeError):
     """Gelato svarte ikke som forventet.
@@ -72,9 +89,9 @@ def _key() -> str:
     return dp_secrets.gelato_api_key()
 
 
-def _sleep(attempt: int) -> None:
-    delay = min(2 ** attempt, 30) + random.uniform(0, 1)
-    print(f"[GELATO] venter {delay:.1f} s foer forsoek {attempt + 1}/{MAX_ATTEMPTS}")
+def _sleep(attempt: int, cap: int = 30, attempts: int = MAX_ATTEMPTS) -> None:
+    delay = min(2 ** attempt, cap) + random.uniform(0, 1)
+    print(f"[GELATO] venter {delay:.1f} s foer forsoek {attempt + 1}/{attempts}")
     time.sleep(delay)
 
 
@@ -147,7 +164,7 @@ def verify_draft(draft_id: str, expect_items: int = 1) -> dict:
     hente fila, saa den taaler at svaret ikke er klart med en gang.
     """
     last_state = None
-    for attempt in range(MAX_ATTEMPTS):
+    for attempt in range(VERIFY_ATTEMPTS):
         order = get_order(draft_id)
         items = order.get("items") or []
         if len(items) >= expect_items:
@@ -166,8 +183,8 @@ def verify_draft(draft_id: str, expect_items: int = 1) -> dict:
         else:
             last_state = f"utkastet har {len(items)} item(er), ventet {expect_items}"
 
-        if attempt < MAX_ATTEMPTS - 1:
-            _sleep(attempt)
+        if attempt < VERIFY_ATTEMPTS - 1:
+            _sleep(attempt, cap=VERIFY_SLEEP_CAP, attempts=VERIFY_ATTEMPTS)
 
     raise GelatoError(
         f"Gelato-utkast {draft_id}: {last_state}.\n"
