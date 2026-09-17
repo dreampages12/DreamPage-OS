@@ -181,6 +181,19 @@
     </section>
 
     <section>
+      <h2>Kjoeringer</h2>
+      <table><thead><tr>
+        <th>job_key</th><th>bok</th><th>status</th><th>varighet</th>
+        <th>sider</th><th>s/side</th><th>startet</th><th>forsoek</th>
+      </tr></thead><tbody id="execs"></tbody></table>
+      <div class="pad muted" style="padding-top:0;font-size:12px">
+        <span class="mono">s/side</span> er der tiden gaar: rendringen er ~72 s
+        per side og staar for ni tiendedeler av en ordre. Klikk en rad for
+        steg-for-steg-tider og logg.
+      </div>
+    </section>
+
+    <section>
       <h2>Boeker</h2>
       <div id="books" class="pad"></div>
     </section>
@@ -225,6 +238,10 @@ async function api(path, options = {}) {
 el('save').onclick = async () => {
   token = el('token').value.trim();
   try {
+    // /api/health med vilje, ikke /api/status: den krever "full"-scope. Et
+    // status-token ville passert /api/status og saa feilet paa alt annet
+    // panelet gjoer. Denne ene forespoerselen skjer bare naar du limer inn
+    // tokenet, saa ComfyUI-kallet i den koster ingenting i drift.
     await api('/api/health');
     localStorage.setItem('dp-token', token);
     el('setup').hidden = true; el('app').hidden = false;
@@ -242,18 +259,34 @@ function chip(label, state, extra) {
     extra ? ` <span class="muted mono">${esc(extra)}</span>` : ''}</span>`;
 }
 
-function renderHealth(h) {
-  const w = h.worker || {}, c = h.comfy || {}, mq = h.rabbitmq || {};
+// Leser /api/status, IKKE /api/health. Forskjellen er ikke kosmetisk:
+// /api/health kaller ComfyUI to ganger (identity + queue_depth) for hvert
+// kall, og panelet pollet det hvert 4. sekund uansett om fanen var synlig.
+// Det er ~30 ComfyUI-forespoersler i minuttet mot en maskin som rendrer
+// boeker. /api/status svarer fra en 5-sekunders cache paa serveren, saa det
+// koster det samme om det polles én eller ti ganger.
+function renderHealth(s) {
+  const f = s.flow || {}, im = s.image || {}, q = s.queue || {};
+  const j = s.jobs || {};
+  const gpu = im.gpu || {};
   el('health').innerHTML = [
-    chip('worker', w.alive ? (w.running ? 'run' : 'ok') : 'fail',
-         w.running ? `${w.running} · ${w.running_step || ''}` : 'ledig'),
-    chip('ComfyUI', c.ok ? 'ok' : 'fail', c.version || ''),
-    chip('RabbitMQ', mq.connected ? 'ok' : 'fail',
-         mq.broker_depth != null ? `${mq.broker_depth} i koe` : ''),
-    chip('jobber', (h.jobs?.failed > 0) ? 'fail' : 'ok',
-         `${h.jobs?.running || 0} kjoerer · ${h.jobs?.pending || 0} venter · ${h.jobs?.failed || 0} feilet`),
+    chip('worker', f.worker_alive ? (f.busy ? 'run' : 'ok') : 'fail',
+         f.busy ? `${f.current_step || ''} · ${fmtSec(f.running_seconds)}` : 'ledig'),
+    chip('ComfyUI', im.status === 'ok' ? 'ok' : 'fail',
+         [im.version, gpu.vram_used_pct != null ? `VRAM ${gpu.vram_used_pct}%` : '']
+           .filter(Boolean).join(' · ')),
+    chip('RabbitMQ', q.connected ? 'ok' : 'fail',
+         q.broker_depth != null ? `${q.broker_depth} i koe` : ''),
+    chip('jobber', (j.failed > 0) ? 'fail' : 'ok',
+         `${j.running || 0} kjoerer · ${j.pending || 0} venter · ${j.failed || 0} feilet`),
   ].join('');
-  el('clock').textContent = (h.at || '').replace('T', ' ').slice(0, 19);
+  el('clock').textContent = (s.at || '').replace('T', ' ').slice(0, 19)
+    + (s.cached ? ' (cache)' : '');
+}
+
+function fmtSec(v) {
+  if (v == null) return '';
+  return v < 90 ? `${Math.round(v)} s` : `${Math.round(v / 60)} min`;
 }
 
 // -- flow-visning ----------------------------------------------------------
@@ -355,6 +388,38 @@ function renderBooks(data) {
 }
 
 // -- detaljer --------------------------------------------------------------
+// -- kjoeringer ------------------------------------------------------------
+// Historikk med varighet. Den regnes ut av started_at/finished_at, som alt
+// ligger i /api/jobs - ingen ekstra forespoersler. Steg-for-steg-tidene
+// finnes i detaljvisningen, og hentes foerst naar du klikker: en historikk
+// som slaar opp 60 jobber ville vaert noeyaktig den tregheten vi unngaar.
+function renderExecutions(jobs) {
+  const rows = jobs.map(j => {
+    const p = j.progress || {};
+    const t0 = j.started_at ? Date.parse(j.started_at) : null;
+    const t1 = j.finished_at ? Date.parse(j.finished_at)
+             : (j.status === 'running' ? Date.now() : null);
+    const secs = (t0 && t1) ? (t1 - t0) / 1000 : null;
+    const per = (secs && p.done) ? secs / p.done : null;
+    return `<tr class="clickable" data-key="${esc(j.job_key)}">
+      <td class="mono">${esc(j.job_key)}</td>
+      <td>${esc(j.book_slug || '')}</td>
+      <td><span class="status ${esc(j.status)}">${esc(j.status)}</span></td>
+      <td class="mono">${secs != null ? fmtSec(secs) : ''}${
+        j.status === 'running' ? ' <span class="muted">saa langt</span>' : ''}</td>
+      <td class="mono">${p.done || 0}/${p.total || 0}</td>
+      <td class="mono">${per != null ? per.toFixed(0) + ' s' : ''}</td>
+      <td class="muted mono" style="font-size:11.5px">${
+        esc((j.started_at || j.queued_at || '').replace('T', ' ').slice(0, 16))}</td>
+      <td class="mono">${j.attempt > 1 ? j.attempt : ''}</td>
+    </tr>`;
+  }).join('');
+  el('execs').innerHTML = rows || '<tr><td colspan="8" class="muted">Ingen kjoeringer.</td></tr>';
+  for (const tr of el('execs').querySelectorAll('tr.clickable')) {
+    tr.onclick = () => openDetail(tr.dataset.key);
+  }
+}
+
 async function openDetail(key, focusStep) {
   selected = key;
   const job = await api(`/api/jobs/${encodeURIComponent(key)}?log_lines=300`);
@@ -400,34 +465,86 @@ async function act(key, what) {
 el('d-close').onclick = () => el('detail').close();
 
 // -- oppdatering -----------------------------------------------------------
+//
+// Panelet skal koste tilnaermet ingenting. Det kjoerer paa den SAMME maskinen
+// som rendrer boeker, og den forrige versjonen gjorde seks forespoersler hvert
+// fjerde sekund i all evighet - ogsaa naar fanen laa i bakgrunnen, og én av
+// dem (/api/health) kalte ComfyUI to ganger. Fire ting fikser det:
+//
+//   1. /api/status i stedet for /api/health   - cachet 5 s paa serveren
+//   2. pause naar fanen ikke er synlig        - null trafikk i bakgrunnen
+//   3. 3 s naar noe kjoerer, 20 s naar ledig  - du ser fremdrift, men
+//                                               ledig tid koster ingenting
+//   4. pipeline og bokliste hentes ÉN gang    - de endrer seg ikke av seg selv
+const FAST_MS = 3000;     // noe kjoerer: du vil se sider ticke inn
+const IDLE_MS = 20000;    // ingenting kjoerer: bare hold klokka i gang
+let cachedFlow = null;    // /api/workflows - endres bare ved omstart
+let booksLoaded = false;  // /api/books - endres bare naar en bok legges til
+let inFlight = false;     // aldri to runder samtidig
+
 async function refresh() {
+  if (inFlight) return;               // en treg runde skal ikke stable opp
+  inFlight = true;
   try {
-    const [health, queue, jobs, workflows, books] = await Promise.all([
-      api('/api/health'),
+    if (!cachedFlow) {
+      const wf = await api('/api/workflows');
+      cachedFlow = wf.workflows.find(w => w.active) || wf.workflows[0];
+    }
+    if (!booksLoaded) {
+      renderBooks(await api('/api/books'));
+      booksLoaded = true;
+    }
+
+    const [status, queue, jobs] = await Promise.all([
+      api('/api/status'),
       api('/api/queue'),
       api('/api/jobs?limit=60' + (jobsFilter ? '&status=' + jobsFilter : '')),
-      api('/api/workflows'),
-      api('/api/books'),
     ]);
-    renderHealth(health);
+    renderHealth(status);
     renderQueue(queue);
     renderJobs(jobs);
-    renderBooks(books);
-    const active = workflows.workflows.find(w => w.active) || workflows.workflows[0];
-    // Mal flowen med den jobben som kjoerer, ellers den nyeste.
+
+    // Detaljkallet er det dyreste per runde (det leser steg-tabellen), saa
+    // vi gjoer det bare naar visningen faktisk endrer seg: en annen jobb,
+    // eller et nytt steg i den som kjoerer.
     const paint = queue.running?.job_key || jobs.jobs[0]?.job_key;
-    let job = null;
-    if (paint) { try { job = await api(`/api/jobs/${encodeURIComponent(paint)}?log_lines=0`); } catch {} }
-    renderFlow(active, job);
+    const stamp = `${paint}|${queue.running?.step || ''}|${jobs.jobs[0]?.status || ''}`;
+    if (paint && stamp !== flowStamp) {
+      flowStamp = stamp;
+      try {
+        flowJob = await api(`/api/jobs/${encodeURIComponent(paint)}?log_lines=0`);
+      } catch { flowJob = null; }
+    }
+    renderFlow(cachedFlow, flowJob);
+    renderExecutions(jobs.jobs);
+
+    const busy = (status.flow || {}).busy || (status.jobs || {}).pending > 0;
+    schedule(busy ? FAST_MS : IDLE_MS);
   } catch (err) {
     if (err.message === 'auth') { stop(); el('app').hidden = true; el('setup').hidden = false; }
-    else console.error(err);
+    else { console.error(err); schedule(IDLE_MS); }
+  } finally {
+    inFlight = false;
   }
 }
-el('refresh').onclick = refresh;
+let flowStamp = '';
+let flowJob = null;
 
-function start() { refresh(); stop(); timer = setInterval(refresh, 4000); }
-function stop() { if (timer) clearInterval(timer); timer = null; }
+function schedule(ms) {
+  stop();
+  if (document.hidden) return;        // synlig fane er en forutsetning
+  timer = setTimeout(refresh, ms);
+}
+function start() { stop(); refresh(); }
+function stop() { if (timer) clearTimeout(timer); timer = null; }
+
+el('refresh').onclick = () => { cachedFlow = null; booksLoaded = false; start(); };
+
+// Bakgrunnsfane = ingen trafikk. Kommer du tilbake, oppdateres det straks,
+// saa du ikke ser gamle tall.
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) stop(); else if (token) start();
+});
 
 if (token) { el('app').hidden = false; start(); }
 else { el('setup').hidden = false; }
