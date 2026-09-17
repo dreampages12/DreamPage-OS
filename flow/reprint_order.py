@@ -170,7 +170,7 @@ def page_input_map(info: dict) -> dict:
     å kjøre bokas script. Denne leste den ved å importere modulen - og et
     prepare-script som gjør noe på toppnivå ville da gjort det her.
     """
-    return page_files.base_stem_map(info.get("book_slug") or "")
+    return page_files.stem_map_for(info)
 
 
 def input_file_for(info: dict, page_key: str) -> str | None:

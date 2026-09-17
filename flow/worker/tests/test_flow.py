@@ -1042,6 +1042,65 @@ def test_valgte_sider_verifiseres_paa_fila(sb: Sandbox) -> None:
     assert dp_bot.verify_chosen_pages(info, None) == []
 
 
+@test
+def test_prepare_scriptets_navn_gjettes_ikke(sb: Sandbox) -> None:
+    """Stien til prepare-scriptet kommer fra config, aldri fra sluggen.
+
+    Ti av boekene har et scriptnavn som ikke foelger sluggen:
+    `dinosaurenes-dal` bruker `prepare_order_dinosaur.py`,
+    `den-skjulte-styrken` bruker `prepare_order_styrken.py`. Gjettet vi
+    navnet, ble tabellen tom - og da fant `commit_variant_to_input` ingen
+    fil aa skrive til, saa sidene operatoeren hadde valgt ble ikke med.
+
+    Det traff ordre 1534 (Oliver) 18.09.2026: aatte godkjente sider falt ut.
+    Guarden fanget det foer opplasting, men aarsaken laa her.
+
+    AST maa ogsaa taale at tabellen bygges i en LOEKKE - det gjoer
+    `den-magiske-bursdagen-jente`, som skriver page00 som literal og de
+    fjorten andre i en for-loekke. AST ser bare literalen.
+    """
+    sys.path.insert(0, str(FLOW))
+    import page_files
+
+    script_dir = sb.root / "books" / sb.slug / "script"
+    script_dir.mkdir(parents=True, exist_ok=True)
+
+    # Navnet har INGENTING med sluggen aa gjoere, og tabellen bygges delvis
+    # i en loekke - noeyaktig de to formene som finnes i produksjon.
+    odd = script_dir / "prepare_order_noe_helt_annet.py"
+    odd.write_text(
+        'PAGE_TO_BASE_STEM = {"page00": "forside(test)"}\n'
+        'for _n in range(1, 3):\n'
+        '    PAGE_TO_BASE_STEM[f"page{_n:02d}"] = f"{_n:02d}-right(test)"\n',
+        encoding="utf-8")
+
+    pages = [{"page_key": f"page{i:02d}", "template_image": f"{i:02d}(test).png"}
+             for i in range(3)]
+    info = {"book_slug": sb.slug, "input_dir": str(sb.root / "tom"),
+            "config": {"prepareScript": str(odd), "pages": pages}}
+
+    assert page_files.prepare_script(info) == str(odd), \
+        "stien maa komme fra config"
+
+    mapping = page_files.stem_map_for(info)
+    for page in pages:
+        assert page["page_key"] in mapping, \
+            f"{page['page_key']} mangler - loekken ble ikke lest"
+    assert mapping["page01"] == "01-right(test)", mapping
+
+    # page_stem skal bruke tabellen, ikke template_image: for en delt side
+    # er de to ULIKE, og template_image er da det gale svaret.
+    assert page_files.page_stem(info, pages[1]) == "01-right(test)"
+
+    # Uten prepareScript i config faller vi tilbake paa det sluggen tilsier -
+    # men da SKAL page_stem bruke template_image, ikke finne opp noe.
+    uten = {"book_slug": sb.slug, "input_dir": str(sb.root / "tom"),
+            "config": {"pages": pages}}
+    assert page_files.prepare_script(uten).endswith(
+        f"prepare_order_{sb.slug}.py")
+    assert page_files.page_stem(uten, pages[1]) == "01(test)"
+
+
 class _NullLog:
     def info(self, *a, **k): pass
     def warn(self, *a, **k): pass

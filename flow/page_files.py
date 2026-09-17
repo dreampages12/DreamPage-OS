@@ -55,17 +55,37 @@ def md5(path: str) -> str:
     return h.hexdigest()
 
 
-def base_stem_map(book_slug: str) -> dict[str, str]:
+def prepare_script(info: dict) -> str:
+    """Stien til bokas prepare-script - fra config.json, ALDRI utledet.
+
+    Ti av boekene har et scriptnavn som ikke foelger sluggen:
+    dinosaurenes-dal bruker `prepare_order_dinosaur.py`, den-skjulte-styrken
+    bruker `prepare_order_styrken.py`, og saa videre. Gjetter man navnet ut
+    fra sluggen, blir tabellen tom - og da faller alt som er avhengig av den
+    stille tilbake paa `template_image`, som er riktig for de fleste sidene
+    og feil for de delte. `commit_variant_to_input` fant da ingen fil i det
+    hele tatt, og de sidene operatoeren hadde valgt ble ikke med (1534).
+    """
+    path = ((info.get("config") or {}).get("prepareScript") or "").strip()
+    if path:
+        return path
+    slug = info.get("book_slug") or ""
+    return os.path.join(ROOT, "books", slug, "script",
+                        f"prepare_order_{slug}.py")
+
+
+def base_stem_map(script_path: str) -> dict[str, str]:
     """`PAGE_TO_BASE_STEM` fra bokas prepare-script, lest med AST.
 
     AST og ikke import: scriptet kjoerer `main()`-logikk og loeser stier ut
     fra `__file__` naar det lastes. Vi vil bare ha tabellen.
-    """
-    if book_slug in _STEM_CACHE:
-        return _STEM_CACHE[book_slug]
 
-    path = os.path.join(ROOT, "books", book_slug, "script",
-                        f"prepare_order_{book_slug}.py")
+    Noekkelen er STIEN, ikke sluggen - se `prepare_script()`.
+    """
+    path = script_path or ""
+    if path in _STEM_CACHE:
+        return _STEM_CACHE[path]
+
     out: dict[str, str] = {}
     try:
         with open(path, "r", encoding="utf-8") as fh:
@@ -90,14 +110,57 @@ def base_stem_map(book_slug: str) -> dict[str, str]:
                     out[key.value] = value.value
 
     if out:
-        _STEM_CACHE[book_slug] = out
+        _STEM_CACHE[path] = out
     return out
 
 
-def page_stem(book_slug: str, page: dict) -> str:
+def _import_stem_map(path: str) -> dict[str, str]:
+    """Samme tabell, men ved aa LASTE modulen. Reserve, ikke foerstevalg.
+
+    `den-magiske-bursdagen-jente` skriver bare `page00` som literal og
+    bygger de fjorten andre i en `for`-loekke. AST ser ingen loekke, bare
+    literaler - saa den fikk ett innslag av femten. Her er det ufarlig aa
+    laste modulen: alle prepare-scriptene er `__main__`-beskyttet, og
+    tabellen ligger paa toppnivaa.
+    """
+    import importlib.util
+    try:
+        name = "dp_prepare_" + os.path.basename(path).replace(".", "_")
+        spec = importlib.util.spec_from_file_location(name, path)
+        if not spec or not spec.loader:
+            return {}
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        raw = getattr(module, "PAGE_TO_BASE_STEM", {}) or {}
+        return {str(k): str(v) for k, v in raw.items()}
+    except Exception:                                 # noqa: BLE001
+        return {}
+
+
+def stem_map_for(info: dict) -> dict[str, str]:
+    """Tabellen for denne boka, komplett nok til aa daekke config.json.
+
+    AST foerst, fordi den er billig og ikke kjoerer bokas kode. Dekker den
+    ikke alle sidene i config, laster vi modulen i stedet - ellers faller
+    de manglende sidene stille tilbake paa `template_image`, og det er feil
+    for hver delt side.
+    """
+    path = prepare_script(info)
+    mapping = base_stem_map(path)
+    keys = [p.get("page_key") for p in ((info.get("config") or {}).get("pages") or [])
+            if p.get("page_key")]
+    if keys and not all(k in mapping for k in keys):
+        lastet = _import_stem_map(path)
+        if sum(1 for k in keys if k in lastet) > sum(1 for k in keys if k in mapping):
+            _STEM_CACHE[path] = lastet
+            return lastet
+    return mapping
+
+
+def page_stem(info: dict, page: dict) -> str:
     """Filnavn-stem (uten filending) for siden, slik prepare navngir den."""
     key = page.get("page_key") or ""
-    mapped = base_stem_map(book_slug).get(key)
+    mapped = stem_map_for(info).get(key)
     if mapped:
         return mapped
     return os.path.splitext(page.get("template_image") or "")[0]
@@ -141,7 +204,7 @@ def audit_page(info: dict, page: dict) -> dict:
     kan bare bevare det som ligger der, og kan aldri legge inn en raa mal.
     """
     slug = info.get("book_slug") or ""
-    stem = page_stem(slug, page)
+    stem = page_stem(info, page)
     found = find_by_stem(info["input_dir"], stem)
     row = {"page_key": page.get("page_key") or "?", "stem": stem,
            "path": found, "raw_as": None}
