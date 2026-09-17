@@ -278,10 +278,15 @@ class Runner:
                     {"traceback": traceback.format_exc()[-2000:]})
                 log.warn(f"{step.name} feilet (forsoek {attempt}/{attempts}): {exc}")
                 if not is_last:
-                    # Voksende pause, men aldri mer enn et halvt minutt:
-                    # en ordre skal ikke staa i ti minutter fordi ComfyUI
-                    # akkurat startet paa nytt.
-                    time.sleep(min(5 * attempt, 30))
+                    # Voksende pause. Grunnverdien er per steg - se
+                    # Step.retry_delay_s: 5 s er riktig for ComfyUI paa samme
+                    # maskin, men for kort for et steg som henter kundens
+                    # bilde over internett.
+                    base = settings.get("retry_delay_s", 5)
+                    delay = min(base * attempt, base * 6)
+                    log.info(f"venter {delay} s foer forsoek {attempt + 1}"
+                             f"/{attempts}")
+                    time.sleep(delay)
 
         if step.optional:
             log.warn(f"{step.name} feilet i alle {attempts} forsoek, men er "

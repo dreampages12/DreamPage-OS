@@ -47,6 +47,17 @@ class Step:
     timeout_s: int = 3600
     checkpoint: bool = False
     optional: bool = False
+    # Pausen mellom forsoekene er retry_delay_s * forsoeksnummer, begrenset
+    # til 6x grunnverdien. 5 er riktig for et steg som snakker med ComfyUI paa
+    # samme maskin: den restarter paa sekunder, og en ordre skal ikke staa i
+    # ti minutter av den grunn.
+    #
+    # Tallet er DATA fordi ett tall ikke passer alle. fetch_child_image henter
+    # kundens bilde over internett, og 17.09.2026 kl. 04:51 var TLS nede paa
+    # denne maskinen i ca. to minutter. Med 5 sekunder brukte steget opp alle
+    # fire forsoekene paa 30 sekunder og drepte BEGGE boekene i ordre 1532 -
+    # en betalt tobok-ordre - mens feilen var over lenge foer noen saa den.
+    retry_delay_s: int = 5
 
     def settings(self) -> dict:
         """Effektive verdier: standard fra koden, overstyrt av config."""
@@ -55,6 +66,8 @@ class Step:
             "enabled": bool(override.get("enabled", True)),
             "retries": int(override.get("retries", self.retries)),
             "timeout_s": int(override.get("timeout_s", self.timeout_s)),
+            "retry_delay_s": int(override.get("retry_delay_s",
+                                              self.retry_delay_s)),
         }
 
 
@@ -91,7 +104,11 @@ PAGES_PIPELINE: tuple[Step, ...] = (
     Step("fetch_child_image", steps.fetch_child_image,
          "Last ned barnebildet til input/<job_key>.jpg. Finnes det, roeres det "
          "ikke - operatoeren kan ha byttet det.",
-         retries=3, timeout_s=300),
+         # 5 forsoek med 30 s grunnpause: 30+60+90+120 = 5 minutter foer vi
+         # gir opp. Dette er det ENESTE steget som er avhengig av internett
+         # midt i en ordre, og en forbigaaende nettverksfeil skal ikke drepe
+         # en betalt bok. Ordre 1532 doede paa 30 sekunder 17.09.2026.
+         retries=4, timeout_s=300, retry_delay_s=30),
 
     Step("face_variants", steps.face_variants,
          "Uttrykksvarianter av barnebildet. Sidespor: en manglende variant "

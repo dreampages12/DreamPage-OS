@@ -454,7 +454,11 @@ def test_pipeline_er_data(sb: Sandbox) -> None:
     assert by_name["render_pages"]["timeout_s"] == 14 * 3600, by_name["render_pages"]
     assert by_name["render_pages"]["checkpoint"] is True
     assert by_name["face_variants"]["optional"] is True
-    assert by_name["fetch_child_image"]["retries"] == 3
+    # fetch_child_image overstyrer standarden (0). Tallet selv er ikke
+    # poenget - det ble hevet fra 3 til 4 da ordre 1532 doede paa et
+    # to-minutters nettverksbrudd - men at steget erklaerer sitt eget er.
+    # Ventetiden testes i test_bildehenting_taaler_kort_nettverksbrudd.
+    assert by_name["fetch_child_image"]["retries"] >= 3, by_name["fetch_child_image"]
     json.dumps(described)          # maa vaere serialiserbart for API-et
 
 
@@ -830,6 +834,47 @@ def test_workflow_per_side(sb: Sandbox) -> None:
     del cfg["pages"][0]["workflow_api_file"]
     plain = B.build_pages(job)
     assert len({p["workflow_api_file"] for p in plain}) == 1, plain
+
+
+@test
+def test_bildehenting_taaler_kort_nettverksbrudd(sb: Sandbox) -> None:
+    """fetch_child_image maa vente lenger enn et forbigaaende nettverksbrudd.
+
+    17.09.2026 kl. 04:51 var TLS nede paa maskinen i ca. to minutter. Steget
+    hadde 4 forsoek med 5 s grunnpause - 30 sekunder totalt - og drepte BEGGE
+    boekene i ordre 1532, en betalt tobok-ordre. Feilen var over lenge foer
+    noen saa den, og Telegram-varselet kom heller ikke fram, fordi det gikk
+    over samme nedlagte HTTPS.
+
+    Testen regner ut den faktiske ventetiden, ikke bare at feltene finnes.
+    Kravet er minst 4 minutter: et vindu som daekker et nettverksbrudd av den
+    typen som faktisk traff oss, med margin.
+    """
+    import pipeline as pipeline_mod
+
+    steg = [s for s in pipeline_mod.by_name("full")
+            if s.name == "fetch_child_image"]
+    assert steg, "fetch_child_image finnes ikke i pipelinen"
+    step = steg[0]
+    cfg = step.settings()
+
+    base = cfg["retry_delay_s"]
+    attempts = cfg["retries"] + 1
+    # Samme formel som runner._run_step bruker.
+    total = sum(min(base * n, base * 6) for n in range(1, attempts))
+    assert total >= 240, (
+        f"fetch_child_image gir opp etter {total} s ({attempts} forsoek, "
+        f"grunnpause {base} s). Et forbigaaende nettverksbrudd varte i to "
+        f"minutter og drepte to betalte boeker - vinduet maa vaere minst 4 min.")
+
+    # ComfyUI-stegene skal IKKE ha blitt tregere av dette: de snakker med en
+    # tjeneste paa samme maskin, og en ordre skal ikke staa unoedig.
+    for other in pipeline_mod.by_name("full"):
+        if other.name in ("render_pages", "face_variants"):
+            assert other.settings()["retry_delay_s"] <= 10, (
+                f"{other.name} har grunnpause "
+                f"{other.settings()['retry_delay_s']} s - den snakker med "
+                f"ComfyUI lokalt og skal vente kort.")
 
 
 def main() -> int:
