@@ -113,14 +113,24 @@ ment å nå ut, og den har sin egen port (8766) med bare tre ruter montert — s
 
 ## Den viktigste feilklassen: stille fallback
 
-Tre ganger har en feil nådd et trykkeklart utkast på **nøyaktig samme måte**:
+Fire ganger har en feil nådd et trykkeklart utkast på **nøyaktig samme måte**:
 koden fant ikke en fil, valgte noe annet, og sa ingenting.
 
 | Ordre | Hva skjedde |
 |---|---|
 | 1510 | line2-logoen hadde flyttet seg. Rendreren skrev «ADVARSEL» og avsluttet med 0. Forsiden sa bare «Henry og det». |
 | 1506 | tekstscriptene pekte på `<rot>/flow/books/…` etter en mappeflytting. Alle bøker på alle fem språk falt tilbake på den delte, gamle åpningssida. |
+| 1528 | `cleanup_comfy_folder` hadde slettet de rendrede sidene etter at utkastet ble laget. En ombygging fra Telegram kjørte `prepare_order`, som kopierer base-maler inn først og henter faceswappede sider fra `comfy/` etterpå — den fant 2 av 12. **12 råe maler gikk til Gelato.** |
 | — | `build_face_variants.py` hadde port 8188 hardkodet som fallback mens vi kjører 8189. Trist-varianten gikk mot en instans uten modeller. |
+
+Ordre 1528 la til en vri verdt å merke seg: advarselen fantes, men den var
+**allerede normal**. `prepare_order_styrken.py` har `page09`, `page10` og
+`page14` i kartet sitt uten at de står i `config.json`, så tre
+`[ADVARSEL]`-linjer kommer på hver eneste bygging av den boka. Tolv ekte
+advarsler så ut som mer av det samme.
+
+> Et varsel som alltid står på, varsler ingenting. Er noe forventet, skal det
+> ikke advares om.
 
 Kjeden er fail-soft **med vilje**: et oppsalg skal aldri stoppe en betalt ordre.
 Derfor er regelen:

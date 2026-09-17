@@ -348,6 +348,52 @@ def build_continue_page(info: dict, callback: bool = True) -> dict:
 
 
 # --------------------------------------------------------------------------
+def assert_comfy_complete(info: dict) -> int:
+    """Alle sidene i config.json er rendret FOER prepare far kopiere.
+
+    prepare_order_<bok>.py kopierer forst ALLE base-malene over input/, og
+    henter sa de faceswappede sidene fra comfy/. Mangler en side i comfy/,
+    blir den raa malen staaende - og scriptet advarer og fortsetter.
+
+    Det traff ordre 1528: cleanup_comfy_folder hadde slettet de 14 rendrede
+    sidene da det forste Gelato-utkastet ble laget, operatoren rendret to nye
+    fra Telegram, og /bygg la 12 raa maler inn i en bok som gikk til Gelato.
+    PDF-guarden sa ok, fordi den teller SIDER og ikke om de er personaliserte.
+
+    Vi bruker config.json som fasit, ikke prepare-scriptets eget kart: de to
+    er ikke alltid enige. For den-skjulte-styrken har kartet page09/10/14 som
+    config ikke har, saa tre advarsler er normale der - og det var nettopp
+    stoyen som gjorde at tolv ekte advarsler ikke ble lagt merke til.
+    """
+    comfy_dir = info.get("comfy_dir")
+    pages = (info.get("config") or {}).get("pages") or []
+    if not comfy_dir or not pages:
+        return 0
+
+    if not os.path.isdir(comfy_dir):
+        funnet = set()
+    else:
+        funnet = {name.split("_")[0] for name in os.listdir(comfy_dir)
+                  if name.lower().endswith((".png", ".webp", ".jpg", ".jpeg"))}
+
+    mangler = [p["page_key"] for p in pages
+               if p.get("page_key") and p["page_key"] not in funnet]
+
+    if mangler:
+        raise SystemExit(
+            f"{len(mangler)} av {len(pages)} sider er IKKE rendret:\n"
+            f"  {', '.join(mangler)}\n"
+            f"  comfy-mappe: {comfy_dir}\n\n"
+            "Kjorer vi prepare naa, kopieres RAA MALER inn i boka for disse "
+            "sidene, og hverken prepare eller PDF-guarden stopper det "
+            "(ordre 1528).\n\n"
+            "Sidene ligger som regel ikke i comfy/ fordi de ble ryddet bort "
+            "etter at Gelato-utkastet ble laget. Er de riktige sidene "
+            "fortsatt i input/, bygg med --skip-prepare - da rores input/ "
+            "ikke. Ellers maa sidene rendres paa nytt.")
+    return len(pages)
+
+
 def rebuild_pdfs(info: dict, skip_prepare: bool = False,
                  callback: bool = True) -> dict:
     payload = info["payload"]
@@ -360,6 +406,10 @@ def rebuild_pdfs(info: dict, skip_prepare: bool = False,
         prepare = info["config"].get("prepareScript")
         if not prepare:
             raise SystemExit(f"config for {info['book_slug']} mangler prepareScript")
+        # FOER prepare: den overskriver input/ med base-maler, og kan ikke
+        # angre. Er comfy/ ufullstendig, er raa maler i boka resultatet.
+        n = assert_comfy_complete(info)
+        print(f"\n--- Sjekk: alle {n} sider er rendret")
         run([sys.executable, prepare, info["order_id"]], "Prepare Pages")
         # Fasit for hva input/ inneholdt rett etter prepare. Uten den kan vi
         # ikke skille en manuell endring fra en fil prepare selv la der.

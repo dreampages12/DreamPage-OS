@@ -105,6 +105,31 @@ flyttet på kunst, fonter eller mapper.
 
 Se `CLAUDE.md` → «Den viktigste feilklassen».
 
+### «Boka fikk plutselig gamle basebilder / upersonaliserte sider»
+
+Ordre 1528. Skjer når `comfy/` er tom eller ufullstendig og noen bygger om
+**uten** `--skip-prepare`: `prepare_order` kopierer base-malene over `input/`
+først, og bare de sidene den finner i `comfy/` blir erstattet med de
+faceswappede. Resten blir stående som råe maler, og PDF-guarden merker
+ingenting — den teller sider, ikke om de er personaliserte.
+
+`comfy/` er som regel tom fordi `cleanup_comfy_folder` sletter den når
+Gelato-utkastet er laget.
+
+Siden 17.09.2026 stopper `assert_comfy_complete()` dette i `rebuild_pdfs`, på
+begge veier (botten og pipelinen). Får du den feilmeldingen:
+
+* **Er de riktige sidene fortsatt i `input/`?** Bygg med `--skip-prepare` —
+  da røres `input/` ikke.
+* **Er de ikke det?** Se etter `orders/<id>/backup-reprint-*/input/` — den
+  lages før hver ombygging. Ellers må sidene rendres på nytt.
+
+Slik ser du om en ordres `input/` er personalisert:
+
+```powershell
+python tools\check_personalized.py 1528
+```
+
 ### «Gelato-utkastet ser ferdig ut, men lar seg ikke bestille»
 
 Nesten alltid: Gelato fikk aldri lastet ned PDF-en, og item-et står uten fil.

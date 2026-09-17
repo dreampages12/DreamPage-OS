@@ -798,6 +798,68 @@ def test_manglende_kunst_stopper_foer_rendring(sb: Sandbox) -> None:
         checker.audit = original
 
 
+# ---------------------------------------------------------------------------
+# Ufullstendig comfy/ -> raa maler i boka (ordre 1528)
+# ---------------------------------------------------------------------------
+@test
+def test_ufullstendig_comfy_stopper_bygging(sb: Sandbox) -> None:
+    """prepare far ikke kjore naar sider mangler i comfy/.
+
+    Ordre 1528 (Lion, den-skjulte-styrken) fikk 12 raa maler i en bok som gikk
+    til Gelato. cleanup_comfy_folder hadde slettet de rendrede sidene da det
+    forste utkastet ble laget; operatoren rendret to nye fra Telegram, og
+    /bygg kjorte prepare_order - som kopierer base-maler over input/ forst og
+    henter faceswappede sider fra comfy/ etterpa. De 12 den ikke fant, ble
+    staaende som raa maler. Scriptet advarte og avsluttet med 0.
+
+    PDF-guarden fanget det ikke: den teller SIDER, ikke om de er
+    personaliserte. 33 sider var riktig. Innholdet var det ikke.
+    """
+    # reprint_order henter Gelato-nokkelen ved IMPORT (finish_order gjor det
+    # paa modulniva). Sandkassa har ingen secrets.json, saa vi bruker den
+    # dokumenterte miljooverstyringen - ingen ekte nokkel, og ingenting her
+    # snakker med Gelato.
+    os.environ.setdefault("DP_GELATO_API_KEY", "test-ikke-en-ekte-nokkel")
+    sys.path.insert(0, str(FLOW))
+    import reprint_order
+
+    comfy = sb.comfy_dir("C1")
+    comfy.mkdir(parents=True, exist_ok=True)
+    info = {
+        "comfy_dir": str(comfy),
+        "config": {"pages": [{"page_key": "page00"}, {"page_key": "page01"},
+                             {"page_key": "page02"}]},
+    }
+
+    # Ingenting rendret enda -> alle tre mangler.
+    try:
+        reprint_order.assert_comfy_complete(info)
+    except SystemExit as exc:
+        assert "3 av 3" in str(exc), str(exc)
+        assert "skip-prepare" in str(exc), "maa si hva operatoren skal gjore"
+    else:
+        raise AssertionError("tom comfy/ slapp igjennom")
+
+    # To av tre - noyaktig formen ordre 1528 hadde.
+    for key in ("page00", "page01"):
+        (comfy / f"{key}_00001_.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+    try:
+        reprint_order.assert_comfy_complete(info)
+    except SystemExit as exc:
+        assert "1 av 3" in str(exc), str(exc)
+        assert "page02" in str(exc), str(exc)
+    else:
+        raise AssertionError("delvis rendret comfy/ slapp igjennom")
+
+    # Alle tre -> slipper gjennom.
+    (comfy / "page02_00001_.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+    assert reprint_order.assert_comfy_complete(info) == 3
+
+    # En bok uten pages i config skal ikke stoppes av denne guarden.
+    assert reprint_order.assert_comfy_complete(
+        {"comfy_dir": str(comfy), "config": {}}) == 0
+
+
 class _NullLog:
     def info(self, *a, **k): pass
     def warn(self, *a, **k): pass
