@@ -65,21 +65,17 @@ def last_session_chat() -> int | None:
     return best
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("text", nargs="?", help="meldingen (ellers leses stdin)")
-    ap.add_argument("--chat", type=int, help="overstyr chat-ID")
-    args = ap.parse_args()
-
-    text = args.text if args.text is not None else sys.stdin.read()
-    text = text.strip()
+def main_text(text: str, chat: int | None = None) -> int:
+    """Send `text`. Egen inngang for andre verktoy (watch_order bruker den),
+    saa meldingsformatet og valget av chat staar ETT sted.
+    """
+    text = (text or "").strip()
     if not text:
-        ap.error("ingen tekst aa sende")
+        raise ValueError("ingen tekst aa sende")
 
     with open(CONFIG, encoding="utf-8") as fh:
         conf = json.load(fh)
-    chat_id = (args.chat or active_chat() or last_session_chat()
-               or conf["chat_id"])
+    chat_id = chat or active_chat() or last_session_chat() or conf["chat_id"]
 
     body = json.dumps({"chat_id": chat_id, "text": text,
                        "parse_mode": "HTML",
@@ -91,6 +87,18 @@ def main() -> int:
         answer = json.load(res)
     print(f"sendt til chat {chat_id}: {answer.get('ok')}")
     return 0 if answer.get("ok") else 1
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("text", nargs="?", help="meldingen (ellers leses stdin)")
+    ap.add_argument("--chat", type=int, help="overstyr chat-ID")
+    args = ap.parse_args()
+
+    text = args.text if args.text is not None else sys.stdin.read()
+    if not (text or "").strip():
+        ap.error("ingen tekst aa sende")
+    return main_text(text, args.chat)
 
 
 if __name__ == "__main__":

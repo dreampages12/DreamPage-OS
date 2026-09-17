@@ -78,9 +78,29 @@ def merged(order_id: str) -> str | None:
                 data = json.load(fh)
         except (OSError, ValueError):
             continue
-        if data.get("merged_orders") and data.get("draft_id"):
+        # Samme regel som dp_merge bruker: status "merged", eller en
+        # merged_orders-liste med FLERE enn seg selv. En liste med ett navn
+        # er ikke en sammenslaaing.
+        if not data.get("draft_id"):
+            continue
+        if (data.get("status") == "merged"
+                or len(data.get("merged_orders") or []) > 1):
             return data["draft_id"]
     return None
+
+
+def si(text: str, enabled: bool) -> None:
+    """Kort beskjed i operatoer-chatten. Fail-soft: en melding som ikke gaar
+    gjennom skal ikke drepe overvaakingen - da mister vi ogsaa stopp-alarmen.
+    """
+    if not enabled:
+        return
+    try:
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import say_to_operator
+        say_to_operator.main_text(text)
+    except Exception as error:                        # noqa: BLE001
+        print(f"{now()}  (klarte ikke sende Telegram-melding: {error})")
 
 
 def main() -> int:
@@ -89,6 +109,9 @@ def main() -> int:
     ap.add_argument("--interval", type=int, default=60, help="sekunder")
     ap.add_argument("--stall-minutes", type=int, default=20,
                     help="hvor lenge samme steg far staa foer vi sier fra")
+    ap.add_argument("--si-i-telegram", action="store_true",
+                    help="send en kort melding i operatoer-chatten naar "
+                         "ordren er ferdig bygget (og hvis den staar stille)")
     args = ap.parse_args()
 
     order = str(args.order_id)
@@ -126,6 +149,9 @@ def main() -> int:
                 stalled.add(key)
                 print(f"{now()}  STOPPET? {key} har staatt paa {state} i "
                       f"{waited:.0f} min - se paa den")
+                si(f"\u26a0\ufe0f <b>{key}</b> har staatt paa "
+                   f"<code>{state}</code> i {waited:.0f} min. Jeg ser paa "
+                   f"den - la den staa.", args.si_i_telegram)
 
         for key, draft in drafts(order).items():
             if key not in said_drafts:
@@ -148,6 +174,23 @@ def main() -> int:
                       "ellers blir det to pakker")
             print(f"{now()}  {order}: ferdig "
                   + ("med feil" if feil else "- alle boekene er bygget"))
+
+            if feil:
+                si(f"\u274c <b>{order}</b> er ikke ferdig: "
+                   + ", ".join(f"{r['job_key']} ({r['status']})" for r in feil)
+                   + ". Jeg ser paa den.", args.si_i_telegram)
+            else:
+                boker = ", ".join(f"{r['child_name']} ({r['book_slug']})"
+                                  for r in rows)
+                linjer = [f"\u2705 <b>{order}</b> er ferdig bygget: {boker}."]
+                if samlet:
+                    linjer.append(f"Samlet Gelato-utkast: "
+                                  f"<code>{samlet}</code>")
+                elif len(rows) > 1:
+                    linjer.append("MEN: boekene ligger som to separate "
+                                  "utkast - de maa slaas sammen, ellers blir "
+                                  "det to pakker.")
+                si("\n".join(linjer), args.si_i_telegram)
             return 0
 
         sys.stdout.flush()
