@@ -200,6 +200,79 @@ def scan_cover_logos() -> list[tuple[str, str]]:
     return found
 
 
+def scan_script_root_paths() -> list[tuple[str, str]]:
+    """(hvor, sti) for kunst og fonter tekstscriptene loeser mot SIN EGEN mappe.
+
+    scan_text_scripts() ser bare paa os.path.join(DP_ROOT, ...). Men den
+    vanligste formen i tekstscriptene er relativ til scriptet selv:
+
+        FRONT_COVER_LINE1_FONT = os.path.join(SCRIPT_ROOT_DIR, "pre", "Trebuchet MS Bold.ttf")
+        BACK_TEXT_FONT         = os.path.join(SCRIPT_ROOT_DIR, "pre", "Fredoka.ttf")
+
+    SCRIPT_ROOT_DIR er flow/text for alle fem spraak, saa disse peker paa
+    flow/text/pre/. Den mappa fantes IKKE fram til 17.09.2026: migreringen
+    (tools/migrate/rewrite_paths.py) la <gammel>/script/pre til flow/pre -
+    altsaa ETT NIVAA for hoeyt - mens scriptene flyttet til flow/text/.
+
+    Konsekvensen var stille, som alltid i denne kjeden: `_front_cover_font`
+    faller tilbake paa COVER_FONT (PlayfairDisplay) naar fila mangler. Linje 1
+    paa forsiden ble serif-kursiv i stedet for Trebuchet, og bakside-teksten
+    paa 85 script-kombinasjoner brukte feil font. Brukeren oppdaget det paa
+    ordre 1532-b1; ingenting i systemet hadde sagt fra.
+
+    Dette er fjerde variant av samme feilklasse: 1510 (line2-logo), 1506
+    (aapningsside), forsidelogoen, og na fontene. Alle fire hadde et
+    fallback som gjorde en feil sti til en stille kvalitetsfeil.
+    """
+    found: list[tuple[str, str]] = []
+    for path in sorted(glob.glob(os.path.join(ROOT, "flow", "text", "*", "*.py"))):
+        if ".backup" in path or ".bak" in path:
+            continue
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        try:
+            with open(path, encoding="utf-8", errors="surrogateescape") as fh:
+                tree = ast.parse(fh.read())
+        except (OSError, SyntaxError):
+            continue        # scan_text_scripts rapporterer syntaksfeilen
+
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and node.func.attr == "join"):
+                continue
+            args = node.args
+            if not args:
+                continue
+            # Foerste argument skal vaere SCRIPT_ROOT_DIR, enten direkte
+            # eller via globals().get("SCRIPT_ROOT_DIR", ...) som flere
+            # script bruker.
+            first = args[0]
+            # BARE SCRIPT_ROOT_DIR. LOGO_DIR er flow/text/logo/<sprak> og
+            # SCRIPT_DIR er flow/text/<sprak> - begge har en annen base, og
+            # aa behandle dem likt ga 56 falske treff paa foerste forsoek.
+            # Det er ikke en kosmetisk feil: check_assets er FOERSTE steg i
+            # pipelinen og kaster JobError, saa en skanner som roper ulv
+            # stopper hver eneste nye ordre. Logoene dekkes av
+            # scan_cover_logos().
+            anchored = (isinstance(first, ast.Name)
+                        and first.id == "SCRIPT_ROOT_DIR")
+            if not anchored and isinstance(first, ast.Call):
+                anchored = any(isinstance(a, ast.Constant)
+                               and a.value == "SCRIPT_ROOT_DIR"
+                               for a in first.args)
+            if not anchored:
+                continue
+            parts = [a.value for a in args[1:]
+                     if isinstance(a, ast.Constant) and isinstance(a.value, str)]
+            if len(parts) != len(args) - 1 or not parts:
+                continue        # sti satt sammen av variabler
+            if not parts[-1].lower().endswith(
+                    (".png", ".webp", ".jpg", ".jpeg", ".ttf", ".otf")):
+                continue
+            found.append((rel, "flow/text/" + "/".join(parts)))
+    return found
+
+
 def audit() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     """(alle stier, de som mangler). Selve sjekken, uten utskrift.
 
@@ -216,6 +289,7 @@ def audit() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
         found += scan_json(rel)
     found += scan_text_scripts()
     found += scan_cover_logos()
+    found += scan_script_root_paths()
 
     missing = [(where, p) for where, p in found if not os.path.isfile(resolve(p))]
 
