@@ -37,6 +37,19 @@ ASSET_RE = re.compile(
 SHARED_DIRS = ("flow/text/logo", "flow/text/bakside",
                "flow/text/ryggrad", "flow/text/lastpages")
 
+# Spraak der en manglende forsidelogo er en FEIL, ikke et valg.
+#
+# nb og nn deler logo: alle 18 filene i flow/text/logo/nn/ er byte-identiske
+# kopier av bokmaalsfilene, og to av dem staar paa boeker der nynorsk-tittelen
+# er en annen (Dragejakten/"Dragejakta", Enhjoerningsdalen/"Einhyrningdalen").
+# Omslaget viser bokmaalsordet; historien inni er nynorsk.
+#
+# en-US, en-GB og sv er IKKE med: der finnes ingen oversatt logo ennaa, og
+# `None` betyr med vilje "tegn linje 2 som tekst". En norsk logo paa en
+# engelsk bok ville vaert verre enn hvit tekst. Lages en engelsk logo, legges
+# spraaket til her.
+LOGO_REQUIRED_LOCALES = ("nb", "nn")
+
 
 def resolve(path: str) -> str:
     return path if os.path.isabs(path) else os.path.join(ROOT, path)
@@ -120,6 +133,73 @@ def scan_text_scripts() -> list[tuple[str, str]]:
     return found
 
 
+def scan_cover_logos() -> list[tuple[str, str]]:
+    """(hvor, sti) for forsidelogoen hvert norsk tekstscript ber om.
+
+    Egen skanner fordi logonavnet IKKE er en modulnivaa-streng man kan lese
+    med ASSET_RE eller scan_text_scripts: de fleste script bygger det inne i
+    `resolve_front_cover_logo()`, flere med en ordbok per spraak, og navnet
+    joines med en variabel. Regex finner det ikke; AST gjoer det.
+
+    Dette er tredje variant av samme feilklasse, og den dyreste hittil fordi
+    den naadde kunden: ordre 1532-b1 (Aksel, nynorsk) fikk forsiden sin som
+    ren hvit kursiv i stedet for gulllogoen, og gikk til Gelato-utkast slik
+    17.09.2026. Tekstscriptet hadde FRONT_COVER_LOGO_NAME = None, og fila
+    laa ikke i flow/text/logo/nn/. Hele kjeden er fail-soft: scriptet skriver
+    "[FORSIDE] Fant ingen logo ... - linje 2 tegnes som tekst", avslutter med
+    0, og boka blir trykkeklar.
+
+    Bare nb og nn - se LOGO_REQUIRED_LOCALES for hvorfor engelsk og svensk
+    ikke er med.
+    """
+    found: list[tuple[str, str]] = []
+    for path in sorted(glob.glob(os.path.join(ROOT, "flow", "text", "*", "*.py"))):
+        if ".backup" in path or ".bak" in path:
+            continue
+        locale = os.path.basename(os.path.dirname(path))
+        if locale not in LOGO_REQUIRED_LOCALES:
+            continue
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        try:
+            with open(path, encoding="utf-8", errors="surrogateescape") as fh:
+                src = fh.read()
+        except OSError:
+            continue
+        if "resolve_front_cover_logo" not in src:
+            continue
+        try:
+            tree = ast.parse(src)
+        except SyntaxError:
+            continue        # scan_text_scripts rapporterer syntaksfeilen
+
+        names: list[str] = []
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "resolve_front_cover_logo":
+                for sub in ast.walk(node):
+                    if (isinstance(sub, ast.Constant)
+                            and isinstance(sub.value, str)
+                            and sub.value.lower().endswith((".png", ".webp", ".jpg"))):
+                        names.append(sub.value)
+            if (isinstance(node, ast.Assign)
+                    and any(isinstance(t, ast.Name) and t.id == "FRONT_COVER_LOGO_NAME"
+                            for t in node.targets)
+                    and isinstance(node.value, ast.Constant)
+                    and isinstance(node.value.value, str)):
+                names.append(node.value.value)
+
+        if not names:
+            found.append((rel, f"<INGEN FORSIDELOGO NAVNGITT for {locale}>"))
+            continue
+        # Scriptet proever flere kandidater og bruker den foerste som finnes.
+        # Er ingen av dem der, blir forsiden hvit tekst.
+        paths = [f"flow/text/logo/{locale}/{n}" for n in dict.fromkeys(names)]
+        if any(os.path.isfile(resolve(p)) for p in paths):
+            found.append((rel, next(p for p in paths if os.path.isfile(resolve(p)))))
+        else:
+            found.append((rel, paths[0]))
+    return found
+
+
 def audit() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     """(alle stier, de som mangler). Selve sjekken, uten utskrift.
 
@@ -135,6 +215,7 @@ def audit() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
                 "config/merge_orders.json"):
         found += scan_json(rel)
     found += scan_text_scripts()
+    found += scan_cover_logos()
 
     missing = [(where, p) for where, p in found if not os.path.isfile(resolve(p))]
 

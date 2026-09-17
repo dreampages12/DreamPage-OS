@@ -401,10 +401,24 @@ FRONT_COVER_GLOW_RADIUS_SCALE = 0.30
 FRONT_COVER_LOGO_SCALE = 0.80
 FRONT_COVER_LOGO_X_OFFSET = 0
 
-# Logoen finnes bare paa bokmaal. None betyr med vilje "tegn linje 2 som
-# tekst" - en norsk logo skal aldri havne paa en nynorsk, engelsk eller
-# svensk forside naar tittelen deres er en annen.
-FRONT_COVER_LOGO_NAME = None
+# Bokmaalslogoen, ogsaa her. Den sier "DINOSAURENES DAL" mens nynorsk-
+# tittelen i boka er "Dinosaurdalen" - og det er MENINGEN, fordi det er det
+# alle de andre nynorsk-boekene gjoer.
+#
+# Her stod None, med begrunnelsen "en norsk logo skal aldri havne paa en
+# nynorsk forside naar tittelen deres er en annen". Konsekvensen var at
+# forsiden ble ren hvit kursiv uten logo, og ordre 1532-b1 (Aksel) gikk til
+# Gelato-utkast slik 17.09.2026.
+#
+# Presedensen er entydig: alle 18 logoene i flow/text/logo/nn/ er
+# BYTE-IDENTISKE kopier av bokmaalsfilene, og to av dem staar paa boeker der
+# nynorsk-tittelen ER en annen - Dragejakten/"Dragejakta" og
+# Enhjoerningsdalen/"Einhyrningdalen". Omslaget viser bokmaalsordet, historien
+# inni er nynorsk.
+#
+# Engelsk og svensk beholder None med vilje: der finnes ingen oversatt logo,
+# og en norsk logo paa en engelsk bok er en annen sak enn bokmaal paa nynorsk.
+FRONT_COVER_LOGO_NAME = "dinosaurenes-dal-logo-nb.png"
 
 
 def _front_cover_font(path, size):
