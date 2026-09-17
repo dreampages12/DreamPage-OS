@@ -667,6 +667,28 @@ def stop_everything(chat_id, reset: bool = False) -> None:
     threading.Timer(5.0, CANCEL.clear).start()
 
 
+LAST_CHAT_PATH = r"C:\DreamPage-OS\state\dp_bot_last_chat.json"
+
+
+def remember_chat(chat_id) -> None:
+    """Hvilken chat operatoeren bruker NAA - for meldinger vi sender utenfra.
+
+    `config/dp_bot.json` -> `chat_id` er bare EN av de tillatte chattene, og
+    ikke noedvendigvis den i bruk. 17.09.2026 gikk en melding om tre ordre
+    til den gale av dem, mens operatoeren satt i en annen og ventet.
+
+    Skrives fail-soft: en melding som ikke kan huskes skal ikke stoppe
+    botten.
+    """
+    try:
+        with open(LAST_CHAT_PATH, "w", encoding="utf-8") as fh:
+            json.dump({"chat_id": chat_id,
+                       "at": dt.datetime.now().isoformat(timespec="seconds")},
+                      fh, ensure_ascii=False)
+    except OSError:
+        pass
+
+
 def worker_loop() -> None:
     while True:
         kind, order_id, chat_id, extra = JOBS.get()
@@ -3091,6 +3113,7 @@ def poll_once(offset: int, allowed: set) -> int:
                 # Svar med en gang - spørringen utløper etter få sekunder.
                 api("answerCallbackQuery", {"callback_query_id": query["id"]},
                     timeout=10)
+                remember_chat(chat_id)
                 UI_JOBS.put(("callback", query))
             elif "message" in update:
                 chat_id = update["message"]["chat"]["id"]
@@ -3102,6 +3125,7 @@ def poll_once(offset: int, allowed: set) -> int:
                         and not text.startswith("/chatid"):
                     log(f"ignorerte melding fra chat {chat_id}")
                     continue
+                remember_chat(chat_id)
                 UI_JOBS.put(("message", update["message"]))
         except Exception:
             log(traceback.format_exc())
