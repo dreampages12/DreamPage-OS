@@ -234,10 +234,16 @@ def verdict(row):
     gel = row.get("gelato")
     byref = row.get("byref")
 
-    # Levert er levert, uansett hva som ligger lokalt.
+    # Levert er levert, uansett hva som ligger lokalt OG uansett hva
+    # jobbraden sier. Dette staar foerst med vilje: ordre 1530 sto som
+    # "FEILET permanent" fordi jobben ble avbrutt, mens kunden hadde en
+    # betalt Gelato-ordre. Kunden har boka - da er ordren ikke et problem,
+    # uansett hvordan jobben endte hos oss.
     if byref and byref.get("type") == "order":
         return "LEVERT", "Gelato-ordre %s %s" % (byref.get("financial"),
                                                  byref.get("created"))
+    if gel is not None and gel.get("ok") and gel.get("type") == "order":
+        return "LEVERT", "Gelato-ordre %s" % gel.get("financial")
 
     if job and job["status"] == "running":
         step = job.get("step") or "?"
@@ -335,10 +341,11 @@ def main():
     if not (args.all or args.open or args.order):
         rows = rows[-args.limit:]
 
-    # Gelato spoerres bare for de som HAR et utkast - ellers er det bortkastede
-    # kall, og API-et har rate limits.
-    if args.gelato or args.order:
-        for row in rows:
+    def ask_gelato(subset):
+        """Bekreft mot Gelato. Ett oppslag per ordre, ikke flere."""
+        for row in subset:
+            if "gelato" in row:
+                continue
             row["gelato"] = (gelato_check(row["draft"]["id"])
                              if row["draft"]["id"] else None)
             # Referansesoek naar det lokale sporet ikke holder: uten utkast,
@@ -350,11 +357,37 @@ def main():
                             if need_ref and row["draft"]["status"] != "merged"
                             else None)
 
+    if args.gelato or args.order:
+        ask_gelato(rows)
+
     for row in rows:
         row["state"], row["why"] = verdict(row)
 
     if args.open:
-        rows = [r for r in rows if r["state"] not in DONE_STATES]
+        # To runder, og det er ikke en optimalisering: "er denne ordren
+        # ferdig" kan ikke besvares lokalt. PDF-ene blir ryddet etter
+        # levering, saa en levert ordre fra august ser lokalt ut som en
+        # ordre som mangler filer. Foerste kjoering av --open meldte 10
+        # slike som UKLAR - en liste med falske alarmer er en liste ingen
+        # leser.
+        #
+        # Derfor: filtrer lokalt, spoer Gelato BARE om de som ser aapne ut,
+        # og doem paa nytt. Det er noen titalls kall i stedet for over 130,
+        # og svaret er riktig.
+        # Kandidatene er de som ser aapne ut lokalt PLUSS alle som har et
+        # utkast. Det andre leddet er ikke sloesing: et utkast kan vaere
+        # borte hos Gelato mens alt ser fint ut her, og da ser ordren ferdig
+        # ut lokalt. Ordre 1435 (Aurora) er noeyaktig det - PDF-ene er
+        # bygget og sidetallene stemmer, men utkastet 404-er. Foerste
+        # versjon av denne to-runde-logikken filtrerte den bort FOER
+        # Gelato-sjekken, og skjulte dermed et ekte hull.
+        candidates = [r for r in rows
+                      if r["state"] not in DONE_STATES or r["draft"]["id"]]
+        if not (args.gelato or args.order):
+            ask_gelato(candidates)
+            for row in candidates:
+                row["state"], row["why"] = verdict(row)
+        rows = [r for r in candidates if r["state"] not in DONE_STATES]
 
     if args.json:
         print(json.dumps(rows, ensure_ascii=False, indent=2, default=str))
