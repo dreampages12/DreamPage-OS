@@ -612,7 +612,25 @@ def upload_and_draft(info: dict, files: dict, make_draft: bool) -> dict:
     # HTML-advarselside. Vi leser utkastet tilbake FOER vi sletter det gamle:
     # feiler dette, er det gamle utkastet fortsatt det beste vi har.
     import gelato_api
-    result["verified"] = gelato_api.verify_draft(draft_id)
+    try:
+        result["verified"] = gelato_api.verify_draft(draft_id)
+    except Exception:
+        # Rydd opp ETTER OSS. Utkastet vi nettopp lagde har ingen innlest fil
+        # og er ubrukelig - det kan ikke bestilles. Lar vi det staa, samler
+        # det seg opp: steget har retries=2, og ordre 1537 endte med TRE
+        # foreldrelose utkast 17.09.2026, ett per forsoek.
+        #
+        # Merk forskjellen fra `old` nedenfor: DET er et utkast fra en
+        # tidligere VELLYKKET kjoering, og det skal staa hvis verifiseringen
+        # feiler - da er det fortsatt det beste vi har. Dette er vaart eget,
+        # nettopp opprettede, og verifisert ubrukelig.
+        try:
+            code, _ = gelato("DELETE",
+                             f"https://order.gelatoapis.com/v4/orders/{draft_id}")
+            print(f"    slettet det ubrukelige utkastet {draft_id} (HTTP {code})")
+        except Exception as cleanup_error:
+            print(f"    kunne ikke slette {draft_id}: {cleanup_error}")
+        raise
     print(f"    verifisert: Gelato har lest inn fila "
           f"({result['verified']['items']} item)")
 
