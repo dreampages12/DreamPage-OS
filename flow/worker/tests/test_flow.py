@@ -1043,6 +1043,71 @@ def test_valgte_sider_verifiseres_paa_fila(sb: Sandbox) -> None:
 
 
 @test
+def test_eget_bilde_fra_telegram(sb: Sandbox) -> None:
+    """«Last inn eget bilde»: bare 4096x2048 og 8192x4096, og det skal i boka.
+
+    Foer maatte Claude bytte sider med ChatGPT-bilder for haand. Knappen
+    maa avvise feil stoerrelse (et 3000x1500-bilde ville blitt trykt
+    uskarpt), og et godkjent bilde maa ende i BAADE input/ og comfy/ - ellers
+    blir det borte ved neste «Bygg fra comfy».
+    """
+    os.environ.setdefault("DP_GELATO_API_KEY", "test-ikke-en-ekte-nokkel")
+    sys.path.insert(0, str(FLOW))
+    import dp_bot
+    from PIL import Image
+
+    tmp = sb.root / "opplasting"
+    tmp.mkdir(parents=True, exist_ok=True)
+
+    feil = tmp / "feil.png"
+    Image.new("RGB", (3000, 1500), "red").save(feil)
+    try:
+        dp_bot.prepare_upload(str(feil), str(tmp / "ut-feil.png"))
+        raise AssertionError("3000x1500 skulle vaert avvist")
+    except ValueError as error:
+        assert "3000x1500" in str(error)
+    assert not (tmp / "ut-feil.png").exists(), "avvist bilde skal ikke lagres"
+
+    liten = tmp / "liten.jpg"
+    Image.new("RGBA", (4096, 2048), "blue").convert("RGB").save(liten, "JPEG")
+    ut = tmp / "ut.png"
+    assert dp_bot.prepare_upload(str(liten), str(ut)) == (4096, 2048)
+    with Image.open(ut) as img:
+        assert img.size == (8192, 4096), "4096x2048 skal skaleres opp"
+        assert img.format == "PNG" and img.mode == "RGB"
+
+    script_dir = sb.root / "books" / sb.slug / "script"
+    script_dir.mkdir(parents=True, exist_ok=True)
+    (script_dir / f"prepare_order_{sb.slug}.py").write_text(
+        'PAGE_TO_BASE_STEM = {"page01": "01(test)"}\n', encoding="utf-8")
+    order_input = sb.root / "books" / sb.slug / "orders" / "U1" / "input"
+    order_input.mkdir(parents=True, exist_ok=True)
+    (order_input / "01(test).png").write_bytes(b"GAMMEL-SIDE")
+    comfy = sb.comfy_dir("U1")
+    comfy.mkdir(parents=True, exist_ok=True)
+    (comfy / "page01_00001_.png").write_bytes(b"GAMMEL-COMFY")
+
+    info = {"input_dir": str(order_input), "comfy_dir": str(comfy),
+            "book_slug": sb.slug,
+            "config": {"prepareScript": "",
+                       "pages": [{"page_key": "page01",
+                                  "template_image": "01(test).png"}]}}
+    result = dp_bot.install_upload(info, "page01", str(ut))
+    assert (order_input / "01(test).png").read_bytes() == ut.read_bytes()
+    assert (comfy / "page01_00001_.png").read_bytes() == ut.read_bytes()
+    assert open(result["backup"], "rb").read() == b"GAMMEL-SIDE", \
+        "den gamle sida skal tas vare paa"
+
+    # En side boka ikke kjenner skal rope, ikke late som den ble byttet.
+    try:
+        dp_bot.install_upload(info, "page07", str(ut))
+        raise AssertionError("ukjent side skulle feilet")
+    except RuntimeError as error:
+        assert "IKKE" in str(error)
+    assert not list(comfy.glob("page07_*")), "ingenting skal skrives foer sjekken"
+
+
+@test
 def test_prepare_scriptets_navn_gjettes_ikke(sb: Sandbox) -> None:
     """Stien til prepare-scriptet kommer fra config, aldri fra sluggen.
 

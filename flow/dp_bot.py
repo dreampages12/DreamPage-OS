@@ -2122,6 +2122,7 @@ def menu_order(chat_id, order_id: str, message_id=None) -> None:
     rows = [
         [{"text": "👁 Se sidene", "callback_data": f"view|{order_id}||0"}],
         [{"text": "🖼 Bytt sider", "callback_data": f"pgs|{order_id}||0"}],
+        [{"text": "📎 Last inn eget bilde", "callback_data": f"uplm|{order_id}||0"}],
         [{"text": "📷 Nytt barnebilde", "callback_data": f"face|{order_id}||0"}],
         [{"text": "🔁 Kjør hele boka på nytt",
           "callback_data": f"rerun|{order_id}||0"}],
@@ -2137,7 +2138,7 @@ def menu_order(chat_id, order_id: str, message_id=None) -> None:
     if info["continue_code"]:
         # Indeksen er talt fra rows-lista over; legger du til en knapp foer
         # "Bygg PDF", maa den telles opp her ogsaa.
-        rows.insert(5, [{"text": "🔮 Fortsett-siden",
+        rows.insert(6, [{"text": "🔮 Fortsett-siden",
                          "callback_data": f"nxt|{order_id}||0"}])
     if len(variants) > 1:
         rows.insert(-1, [{"text": ("● " if name == current else "○ ")
@@ -2241,6 +2242,8 @@ Kommandoene finnes fortsatt som snarveier:
    «🚀 Hele boka automatisk» kjører alle sidene i ett strekk uten å spørre
    underveis — du får sidene samlet til slutt og kan lage om de dårlige.
 <code>/bygg 1235</code> — bygg PDF på nytt uten å endre sider
+📎 <b>Last inn eget bilde</b> (i ordremenyen) — bytt en side med et bilde
+   du har laget selv. Bare 4096x2048 eller 8192x4096, sendt som fil.
 
 Har du redigert bilder i <code>input/</code> for hånd, oppdager boten det og
 spør før den bygger — <b>Behold mine bilder</b> hopper over prepare, så
@@ -2423,6 +2426,13 @@ def handle_photo(chat_id, message: dict) -> None:
         enqueue("testbook", info["order_id"], chat_id)
         return
 
+    # Eget bilde gaar foran barnebilde og sidevalg: du trykket nettopp
+    # knappen som ba om det.
+    upload = PENDING_UPLOAD.get(chat_id)
+    if upload:
+        receive_upload(chat_id, message, upload)
+        return
+
     if face_waiting:
         session = face_waiting[0]
         order_id = session["order_id"]
@@ -2481,6 +2491,228 @@ def handle_photo(chat_id, message: dict) -> None:
 
     send(chat_id, "Fikk et bilde, men ingen økt venter på et. "
                   "Start med <code>/fix</code> eller <code>/nyttbilde</code>.")
+
+
+# --------------------------------------------------------------------------
+# Egne bilder: bytt en side med et bilde du har laget selv (f.eks. ChatGPT)
+#
+# Foer maatte dette gjoeres for haand av Claude paa maskinen: finne riktig
+# fil i input/, ta vare paa den gamle, kopiere inn den nye. Naa er det en
+# knapp. Bildet ligger i boka foerst naar du har sett det og trykket ja.
+# --------------------------------------------------------------------------
+# De eneste stoerrelsene en side kan ha. 4096x2048 skaleres opp til
+# 8192x4096 slik at alle sidene i boka er like store - tekst-scriptet er
+# stilt inn paa sidene slik comfy lager dem.
+UPLOAD_SIZES = ((4096, 2048), (8192, 4096))
+UPLOAD_TARGET = (8192, 4096)
+# Bot API lar ikke en bot hente filer over 20 MB. getFile svarer bare
+# «file is too big», saa vi sier det foer vi proever.
+TELEGRAM_GETFILE_LIMIT = 20 * 1024 * 1024
+
+# chat_id -> {"order_id", "page_key", "path"}. I minnet, som PENDING_TEST:
+# doer boten, trykker du knappen igjen - ingenting er skrevet til boka enda.
+PENDING_UPLOAD: dict = {}
+
+
+def size_text(size) -> str:
+    return f"{size[0]}x{size[1]}"
+
+
+def allowed_sizes_text() -> str:
+    return " eller ".join(size_text(s) for s in UPLOAD_SIZES)
+
+
+def prepare_upload(source: str, dest: str) -> tuple[int, int]:
+    """Sjekk stoerrelsen og lagre som PNG i full stoerrelse. Gir originalens maal.
+
+    Alt annet enn de to godkjente stoerrelsene avvises - ogsaa et bilde med
+    riktig form: et 2:1-bilde paa 3000x1500 ville blitt skalert opp og trykt
+    uskarpt uten at noen sa noe.
+    """
+    from PIL import Image
+    with Image.open(source) as img:
+        original = img.size
+        if original not in UPLOAD_SIZES:
+            raise ValueError(f"bildet er {size_text(original)}. Bare "
+                             f"{allowed_sizes_text()} godtas.")
+        # Gjennomsiktighet har ingenting i en trykt side aa gjoere; RGB er
+        # det sidene fra comfy ogsaa er.
+        out = img.convert("RGB")
+    if out.size != UPLOAD_TARGET:
+        out = out.resize(UPLOAD_TARGET, Image.LANCZOS)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    out.save(dest, "PNG")
+    return original
+
+
+def install_upload(info: dict, page_key: str, source: str) -> dict:
+    """Legg et godkjent eget bilde inn som siden i boka.
+
+    Skrives til input/ (det tekst-scriptet leser) OG til comfy/ hvis den
+    finnes: velger du senere «Bygg fra comfy», kopierer prepare comfy/ over
+    input/, og da hadde bildet ditt forsvunnet i stillhet. comfy/ lages
+    ikke her - finnes den ikke, bygger ask_build uten prepare, og en
+    comfy-mappe med en eneste side ville faatt den til aa proeve.
+    """
+    # Sjekkes FOER noe skrives: commit_variant ville ellers lagt bildet i
+    # comfy/ for en side input/ ikke kjenner, og feilet foerst etterpaa.
+    if not reprint_order.page_input_map(info).get(page_key):
+        raise RuntimeError(
+            f"fant ikke hvilken fil i input/ {page_label(page_key)} er - "
+            "bildet er IKKE lagt inn i boka.")
+    old = reprint_order.input_file_for(info, page_key)
+    backup_path = None
+    if old:
+        stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+        folder = os.path.join(os.path.dirname(info["input_dir"]),
+                              f"backup-opplasting-{stamp}")
+        os.makedirs(folder, exist_ok=True)
+        backup_path = os.path.join(folder, os.path.basename(old))
+        shutil.copy2(old, backup_path)
+
+    if os.path.isdir(info.get("comfy_dir") or ""):
+        reprint_order.commit_variant(info, page_key, source)
+    dest = reprint_order.commit_variant_to_input(info, page_key, source)
+    if not dest:
+        raise RuntimeError(
+            f"fant ikke hvilken fil i input/ {page_label(page_key)} er - "
+            "bildet er IKKE lagt inn i boka.")
+    # Kontroller fila, ikke at kopieringen returnerte (se verify_chosen_pages).
+    if page_files.md5(dest) != page_files.md5(source):
+        raise RuntimeError(f"input/{os.path.basename(dest)} ble ikke lik "
+                           "bildet ditt - bildet er IKKE lagt inn i boka.")
+    return {"dest": dest, "backup": backup_path}
+
+
+def menu_upload(chat_id, order_id: str, message_id=None) -> None:
+    """Velg hvilken side du vil bytte med et eget bilde."""
+    info = dp_order.resolve(order_id)
+    buttons = []
+    for page in info["config"].get("pages", []):
+        key = page["page_key"]
+        label = "forside" if key == "page00" else key.replace("page", "")
+        buttons.append({"text": label, "callback_data": f"upl|{order_id}|{key}|0"})
+    rows = [buttons[i:i + 4] for i in range(0, len(buttons), 4)]
+    rows.append([{"text": "◀ Tilbake", "callback_data": f"ord|{order_id}||0"}])
+    text = (f"<b>Ordre {order_id}</b> — hvilken side vil du bytte med ditt "
+            f"eget bilde?\n\nGodtar bare {allowed_sizes_text()}.")
+    if message_id:
+        api("editMessageText", {"chat_id": chat_id, "message_id": message_id,
+                                "text": text, "parse_mode": "HTML",
+                                "reply_markup": {"inline_keyboard": rows}})
+    else:
+        send(chat_id, text, rows)
+
+
+def ask_upload(chat_id, order_id: str, page_key: str) -> None:
+    info = dp_order.resolve(order_id)
+    current = current_page_image(info, page_key)
+    if current:
+        # En kvadratisk side kan ikke byttes med et oppslag - da ville
+        # PDF-en faatt feil format paa akkurat den siden.
+        from PIL import Image
+        with Image.open(current) as img:
+            width, height = img.size
+        if width != 2 * height:
+            send(chat_id,
+                 f"⛔ {page_label(page_key)} i ordre <b>{order_id}</b> er "
+                 f"{width}x{height}, ikke et oppslag i 2:1. Den kan ikke "
+                 f"byttes med et bilde på {allowed_sizes_text()}.",
+                 [[{"text": "◀ Tilbake", "callback_data": f"uplm|{order_id}||0"}]])
+            return
+    PENDING_UPLOAD[chat_id] = {"order_id": order_id, "page_key": page_key}
+    send(chat_id,
+         f"📎 Send bildet for <b>{page_label(page_key)}</b> "
+         f"(ordre {order_id}) som <b>fil</b>.\n\n"
+         f"Godtar bare {allowed_sizes_text()}, og maks 20 MB "
+         "(Telegram-grensen for boter). Er PNG-en for stor, send den som JPG.",
+         [[{"text": "✖ Avbryt", "callback_data": f"uplx|{order_id}||0"}]])
+    if current:
+        enqueue_view(order_id, chat_id, page_keys=[page_key])
+
+
+def receive_upload(chat_id, message: dict, pending: dict) -> None:
+    order_id, page_key = pending["order_id"], pending["page_key"]
+    again = [[{"text": "✖ Avbryt", "callback_data": f"uplx|{order_id}||0"}]]
+    document = message.get("document")
+    if not document:
+        # Et komprimert bilde er aldri over 2560 px - det kan ikke vaere
+        # riktig stoerrelse, og vi skal ikke late som vi kan redde det.
+        send(chat_id, "⚠️ Det kom som <b>bilde</b>, og Telegram har "
+                      "komprimert det. Send det som <b>fil</b> i stedet.", again)
+        return
+    if (document.get("file_size") or 0) > TELEGRAM_GETFILE_LIMIT:
+        mb = document["file_size"] / 1e6
+        send(chat_id, f"⚠️ Fila er {mb:.0f} MB. Boter får ikke hente filer "
+                      "over 20 MB fra Telegram. Lagre som JPG og send igjen.",
+             again)
+        return
+
+    send(chat_id, "⏳ Sjekker bildet …")
+    raw = download_file(document["file_id"], UPLOAD_DIR)
+    stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
+    dest = os.path.join(UPLOAD_DIR, f"{order_id}-{page_key}-eget-{stamp}.png")
+    try:
+        original = prepare_upload(raw, dest)
+    except ValueError as error:
+        send(chat_id, f"⛔ Avvist: {esc(error)}\nSend et nytt bilde.", again)
+        return
+    except OSError as error:
+        send(chat_id, f"⛔ Fikk ikke åpnet fila som bilde: {esc(error)}", again)
+        return
+    finally:
+        try:
+            os.unlink(raw)
+        except OSError:
+            pass
+
+    pending["path"] = dest
+    note = (f"\nOppskalert fra {size_text(original)} til {size_text(UPLOAD_TARGET)}."
+            if original != UPLOAD_TARGET else "")
+    api("sendPhoto",
+        {"chat_id": chat_id, "parse_mode": "HTML",
+         "caption": f"Ditt bilde for <b>{page_label(page_key)}</b> "
+                    f"(ordre {order_id}), {size_text(original)}.{note}",
+         "reply_markup": {"inline_keyboard": [
+             [{"text": f"✅ Bruk på {page_label(page_key)}",
+               "callback_data": f"upl!|{order_id}|{page_key}|0"}],
+             [{"text": "✖ Avbryt", "callback_data": f"uplx|{order_id}||0"}]]}},
+        files={"photo": preview(dest, name_hint=f"{order_id}-eget")})
+
+
+def apply_upload(chat_id, order_id: str, page_key: str) -> None:
+    pending = PENDING_UPLOAD.get(chat_id)
+    if (not pending or pending.get("order_id") != order_id
+            or pending.get("page_key") != page_key or not pending.get("path")):
+        send(chat_id, "Fant ikke bildet lenger (boten kan ha startet på nytt). "
+                      "Velg siden og send det igjen.",
+             [[{"text": "📎 Last inn eget bilde",
+                "callback_data": f"uplm|{order_id}||0"}]])
+        return
+    info = dp_order.resolve(order_id)
+    result = install_upload(info, page_key, pending["path"])
+    PENDING_UPLOAD.pop(chat_id, None)
+
+    # En aapen oekt med samme side ville ellers skrevet sin egen variant over
+    # bildet ditt i job_build, eller rendret siden paa nytt.
+    with STATE_LOCK:
+        session = load_state(order_id)
+        if session and page_key in (session.get("pages") or {}):
+            session["pages"][page_key]["chosen"] = pending["path"]
+            session["pages"][page_key]["status"] = "uploaded"
+            save_state(session)
+
+    lines = [f"✅ <b>{page_label(page_key)}</b> i ordre {order_id} er byttet: "
+             f"<code>{esc(os.path.basename(result['dest']))}</code>"]
+    if result["backup"]:
+        folder = os.path.basename(os.path.dirname(result["backup"]))
+        lines.append(f"Den gamle ligger i <code>{esc(folder)}</code>.")
+    lines.append("\nPDF-en er ikke bygget på nytt enda.")
+    send(chat_id, "\n".join(lines), [
+        [{"text": "📎 Bytt en side til", "callback_data": f"uplm|{order_id}||0"}],
+        [{"text": "🔨 Bygg PDF på nytt", "callback_data": f"build|{order_id}||0"}],
+        [{"text": "◀ Til ordren", "callback_data": f"ord|{order_id}||0"}],
+    ])
 
 
 def advance(order_id: str, chat_id) -> None:
@@ -2903,6 +3135,19 @@ def handle_callback(query: dict) -> None:
                 save_state(session)
         send(chat_id, f"⏭ <b>{page_key}</b>: beholder den gamle siden.")
         advance(order_id, chat_id)
+
+    elif action == "uplm":
+        menu_upload(chat_id, order_id, message_id)
+
+    elif action == "upl":
+        ask_upload(chat_id, order_id, page_key)
+
+    elif action == "upl!":
+        apply_upload(chat_id, order_id, page_key)
+
+    elif action == "uplx":
+        PENDING_UPLOAD.pop(chat_id, None)
+        send(chat_id, f"✖ Ingen side byttet i <b>{order_id}</b>.")
 
     elif action == "build":
         ask_build(chat_id, order_id)
