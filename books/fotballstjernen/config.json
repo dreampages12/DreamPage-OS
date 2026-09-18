@@ -83,7 +83,7 @@
       "page_key": "page11",
       "template_image": "11(fotballstjernen).png",
       "mask_image": "11-headmask(fotballstjernen).png",
-      "face_expression": "smil"
+      "face_expression": "noytral"
     },
     {
       "page_key": "page12",
@@ -101,13 +101,7 @@
       "page_key": "page14",
       "template_image": "14(fotballstjernen).png",
       "mask_image": "14-headmask(fotballstjernen).png",
-      "face_expression": "smil"
-    },
-    {
-      "page_key": "page15",
-      "template_image": "15(fotballstjernen).png",
-      "mask_image": "15-headmask(fotballstjernen).png",
-      "face_expression": "smil"
+      "face_expression": "glad"
     }
   ],
   "expectedInnerPages": 31,

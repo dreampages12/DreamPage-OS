@@ -197,6 +197,52 @@ def build_hair_mask(template_file: str, head_file: str, tag: str,
     return merged
 
 
+def keep_mask(template_file: str, head_file: str, tag: str, keep: str,
+              threshold: float = 0.3, grow: int = 4) -> Image.Image:
+    """Det som IKKE skal males om, f.eks. diademet i kongeriket.
+
+    Headmasken dekker hele hodet, diademet med, og ble slaatt sammen med
+    haarmasken - saa alle 15 kort-malene i kongeriket (08.09.2026) mistet
+    diademet. Det vi segmenterer her trekkes ut av haarmasken, og pikslene
+    blir staaende urørt.
+
+    Utsnittet er sentrert PAA hodet, ikke under det som haarutsnittet: et
+    diadem sitter paa toppen og havner ellers utenfor. Finnes ingenting, er
+    det en feil - en stille tom maske er akkurat slik diademet forsvant.
+    """
+    template = Image.open(os.path.join(INPUT_DIR, template_file)).convert("RGB")
+    head = Image.open(os.path.join(INPUT_DIR, head_file)).convert("L")
+    if head.size != template.size:
+        head = head.resize(template.size)
+    x0, y0, x1, y1 = _bbox_of(head)
+    w, h = x1 - x0, y1 - y0
+    box = (max(0, int(x0 - w * 0.6)), max(0, int(y0 - h * 0.6)),
+           min(template.width, int(x1 + w * 0.6)),
+           min(template.height, int(y1 + h * 0.3)))
+    crop_rel = "_maskwork/%s-keep-crop.png" % tag
+    template.crop(box).save(os.path.join(INPUT_DIR, crop_rel.replace("/", os.sep)))
+    seg = _segment(crop_rel, tag + "-keep", keep, threshold)
+    seg = seg.resize((box[2] - box[0], box[3] - box[1]))
+    full = Image.new("L", template.size, 0)
+    full.paste(seg, box[:2])
+    full = full.point(lambda v: 255 if v > 96 else 0)
+    if not full.getbbox():
+        raise SystemExit("fant ikke %r paa %s - tegn masken for haand eller "
+                         "kjoer siden uten --keep" % (keep, tag))
+    # Paa 02/11/12/13 i kongeriket tok "tiara" med hele jenta ved terskel
+    # 0.3. Da ble haarmasken tom, haaret sto uendret, og ingenting sa fra.
+    # Et diadem er en liten del av hodet - er masken stoerre, er den feil.
+    kept = full.histogram()[255]
+    head_px = sum(head.point(lambda v: 255 if v > 32 else 0).histogram()[255:])
+    if head_px and kept > head_px * 0.35:
+        raise SystemExit("%r-masken paa %s er %d%% av headmasken - "
+                         "segmenteringen tok for mye. Proev hoeyere "
+                         "--keep-threshold" % (keep, tag, 100 * kept // head_px))
+    if grow:
+        full = full.filter(ImageFilter.MaxFilter(grow * 2 + 1))
+    return full
+
+
 # --------------------------------------------------------------------------
 # Kort haar
 # --------------------------------------------------------------------------
@@ -302,6 +348,9 @@ def main() -> int:
                     help="overstyr instruksjonen; ellers VARIANT_PROMPTS[variant]")
     ap.add_argument("--any-book", action="store_true",
                     help="kjør selv om boka ikke er i HAIR_VARIANT_BOOKS")
+    ap.add_argument("--keep", default="",
+                    help="det som skal staa urørt, f.eks. 'tiara' (kongeriket)")
+    ap.add_argument("--keep-threshold", type=float, default=0.3)
     ap.add_argument("--remask", action="store_true",
                     help="lag haarmasken paa nytt selv om fila finnes")
     ap.add_argument("--overwrite", action="store_true",
@@ -312,6 +361,11 @@ def main() -> int:
 
     if args.hair_prompt is None:
         args.hair_prompt = VARIANT_PROMPTS.get(args.variant, HAIR_PROMPT)
+    if args.keep:
+        # "Do not add accessories" i prompten leses ellers som "fjern dem".
+        args.hair_prompt += (" The child wears a %s on the head: keep the %s "
+                             "exactly as it is, in the same position, fully "
+                             "visible." % (args.keep, args.keep))
     suffix = dp_order.HAIR_VARIANTS.get(args.variant, {}).get("suffix")
     if not suffix:
         ap.error("ukjent hårvariant %r (kjenner %s)"
@@ -388,6 +442,17 @@ def main() -> int:
                                  item["tag"] + "-maske.png"))
         else:
             print("    haarmaske: bruker %s" % item["hair"])
+
+        if args.keep:
+            print("    %s beholdes ..." % args.keep)
+            keep = keep_mask(item["template"], item["head"], item["tag"], args.keep,
+                             threshold=args.keep_threshold)
+            hair = Image.open(hair_path).convert("L")
+            if hair.size != keep.size:
+                keep = keep.resize(hair.size)
+            ImageChops.subtract(hair, keep).save(hair_path)
+            keep.save(os.path.join(OUTPUT_DIR, "shorthair", args.book,
+                                   item["tag"] + "-behold.png"))
 
         print("    kort haar ...")
         files = render_shorthair(item["template"], item["hair"], args.book,

@@ -27,12 +27,14 @@ import json
 import sys
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import dp_secrets  # noqa: E402
+from paths import STATE  # noqa: E402
 
 UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
 
@@ -46,11 +48,87 @@ def enabled() -> bool:
         dp_secrets.get("worker_chat_id") not in (None, "")
 
 
+def _post(token: str, chat, text: str, timeout: int) -> dict:
+    body = json.dumps({"chat_id": chat, "text": text,
+                       "disable_web_page_preview": True}).encode()
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=body, method="POST",
+        headers={"Content-Type": "application/json", "User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=timeout) as res:
+        return {"sent": True, "http": res.status}
+
+
+# ---------------------------------------------------------------------------
+# Utboksen: et varsel som ikke kom fram, er ikke borte
+# ---------------------------------------------------------------------------
+# Hver natt 04:30-05:05 er utgaaende HTTPS nede paa maskinen (se
+# net.wait_for_internet). Ordre 1532 doede i det vinduet 17.09.2026 - og
+# varselet om at den doede gikk over det samme nedlagte nettet. Det ble en
+# linje i loggen, og ordren laa i fem timer til noen aapnet panelet.
+#
+# Et varsel som feiler, skrives derfor hit og sendes neste gang noe lykkes:
+# ved neste varsel, eller naar vaktmesteren kjoerer `notify.py flush` hvert
+# 5. minutt. Den kommer sent, og den sier at den kommer sent.
+OUTBOX = STATE / "notify_outbox"
+
+
+def _queue(text: str) -> Path | None:
+    try:
+        OUTBOX.mkdir(parents=True, exist_ok=True)
+        now = datetime.now().astimezone()
+        path = OUTBOX / f"{now.strftime('%Y%m%d-%H%M%S-%f')}.json"
+        path.write_text(json.dumps({"at": now.isoformat(timespec="seconds"),
+                                    "text": text}, ensure_ascii=False),
+                        encoding="utf-8")
+        return path
+    except OSError:
+        return None
+
+
+def flush(log=None, timeout: int = 30) -> dict:
+    """Send det som ligger i utboksen, eldst foerst. Stopper ved foerste
+    feil - da er nettet fortsatt nede, og resten venter til neste gang."""
+    token = dp_secrets.get("worker_bot_token")
+    chat = dp_secrets.get("worker_chat_id")
+    files = sorted(OUTBOX.glob("*.json")) if OUTBOX.is_dir() else []
+    sent = 0
+    if not files or not token or chat in (None, ""):
+        return {"sent": 0, "waiting": len(files)}
+    for path in files:
+        try:
+            item = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            # Legges til side, ikke slettes - men skal ikke stenge koeen.
+            try:
+                path.rename(path.with_suffix(".bad"))
+            except OSError:
+                pass
+            continue
+        text = (f"⏳ Forsinket varsel, skrevet {str(item.get('at'))[:16]} "
+                f"mens nettet var nede:\n\n{item.get('text', '')}")
+        if len(text) > MAX_LEN:
+            text = text[:MAX_LEN] + "\n... (kuttet)"
+        try:
+            _post(token, chat, text, timeout)
+        except (urllib.error.URLError, OSError) as exc:
+            if log:
+                log.warn(f"utboksen: fortsatt ikke fram ({exc})")
+            break
+        path.unlink(missing_ok=True)
+        sent += 1
+    waiting = len(list(OUTBOX.glob("*.json")))
+    return {"sent": sent, "waiting": waiting}
+
+
 def send(text: str, log=None, timeout: int = 30) -> dict:
     """Send én melding. Returnerer alltid - kaster aldri.
 
     `log` er valgfri (en Log eller None), fordi denne ogsaa kalles fra
     steder som ikke har en jobb-logg, som vaktmesteren.
+
+    Kommer meldingen ikke fram, legges den i utboksen i stedet for aa
+    forsvinne. Kommer den fram, sendes det som ventet i utboksen etterpaa.
     """
     token = dp_secrets.get("worker_bot_token")
     chat = dp_secrets.get("worker_chat_id")
@@ -62,19 +140,22 @@ def send(text: str, log=None, timeout: int = 30) -> dict:
     if len(text) > MAX_LEN:
         text = text[:MAX_LEN] + "\n... (kuttet)"
 
-    body = json.dumps({"chat_id": chat, "text": text,
-                       "disable_web_page_preview": True}).encode()
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data=body, method="POST",
-        headers={"Content-Type": "application/json", "User-Agent": UA})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as res:
-            return {"sent": True, "http": res.status}
+        result = _post(token, chat, text, timeout)
     except (urllib.error.URLError, OSError) as exc:
+        queued = _queue(text)
         if log:
-            log.error(f"Telegram-varsel feilet: {exc}")
-        return {"sent": False, "error": str(exc)}
+            log.error(f"Telegram-varsel feilet: {exc} - "
+                      + ("lagt i utboksen" if queued else "KUNNE IKKE LAGRES"))
+        return {"sent": False, "error": str(exc), "queued": bool(queued)}
+
+    if OUTBOX.is_dir() and any(OUTBOX.glob("*.json")):
+        try:
+            result["outbox"] = flush(log, timeout)
+        except Exception as exc:                     # noqa: BLE001
+            if log:
+                log.warn(f"utboksen kunne ikke toemmes: {exc}")
+    return result
 
 
 def job_failed(job_key: str, job: dict, error: str, kind: str,
@@ -150,7 +231,12 @@ if __name__ == "__main__":
     import sys as _sys
     _args = _sys.argv[1:]
     if not _args:
-        raise SystemExit("bruk: notify.py send <tekst> | watchdog <nede> [startet]")
+        raise SystemExit("bruk: notify.py send <tekst> | watchdog <nede> [startet] | flush")
+    if _args[0] == "flush":
+        # Vaktmesteren, hvert 5. minutt. Exit 0 ogsaa naar noe venter: det er
+        # ikke vaktmesterens feil at nettet er nede.
+        print(json.dumps(flush(), ensure_ascii=False))
+        raise SystemExit(0)
     if _args[0] == "watchdog":
         _failed = [x for x in (_args[1] if len(_args) > 1 else "").split(",") if x]
         _started = [x for x in (_args[2] if len(_args) > 2 else "").split(",") if x]

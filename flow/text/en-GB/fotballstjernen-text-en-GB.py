@@ -815,14 +815,6 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
         },
 
         {
-            "filename": "15(fotballstjernen).png",
-            "type": "inner",
-            "square": True,
-            "endtext": True,
-            "text": p("This adventure is over\nbut the magic lives on."),
-        },
-
-        {
             "filename": "bakside(fotballstjernen).png",
             "type": "cover",
             "side": "left",
@@ -1412,28 +1404,29 @@ def process_book(base_dir: str, out_dir: str, child_name: str, cover_type: str, 
         inner_paths.insert(0, rendered_first)
     else:
         print("ADVARSEL: Fant ikke dreampage-first.png")
-    # blank-back er normalt erstattet av comfy-siste-siden page15
-    # (15(fotballstjernen).png). Har ordren sin EGEN blank-back.png -- dvs.
-    # "Fortsett eventyret"-siden med QR fra build_last_page.py -- byttes
-    # page15 ut med den. Uten oppsalg trykkes page15 som for.
-    order_last_page = os.path.join(base_dir, "blank-back.png")
+    # Siste historieside er ordrens blank-back.png: "Fortsett eventyret"-siden
+    # med QR fra build_last_page.py. Foer 18.09.2026 rendret ComfyUI ogsaa en
+    # side 15 (gutten med pokalen), som denne siden saa ERSTATTET - paa hver
+    # ordre med oppsalg, altsaa alle. Side 15 er fjernet fra boka: GPU-tiden
+    # gikk til en side som aldri ble trykt.
+    #
     # prepare_order kopierer ALLTID den delte blank-back.png inn i ordren, saa
     # bare eksistens er ikke nok: bare en fil som skiller seg fra malen er en
-    # ekte fortsett-eventyret-side fra build_last_page.py.
+    # ekte fortsett-eventyret-side. Mangler den, brukes malen - som i de andre
+    # boekene - men det sies fra: alle nye ordre skal ha en fortsett-side.
+    order_last_page = os.path.join(base_dir, "blank-back.png")
     shared_blank_back = os.path.join(SCRIPT_DIR, "blank-back.png")
     is_continue_page = os.path.exists(order_last_page) and not (
         os.path.exists(shared_blank_back)
         and filecmp.cmp(order_last_page, shared_blank_back, shallow=False)
     )
     if is_continue_page:
-        before = len(inner_paths)
-        inner_paths = [q for q in inner_paths
-                       if os.path.basename(q).lower() != "15(fotballstjernen).png"]
-        if len(inner_paths) == before:
-            print("ADVARSEL: fant ikke 15(fotballstjernen).png blant innersidene - "
-                  "fortsett-eventyret-siden legges til pa slutten uten a erstatte noe")
         inner_paths.append(order_last_page)
-        print("[INNER PDF] Fortsett-eventyret-siden erstatter page15:", order_last_page)
+        print("[INNER PDF] Fortsett-eventyret-siden:", order_last_page)
+    else:
+        inner_paths.append(blank_back)
+        print("ADVARSEL: ordren har ingen fortsett-eventyret-side - bruker den "
+              "delte blank-back-malen:", blank_back)
     if last_page:
         inner_paths.append(last_page)
     else:

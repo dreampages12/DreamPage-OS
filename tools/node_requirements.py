@@ -48,7 +48,7 @@ DEFAULT_NODE_DIRS = [IMAGE / "custom_nodes"]
 # node der, stopper produksjonen.
 #
 # VERKTOEY kjoeres ogsaa av systemet - uttrykksvariantene lages paa HVER ordre
-# av face_variants/build_trist_variant.py - men en manglende node der stopper
+# av face_variants/build_variants.py - men en manglende node der stopper
 # ikke boka: siden faller tilbake paa originalbildet.
 #
 # Alt annet i user/default/workflows er GUI-eksperimenter. De teller ikke.

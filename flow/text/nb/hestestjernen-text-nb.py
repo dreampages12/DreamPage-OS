@@ -394,9 +394,9 @@ def _draw_title_cover_text(img, text):
 # ---------------------------------------------------------------------------
 FRONT_COVER_LOGO_SCALE = 0.60
 FRONT_COVER_LOGO_X_OFFSET = 0
-FRONT_COVER_TOP_MARGIN = 0.04
-FRONT_COVER_LINE_SPACING = 0.038
-FRONT_COVER_LINE1_SIZE = 109 / 1024          # andel av kortsiden (malen er 1024 px)
+FRONT_COVER_TOP_MARGIN = 0.022
+FRONT_COVER_LINE_SPACING = 0.0649          # holder logoen der den var, se kommentar over
+FRONT_COVER_LINE1_SIZE = 98 / 1024          # andel av kortsiden (malen er 1024 px)
 FRONT_COVER_GOLD = ((255, 255, 255), (255, 255, 255))
 FRONT_COVER_SHADOW = (15, 35, 65)
 

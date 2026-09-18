@@ -14,8 +14,9 @@ Forskjellene fra regen_page.py:
   gammel page03_00001_.png ville ellers vinne over den nye _00002_.
 * Laasen tas EN gang for hele kjoeringen, ikke per side. En halvt ombygd
   ordre er verre enn aa vente.
-* --face styrer barnebildet. Uten den brukes ordrens eget bilde
-  (info["face_image"]), ikke uttrykksvariantene fra config.face_expression.
+* --face styrer barnebildet. Uten den faar hver side ordrens eget bilde
+  med uttrykksvarianten fra config.face_expression (trist/glad), som
+  workeren - se regen_page.page_face.
 
   python rerun_order_comfy.py --order 1296 --dry-run
   python rerun_order_comfy.py --order 1296 --apply
@@ -88,10 +89,14 @@ def main() -> int:
         print("variant: kropp=%s haar=%s hud=%s" % (body, hair, skin))
         pages = [dp_order.apply_variants(p, body, hair, skin) for p in pages]
 
-    face = args.face or info["face_image"]
-    face_path = os.path.join(r"C:\DreamPage-OS\input", face)
-    if not os.path.isfile(face_path):
-        raise SystemExit("fant ikke barnebildet " + face_path)
+    # Barnebildet velges PER SIDE: fotballstjernen side 04 skal ha den triste
+    # varianten og side 14 den glade, akkurat som workeren lagde dem. Her stod
+    # ett bilde for hele ordren, og en ombygging mistet uttrykkene stille.
+    faces = {p["page_key"]: regen.page_face(info, p, args.face or None) for p in pages}
+    for face in set(faces.values()):
+        face_path = os.path.join(r"C:\DreamPage-OS\input", face)
+        if not os.path.isfile(face_path):
+            raise SystemExit("fant ikke barnebildet " + face_path)
 
     workflow_file = (config.get("workflowApi")
                      or (config.get("workflowApis") or {}).get("innerpages")
@@ -105,11 +110,11 @@ def main() -> int:
     comfy_dir = info["comfy_dir"]
 
     print("ordre %s (%s), barn %s" % (info["order_id"], info["book_slug"], info["child_name"]))
-    print("barnebilde: %s" % face)
     print("sider: %s" % ", ".join(p["page_key"] for p in pages))
     for page in pages:
-        print("  %-8s %-28s %s" % (page["page_key"], page["template_image"],
-                                   page.get("mask_image", "-")))
+        print("  %-8s %-28s %-32s %s" % (page["page_key"], page["template_image"],
+                                        page.get("mask_image", "-"),
+                                        faces[page["page_key"]]))
     if not args.apply:
         print("dry-run (ingenting kjoert)")
         return 0
@@ -117,10 +122,15 @@ def main() -> int:
     stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
     old_dir = os.path.join(os.path.dirname(comfy_dir), "comfy-old-" + stamp)
 
-    if not regen.acquire_lock(info["order_id"], "rerun", wait_seconds=args.wait_lock):
-        lock = regen.read_lock() or {}
-        raise SystemExit("ComfyUI er opptatt med ordre %s (%s)."
-                         % (lock.get("order_id", "?"), lock.get("page_key", "?")))
+    # Laasefila (.dreampage-comfy.lock) ble fjernet da regen_page gikk over
+    # til aa spoerre flow-workeren direkte om hva som kjoerer - se den lange
+    # kommentaren der. Denne fila ble aldri med paa flyttingen, saa --apply
+    # kastet AttributeError paa acquire_lock og har vaert doed siden.
+    # --dry-run returnerer foer dette punktet, som er grunnen til at ingen
+    # saa det foer ordre 1522 skulle bygges om (18.09.2026).
+    if not regen.wait_until_free(wait_seconds=args.wait_lock):
+        raise SystemExit("ComfyUI er opptatt: %s. Proev igjen senere."
+                         % (regen.busy_reason() or "noe annet"))
     try:
         for n, page in enumerate(pages, 1):
             page_key = page["page_key"]
@@ -139,7 +149,7 @@ def main() -> int:
 
             seed = random.randrange(1, 2 ** 53)
             prompt[pn["template"]]["inputs"]["image"] = page["template_image"]
-            prompt[pn["face"]]["inputs"]["image"] = face
+            prompt[pn["face"]]["inputs"]["image"] = faces[page_key]
             if pn.get("mask") and page.get("mask_image"):
                 prompt[pn["mask"]]["inputs"]["image"] = page["mask_image"]
             prompt[pn["output"]]["inputs"]["filename_prefix"] = "%s/%s" % (out_rel, page_key)
@@ -169,7 +179,7 @@ def main() -> int:
             if not got:
                 raise SystemExit("ingen bilder ble produsert for " + page_key)
     finally:
-        regen.release_lock()
+        pass   # ingen laas aa slippe - flow-workeren er sannheten naa
 
     if os.path.isdir(old_dir):
         print("gamle rendere flyttet til %s" % old_dir)

@@ -176,6 +176,23 @@ vite at det er derfor ComfyUI kan oppdateres uten frykt.
 Porten er **8189**, ikke ComfyUIs standard 8188. Den står ett sted:
 `config/flow.json` → `comfy.url`, og fire steder leser den derfra.
 
+### Frontenden
+
+ComfyUI-frontenden ligger i `frontend\<versjon>\` på rota, ikke i det delte
+Python-miljøet, og `dreampage.ps1` gir ComfyUI den med `--front-end-root`.
+Versjonen står i `$FRONTEND_VERSION` øverst i `dreampage.ps1`. Mappa er ikke i
+git — hent den slik:
+
+```powershell
+$v = '1.43.18'
+pip download "comfyui-frontend-package==$v" --no-deps -d tmp\fe
+python -c "import zipfile,glob; z=zipfile.ZipFile(glob.glob(r'tmp\fe\*$v*.whl')[0]); [z.extract(m, r'frontend\$v') for m in z.namelist() if m.startswith('comfyui_frontend_package/static/')]"
+```
+
+Mangler mappa, starter ComfyUI likevel med den gamle frontenden fra pip, og
+`dreampage.ps1` skriver en advarsel. Ordrene merker ingenting — de bruker bare
+API-et.
+
 ---
 
 ## 8. Start
@@ -241,7 +258,7 @@ To scheduled tasks:
 | Navn | Kjører | Hva |
 |---|---|---|
 | «DreamPage OS» | hvert 5. min + ved innlogging | `dreampage.ps1 ensure` |
-| «DreamPage cleanup» | daglig 04:30 | `tools/cleanup_variants.py` |
+| «DreamPage cleanup» | daglig 05:30 (ikke i nattbruddet 04:30–05:05) | `tools/cleanup_variants.py` |
 
 Uten den første kommer ComfyUI og flow **ikke** tilbake etter en omstart, og
 ordrene hoper seg opp i køen uten at noe sier fra.

@@ -222,7 +222,9 @@ def build_job(payload: dict) -> dict:
 # ---------------------------------------------------------------------------
 # Sidene
 # ---------------------------------------------------------------------------
-FACE_EXPRESSIONS = ("noytral", "smil", "trist")
+# "glad" kom 18.09.2026 (fotballstjernen side 14). Et uttrykk som ikke
+# staar her, gir originalbildet uansett hva som ligger i input/.
+FACE_EXPRESSIONS = ("noytral", "smil", "trist", "glad")
 
 
 def face_for(face_filename: str, expression: str | None) -> str:

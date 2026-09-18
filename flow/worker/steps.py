@@ -30,6 +30,7 @@ from paths import (BOOKS, FACE_VARIANTS, INPUT, ORDERS_STATE, TOOLS,  # noqa: E4
                    order_input_dir, order_pdf_dir, order_state_path)
 import books  # noqa: E402
 import comfy as comfy_mod  # noqa: E402
+import net  # noqa: E402
 from books import JobError  # noqa: E402
 
 PYTHON = sys.executable
@@ -224,6 +225,10 @@ def fetch_child_image(ctx: Context) -> dict:
         raise JobError(f"input/{ctx.job_key}.jpg finnes ikke, og payloaden har "
                        f"ingen image_url aa laste den fra")
 
+    # Nattbruddet 04:30-05:05 - se net.wait_for_internet. Uten denne bruker
+    # steget opp forsoekene sine paa fem minutter og ordren er tapt.
+    net.wait_for_internet(url, ctx.log, ctx.cancelled)
+
     INPUT.mkdir(parents=True, exist_ok=True)
     tmp = target.with_suffix(".jpg.part")
     req = urllib.request.Request(url, headers={
@@ -235,6 +240,19 @@ def fetch_child_image(ctx: Context) -> dict:
     try:
         with urllib.request.urlopen(req, timeout=120) as res, open(tmp, "wb") as fh:
             shutil.copyfileobj(res, fh)
+    except urllib.error.HTTPError as exc:
+        tmp.unlink(missing_ok=True)
+        # Serveren svarte, og svaret var nei. Ordre 1546 (18.09.2026): WP
+        # svarte 404 paa bildet, og svarte fortsatt 404 sju timer senere.
+        # Et nytt forsoek hjelper ikke, og med ventingen over ville det
+        # holdt hele koeen i 45 minutter. Stopp med en gang, og si hva
+        # operatoeren maa gjoere.
+        if 400 <= exc.code < 500 and exc.code not in (408, 425, 429):
+            raise JobError(
+                f"serveren sier at barnebildet ikke kan hentes (HTTP "
+                f"{exc.code}) fra {url}. Skaff bildet, legg det som "
+                f"input/{ctx.job_key}.jpg og be om retry.") from exc
+        raise RuntimeError(f"kunne ikke laste ned barnebildet fra {url}: {exc}") from exc
     except (urllib.error.URLError, OSError) as exc:
         tmp.unlink(missing_ok=True)
         raise RuntimeError(f"kunne ikke laste ned barnebildet fra {url}: {exc}") from exc
@@ -254,7 +272,7 @@ def face_variants(ctx: Context) -> dict:
     steget sine egne feil i stedet for aa stoppe ordren, akkurat som
     "Build Face Variants" + "Photo Warning" gjorde.
     """
-    script = FACE_VARIANTS / "build_trist_variant.py"
+    script = FACE_VARIANTS / "build_variants.py"
     if not script.is_file():
         return {"skipped": f"{script} finnes ikke"}
     cmd = [PYTHON, str(script), ctx.job_key, "--book", ctx.job["book_slug"]]

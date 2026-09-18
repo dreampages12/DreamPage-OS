@@ -326,6 +326,42 @@ def existing_variants(info: dict, page_key: str) -> list[str]:
     return sorted(found, key=os.path.getmtime)
 
 
+def page_face(info: dict, page: dict, face_image: str | None = None) -> str:
+    """Barnebildet for EN side - med uttrykksvarianten, slik workeren velger.
+
+    Foer 18.09.2026 brukte baade denne fila og rerun_order_comfy.py alltid
+    originalbildet. Bygde operatoeren om fotballstjernen side 04 fra
+    Telegram, forsvant det triste ansiktet uten et ord - og side 14 ville
+    mistet det glade. Samme regel som flow/worker/books.face_for, saa en
+    ombygd side blir lik den workeren lagde.
+
+    Et bilde operatoeren har valgt selv (--face / "bytt bilde") vinner: da er
+    variantene av det gamle bildet feil uansett.
+    """
+    if face_image:
+        return face_image
+    worker = os.path.join(SCRIPT_DIR, "worker")
+    if worker not in sys.path:
+        sys.path.insert(0, worker)
+    from books import face_for
+    expr = str(page.get("face_expression") or "noytral")
+    face = face_for(info["face_image"], expr)
+    if expr != "noytral" and face == info["face_image"]:
+        # Mangler varianten i en bok som skal ha den, skal det SIES - ellers
+        # er dette 1528 om igjen. I boeker uten varianter er det forventet.
+        sys.path.insert(0, os.path.join(SCRIPT_DIR, "face_variants"))
+        try:
+            import build_variants
+            wanted = info.get("book_slug") in build_variants.BOOKS
+        except Exception:
+            wanted = False
+        if wanted:
+            print(f"ADVARSEL: {page.get('page_key')} skal ha '{expr}', men "
+                  f"varianten finnes ikke - bruker originalbildet. Lag den med "
+                  f"flow/face_variants/build_variants.py", flush=True)
+    return face
+
+
 def render_variants(info: dict, page_key: str, count: int = 3,
                     face_image: str | None = None,
                     wait_lock: int = 3600,
@@ -356,7 +392,8 @@ def render_variants(info: dict, page_key: str, count: int = 3,
     with open(workflow_path, encoding="utf-8-sig") as fh:
         base_prompt = json.load(fh)
 
-    face = face_image or info["face_image"]
+    face = page_face(info, page, face_image)
+    print(f"    barnebilde: {face}", flush=True)
     if not os.path.isfile(os.path.join(r"C:\DreamPage-OS\input", face)):
         raise SystemExit(f"fant ikke barnebildet C:/DreamPage-OS/input/{face}")
 

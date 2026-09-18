@@ -37,7 +37,10 @@ PAGE_TO_BASE_STEM = {
     "page12": "12(fotballstjernen)",
     "page13": "13(fotballstjernen)",
     "page14": "14-right(fotballstjernen)",
-    "page15": "15(fotballstjernen)",
+    # page15 (gutten med pokalen) er fjernet 18.09.2026: fortsett-eventyret-
+    # siden erstattet den paa hver ordre, saa den ble rendret og aldri trykt.
+    # Staar den her uten aa staa i config.json, blir det en [ADVARSEL] paa
+    # hver bygging - og da drukner de ekte (ordre 1528).
 }
 
 

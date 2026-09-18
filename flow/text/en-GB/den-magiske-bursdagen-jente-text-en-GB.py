@@ -591,10 +591,9 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Det var bursdagen til (Navn), og noe glitret under puten hennes.\n"
-                    "Det var en gyllen sløyfe – og den beveget seg helt av seg selv.\n"
-                    "(Navn) trakk forsiktig i den, og den rosa festkjolen svevde ut av skapet.\n"
-                    "Sløyfen ville tydeligvis vise henne noe."
+                    "Endelig var dagen her!\n"
+                    "(Navn) våknet og smilte stort. Rundt henne var det ballonger og bursdagspynt.\n"
+                    "I dag hadde hun bursdag!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -614,10 +613,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "(Navn) tok på seg kjolen, og sløyfen snodde seg bort til døren.\n"
-                    "Hun trakk i den én gang til, og døren gled sakte opp.\n"
-                    "Utenfor lå en hage full av blomster, lys og sommerfugler.\n"
-                    "Sløyfen fortsatte ut i hagen, som om den ville at hun skulle følge etter."
+                    "Senere var det klart for bursdagskake.\n"
+                    "På bordet sto en stor, rosa kake med seks lys.\n"
+                    "(Navn) så spent på de små flammene. Nå skulle hun ønske seg noe!\n"
+                    "Hun lukket øynene og blåste."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -637,10 +636,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Sløyfen la seg som en lysende sti gjennom hagen.\n"
-                    "Langt borte skimtet (Navn) en paviljong som glitret i solnedgangen.\n"
-                    "Da skjønte hun hvor sløyfen ville: den skulle føre henne dit.\n"
-                    "Så løp (Navn) av sted, midt i det gylne lyset."
+                    "Plutselig begynte ballongene å sveve helt av seg selv!\n"
+                    "De danset rundt i rommet mens små, gylne lys glitret i luften.\n"
+                    "(Navn) sperret opp øynene.\n"
+                    "– Ballongene er magiske!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -660,10 +659,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Ved en stor blomsterport stoppet stien opp.\n"
-                    "(Navn) tok tak i sløyfen og trakk så hardt hun kunne.\n"
-                    "Porten svingte opp, ballonger steg mot himmelen og små lys ble tent.\n"
-                    "På den andre siden lå gaver på rekke og rad, hele veien mot paviljongen."
+                    "(Navn) blåste ut enda et lys.\n"
+                    "Da hørte hun plutselig en liten lyd bak seg.\n"
+                    "Bamsen hennes reiste seg og vinket!\n"
+                    "(Navn) kunne nesten ikke tro det. Bamsen hadde blitt levende!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -683,10 +682,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Plutselig kom det noen løpende bak henne.\n"
-                    "To kaniner og et lite rådyr fulgte den samme gylne sløyfen.\n"
-                    "De sprang forbi (Navn) og snudde seg, som om de ville si: bli med!\n"
-                    "Sammen skyndte de seg videre mot bursdagsfesten."
+                    "Hun blåste ut det neste lyset.\n"
+                    "POFF!\n"
+                    "Store, glitrende såpebobler fylte hele rommet.\n"
+                    "(Navn) og Bamsen løp rundt og prøvde å sprekke dem."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -706,10 +705,9 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Men da (Navn) kom frem, var ikke festen ferdig ennå.\n"
-                    "Bordet stod tomt, og gavene lå strødd utover.\n"
-                    "(Navn) tok tak i sløyfen, og kaninene tok tak bak henne.\n"
-                    "Sammen dro de – og blomster, ballonger og gaver begynte å finne plassen sin."
+                    "Da enda et lys slukket, begynte blomster å vokse rundt henne.\n"
+                    "Sommerfugler fløy mellom ballongene, og små gylne lys glitret i luften.\n"
+                    "Bursdagen ble mer og mer magisk!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -729,10 +727,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "(Navn) tok i så hardt hun kunne, én siste gang.\n"
-                    "Forhengene gled til side, og hele festen kom til syne.\n"
-                    "Der stod en stor kake, tusen små lys og ballonger helt opp til himmelen.\n"
-                    "Dette var hennes helt egen magiske bursdagsfest."
+                    "Plutselig hørte (Navn) en lyd utenfor.\n"
+                    "Klopp, klopp, klopp.\n"
+                    "Hun gikk bort til døren og kikket ut.\n"
+                    "Midt i hagen sto en liten, hvit ponni med rosa sløyfe!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -752,10 +750,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Det var fortsatt litt igjen å gjøre.\n"
-                    "(Navn) dyttet den siste store gaven på plass ved bordet.\n"
-                    "Kaninene ordnet sløyfene, og rådyret holdt den gylne tråden.\n"
-                    "Nå var alt klart til å feire."
+                    "(Navn) satte seg opp på ponnien, og Bamsen ble med.\n"
+                    "De red rundt i hagen mellom ballonger, sommerfugler og store såpebobler.\n"
+                    "(Navn) lo.\n"
+                    "Dette var den morsomste bursdagen hun noen gang hadde hatt!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -775,10 +773,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "(Navn) lukket øynene og ønsket seg noe.\n"
-                    "Så blåste hun ut alle lysene på kaken.\n"
-                    "Gnistene virvlet opp og ble til en ny, glødende del av sløyfen.\n"
-                    "Bursdagsønsket hennes fløy av sted, videre ut i hagen."
+                    "Men det var fortsatt lys igjen på kaken.\n"
+                    "(Navn) gikk tilbake og blåste igjen.\n"
+                    "Plutselig begynte gavene å åpne seg helt av seg selv!\n"
+                    "Sløyfer fløy gjennom luften, og konfetti dalte ned over (Navn) og Bamsen."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -798,10 +796,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Overalt der ønsket fløy, våknet hagen til liv.\n"
-                    "Blomster åpnet seg, og girlandere hengte seg selv opp mellom trærne.\n"
-                    "Kaninene kom med tallerkener, og rådyret bar en kurv full av roser.\n"
-                    "(Navn) satte den siste lysende blomsterstjernen øverst på kaken."
+                    "Til slutt var det bare ett lys igjen.\n"
+                    "(Navn) så på den lille flammen.\n"
+                    "– Nå må du ønske deg noe helt spesielt, hvisket Bamsen.\n"
+                    "(Navn) lukket øynene, ønsket så hardt hun kunne og blåste."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -821,10 +819,11 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Men ønskelyset stoppet ikke ved kaken.\n"
-                    "En av kaninene oppdaget at det fortsatte bortover stien.\n"
-                    "Kaninen satte av sted, og (Navn) løp tett bak.\n"
-                    "Under en benk full av roser lå det en gave som ingen hadde sett før."
+                    "Lyset slukket.\n"
+                    "Men ...\n"
+                    "ingenting skjedde.\n"
+                    "(Navn) kikket rundt.\n"
+                    "– Virket ikke det siste ønsket? spurte hun."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -844,10 +843,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "(Navn) satte seg ned foran den skjulte gaven.\n"
-                    "Hun tok tak i den lange sløyfen og trakk sakte.\n"
-                    "Lokket spratt opp, og varmt, gyllent lys strømmet ut.\n"
-                    "Kaninene og rådyret kom nærmere for å se hva som var inni."
+                    "Da kom et varmt, gyllent lys inn gjennom døren.\n"
+                    "(Navn) og Bamsen gikk nærmere.\n"
+                    "Noe beveget seg ute i hagen.\n"
+                    "Og så hørte de en myk lyd ..."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -867,10 +866,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Inni gaven lå et lite lys formet som en blomst.\n"
-                    "(Navn) løftet det forsiktig opp, og det festet seg til den gylne sløyfen.\n"
-                    "Med ett samlet ballonger, blomster og lys seg rundt paviljongen.\n"
-                    "Nå var bursdagsfesten endelig helt ferdig."
+                    "(Navn) gikk ut og gispet.\n"
+                    "Foran henne sto en ekte, hvit enhjørning!\n"
+                    "Hornet glitret, og rundt halsen hadde den en rosa bursdagssløyfe.\n"
+                    "Det siste ønsket hadde virket likevel!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -890,10 +889,10 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Da solen gikk ned, satte (Navn) seg til bords med vennene sine.\n"
-                    "Hun skar det første stykket kake og delte det ut til kaninene og rådyret.\n"
-                    "Den gylne sløyfen la seg som en varm ring rundt hele selskapet.\n"
-                    "(Navn) hadde ikke bare funnet bursdagsfesten sin – hun hadde vært med på å lage den."
+                    "(Navn) red gjennom hagen på enhjørningen med Bamsen sammen med seg.\n"
+                    "Ballongene danset, sommerfuglene fløy og konfettien glitret i luften.\n"
+                    "(Navn) smilte stort.\n"
+                    "Dette hadde vært den mest magiske bursdagen noensinne."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
@@ -913,11 +912,11 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Denne boken handler om glede.\n"
-                    "Om å våkne opp til noe magisk, og selv være med på å skape det.\n"
-                    "Den viser at den fineste festen ikke er den man bare blir invitert til, men den man hjelper til med å gjøre ferdig.\n"
-                    "Derfor er det (Navn) som får hele feiringen til å våkne. En bursdagsgjest som blir vertinne i sitt eget eventyr.\n"
-                    "En personlig fortelling som gir barn glede, mestringsfølelse og troen på at den aller fineste bursdagsmagien er den vi lager sammen."
+                    "Denne boken handler om ønsker.\n"
+                    "Om å blåse ut lysene på kaken og oppdage at hvert eneste ønske blir til noe magisk.\n"
+                    "Ballonger som svever av seg selv, en bamse som våkner til liv, en ponni i hagen – og helt til slutt et ønske som ser ut til å ha slått feil.\n"
+                    "Derfor er det (Navn) som står midt i alt sammen, og som får oppleve at det siste ønsket var det aller største.\n"
+                    "En personlig fortelling som gir barn glede, spenning og troen på at det magiske kan skje når man tør å ønske seg noe stort."
                 ),
                 "font_size": 46,
                 "color": "#FFFFFF",

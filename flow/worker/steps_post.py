@@ -57,6 +57,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from paths import FLOW, GELATO_DRAFTS, OUTPUT, order_dir  # noqa: E402
 import books  # noqa: E402
 import dp_secrets  # noqa: E402
+import net  # noqa: E402
+import notify  # noqa: E402
 from books import JobError  # noqa: E402
 from steps import Context  # noqa: E402
 
@@ -310,6 +312,12 @@ def upload_and_draft(ctx: Context) -> dict:
     if info["cover_type"] != "hardcover":
         ctx.log.warn(f"cover_type er {info['cover_type']} - bare hardcover selges")
 
+    # Nattbruddet 04:30-05:05 (se net.wait_for_internet). Dette steget er
+    # ETTER sjekkpunktet i build_pdfs, saa meldingen er acket: feiler det
+    # her, ligger en ferdig bok og venter paa at noen tilfeldigvis ser den.
+    for host in ("https://www.googleapis.com/", "https://order.gelatoapis.com/"):
+        net.wait_for_internet(host, ctx.log, ctx.cancelled)
+
     sys.path.insert(0, str(FLOW))
     import reprint_order
     result = _as_runtime_error(reprint_order.upload_and_draft, info, files,
@@ -376,21 +384,13 @@ def telegram_approval(ctx: Context) -> dict:
         f"Gelato-utkast:\nhttps://dashboard.gelato.com/orders/{draft}\n\n"
         "Gaa gjennom og bestill manuelt i Gelato."
     )
-    body = json.dumps({"chat_id": chat, "text": text,
-                       "disable_web_page_preview": True}).encode()
-    req = urllib.request.Request(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data=body, method="POST",
-        headers={"Content-Type": "application/json", "User-Agent": UA})
-    try:
-        with urllib.request.urlopen(req, timeout=30) as res:
-            return {"sent": True, "http": res.status, "draft_id": draft}
-    except (urllib.error.URLError, OSError) as exc:
-        # En ordre som er ferdig, men der varselet ikke kom fram, er ikke en
-        # feilet ordre - den er en ordre ingen har sett. Den skal derfor
-        # SYNES i jobb-DB-en, men ikke rulles tilbake.
-        ctx.log.error(f"Telegram-varsel feilet: {exc}")
-        return {"sent": False, "error": str(exc), "draft_id": draft}
+    # Via notify.send, slik at et varsel som ikke kommer fram havner i
+    # utboksen i stedet for aa forsvinne. En ordre som er ferdig, men der
+    # varselet ikke kom fram, er ikke en feilet ordre - den er en ordre ingen
+    # har sett. Derfor rulles den ikke tilbake, men den skal fram.
+    result = notify.send(text, log=ctx.log)
+    result["draft_id"] = draft
+    return result
 
 
 # ---------------------------------------------------------------------------

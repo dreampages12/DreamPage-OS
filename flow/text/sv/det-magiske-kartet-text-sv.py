@@ -1029,7 +1029,11 @@ def render_page(page: Dict[str, Any], base_dir: str, out_dir: str) -> List[str]:
                 highlights=block.get("highlights", []),
                 gradient=None,  
                 img=img,
-                align="left"
+                align="left",
+                # Defaulten er 10 px absolutt (arvet fra en 1024 px-mal) og
+                # klistret linjene sammen paa 4096 px-sida. 0.55 * fontstorrelsen
+                # er samme forhold som den-magiske-reisen-jente fikk 14.09.2026.
+                line_spacing=max(10, int(font_size * 0.55)),
             )
 
         # --- Tagline (rendret av scriptet, over "© 2026 DreamPage") ---

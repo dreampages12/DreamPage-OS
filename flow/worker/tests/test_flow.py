@@ -1297,6 +1297,382 @@ def test_systemexit_dreper_ikke_koeen(sb: Sandbox) -> None:
     assert (store.job("S2") or {}).get("status") != "running", store.job("S2")
 
 
+class _NoteLog:
+    """Samler warn/info/error, saa en test kan se hva som ble sagt."""
+
+    def __init__(self):
+        self.lines: list = []
+
+    def warn(self, m, **_k):
+        self.lines.append(("warn", m))
+
+    def info(self, m, **_k):
+        self.lines.append(("info", m))
+
+    def error(self, m, **_k):
+        self.lines.append(("error", m))
+
+
+@test
+def test_nattbruddet_ventes_ut(sb: Sandbox) -> None:
+    """Et nettbrudd paa 35 minutter skal ventes ut, ikke gis opp.
+
+    Hver natt 04:30-05:05 er utgaaende HTTPS nede paa maskinen - i dp_bot.log
+    hver dag siden 12.08.2026. Forrige fiks (5 min retry) bygde paa at bruddet
+    varte i to minutter. Det varer i 35, og ordre 1532 doede i det.
+    """
+    import net
+
+    calls = {"probe": 0}
+    slept: list = []
+
+    def probe(_url):
+        calls["probe"] += 1
+        return calls["probe"] > 70            # 70 x 30 s = 35 min nede
+
+    log = _NoteLog()
+    waited = net.wait_for_internet("https://x.invalid/a?b=c", log,
+                                   probe=probe, sleep=slept.append)
+    assert waited == 35 * 60, waited
+    assert len(slept) == 70, len(slept)
+    # Én advarsel naar det starter, ikke én hvert 30. sekund.
+    assert sum(1 for k, _ in log.lines if k == "warn") == 1, log.lines
+
+    # Gir opp etter 45 min, med en feil som sier det.
+    try:
+        net.wait_for_internet("https://x.invalid/", probe=lambda _u: False,
+                              sleep=lambda _s: None)
+    except RuntimeError as exc:
+        assert "nede" in str(exc), exc
+    else:
+        raise AssertionError("wait_for_internet ga aldri opp")
+
+    # En operatoer som avbryter, skal ikke maatte vente 45 minutter.
+    try:
+        net.wait_for_internet("https://x.invalid/", probe=lambda _u: False,
+                              cancelled=lambda: True, sleep=lambda _s: None)
+    except RuntimeError as exc:
+        assert "avbrutt" in str(exc), exc
+    else:
+        raise AssertionError("avbrudd ble ikke respektert")
+
+    # Et HTTP-svar - ogsaa en feil - betyr at nettet virker.
+    import http.server
+    import threading as _t
+
+    class _H(http.server.BaseHTTPRequestHandler):
+        def do_HEAD(self):
+            self.send_response(405)
+            self.end_headers()
+
+        def log_message(self, *_a):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _H)
+    _t.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        assert net.internet_up(f"http://127.0.0.1:{srv.server_port}/x.jpg")
+    finally:
+        srv.shutdown()
+    assert not net.internet_up("http://127.0.0.1:9/", timeout=2)
+
+
+@test
+def test_barnebilde_404_stopper_med_en_gang(sb: Sandbox) -> None:
+    """Serveren sier nei -> JobError med en gang, ikke 45 min venting.
+
+    Ordre 1546 (18.09.2026): WordPress svarte 404 paa barnebildet, og gjorde
+    det fortsatt sju timer senere. Med ventingen paa nettet ville et nytt
+    forsoek holdt hele koeen - uten aa kunne hjelpe.
+    """
+    import http.server
+    import threading as _t
+    import steps
+    from books import JobError
+
+    class _H(http.server.BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(404)
+            self.end_headers()
+
+        do_HEAD = do_GET
+
+        def log_message(self, *_a):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), _H)
+    _t.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        ctx = steps.Context(job_key="B404", payload={}, log=_NoteLog())
+        ctx.job = {"image_url": f"http://127.0.0.1:{srv.server_port}/b.jpg"}
+        try:
+            steps.fetch_child_image(ctx)
+        except JobError as exc:
+            assert "404" in str(exc) and "input/B404.jpg" in str(exc), exc
+        else:
+            raise AssertionError("404 ga ikke JobError")
+    finally:
+        srv.shutdown()
+    assert not (sb.root / "input" / "B404.jpg").exists()
+    assert not (sb.root / "input" / "B404.jpg.part").exists()
+
+
+@test
+def test_varsel_som_ikke_kom_fram_sendes_senere(sb: Sandbox) -> None:
+    """Et Telegram-varsel under nattbruddet skal fram, merket som forsinket.
+
+    Ordre 1532 doede 04:51 - og varselet om det gikk over det samme nedlagte
+    nettet. Operatoeren fikk vite det fem timer senere, fra panelet.
+    """
+    import urllib.error
+    import notify
+    import dp_secrets
+
+    posted: list = []
+    down = {"now": True}
+
+    def fake_post(_token, _chat, text, _timeout):
+        if down["now"]:
+            raise urllib.error.URLError("[Errno 2] No such file or directory")
+        posted.append(text)
+        return {"sent": True, "http": 200}
+
+    orig = (notify._post, notify.OUTBOX, dp_secrets.get)
+    notify._post = fake_post
+    notify.OUTBOX = sb.root / "state" / "notify_outbox"
+    dp_secrets.get = lambda k, *a, **kw: {"worker_bot_token": "t",
+                                         "worker_chat_id": 1}.get(k)
+    try:
+        r = notify.send("ORDRE X FEILET")
+        assert r["sent"] is False and r["queued"] is True, r
+        assert len(list(notify.OUTBOX.glob("*.json"))) == 1
+
+        # Fortsatt nede: vaktmesteren proever, ingenting forsvinner.
+        assert notify.flush() == {"sent": 0, "waiting": 1}
+
+        down["now"] = False
+        r = notify.send("neste varsel")
+        assert r["sent"] is True, r
+        assert posted[0] == "neste varsel", posted
+        assert "Forsinket" in posted[1] and "ORDRE X FEILET" in posted[1], posted
+        assert not list(notify.OUTBOX.glob("*.json")), "utboksen ble ikke toemt"
+    finally:
+        notify._post, notify.OUTBOX, dp_secrets.get = orig
+
+
+@test
+def test_duplikat_etterlater_ingen_tagg(sb: Sandbox) -> None:
+    """Et duplikat ackes og glemmes - taggen skal ikke bli liggende.
+
+    Duplikatet av 1536 (17.09.2026 11:38) ble acket, men taggen ble liggende i
+    Consumer._tags. /api/status viste `unacked: 1` med tom koe i et doegn, og
+    en senere ack paa samme job_key ville truffet en tagg som ikke lenger
+    gjaldt.
+    """
+    import threading as _t
+    import types
+    import mq as mq_mod
+
+    store = fresh_store(sb, "duptag")
+    store.enqueue("T1", sb.payload("T1"))
+    store.start("T1")
+    store.finish("T1", "done")
+
+    submitted: list = []
+    c = mq_mod.Consumer.__new__(mq_mod.Consumer)
+    c.store = store
+    c.runner = types.SimpleNamespace(submit=submitted.append, depth=lambda: 0)
+    c.log = _NoteLog()
+    c._tags = {}
+    c._tags_lock = _t.Lock()
+    c._connection = c._channel = None          # _ack blir en no-op
+
+    method = types.SimpleNamespace(delivery_tag=7, redelivered=True)
+    c._handle(method, json.dumps(sb.payload("T1")).encode())
+    assert not submitted, "en ferdig jobb ble kjoert paa nytt"
+    assert c._tags == {}, f"duplikatet etterlot en tagg: {c._tags}"
+
+    # En ny jobb skal fortsatt huskes, ellers blir den aldri acket.
+    c._handle(types.SimpleNamespace(delivery_tag=8, redelivered=False),
+              json.dumps(sb.payload("T2")).encode())
+    assert c._tags == {"T2": 8}, c._tags
+    assert len(submitted) == 1
+
+
+@test
+def test_glad_variant_brukes_bare_der_config_sier_det(sb: Sandbox) -> None:
+    """Glad-varianten brukes paa siden som ber om den - og ingen andre.
+
+    18.09.2026: fotballstjernen fikk en glad variant til side 14, i tillegg
+    til den triste paa side 04. Uttrykket kommer fra config, og en side som
+    sier `smil` uten at noen fil finnes, faar originalbildet som foer.
+    """
+    import books as B
+
+    job = B.build_job(sb.payload("G1"))
+    face = job["face_filename"]
+    stem = face.rsplit(".", 1)[0]
+    cfg = job["config"]
+    cfg["pages"][0]["face_expression"] = "glad"
+    cfg["pages"][1]["face_expression"] = "smil"
+    (sb.root / "input" / f"{stem}-glad.jpg").write_bytes(b"\xff\xd8\xff" + b"0" * 32)
+    try:
+        pages = {p["page_key"]: p for p in B.build_pages(job)}
+    finally:
+        (sb.root / "input" / f"{stem}-glad.jpg").unlink()
+
+    assert pages["page00"]["face_image"] == f"{stem}-glad.jpg", pages["page00"]
+    assert pages["page01"]["face_image"] == face, pages["page01"]
+    assert pages["page02"]["face_image"] == face, pages["page02"]
+
+
+@test
+def test_variantfeil_roper(sb: Sandbox) -> None:
+    """En variant som feiler, skal gi en ADVARSEL-linje - ikke stillhet.
+
+    Scriptet skrev "FEILET (...)", og face_variants-steget leter bare etter
+    "ADVARSEL" og "MERK:". Feilen var usynlig i jobbloggen og panelet, og
+    side 04 i fotballstjernen fikk originalbildet uten at noen fikk vite det.
+    """
+    import contextlib
+    import io as _io
+    fv = str(FLOW / "face_variants")
+    if fv not in sys.path:
+        sys.path.insert(0, fv)
+    import build_variants as BV
+
+    book = sb.root / "books" / sb.slug / "config.json"
+    orig_cfg = book.read_text(encoding="utf-8")
+    cfg = json.loads(orig_cfg)
+    cfg["pages"][0]["face_expression"] = "trist"
+    cfg["pages"][1]["face_expression"] = "finnes-ikke"
+    book.write_text(json.dumps(cfg), encoding="utf-8")
+    sb.child_photo("V9")
+
+    def boom(_graph):
+        raise RuntimeError("ComfyUI svarte ikke")
+
+    saved = (BV.BOOKS, BV.BFV.submit, BV.BFV.INPUT_DIR, BV.BOOKS_DIR,
+             BV.BFV.normalize_orientation, sys.argv)
+    BV.BOOKS = {sb.slug}
+    BV.BFV.submit = boom
+    BV.BFV.INPUT_DIR = str(sb.root / "input")
+    BV.BOOKS_DIR = sb.root / "books"
+    BV.BFV.normalize_orientation = lambda _p: None
+    sys.argv = ["build_variants.py", "V9", "--book", sb.slug]
+    out = _io.StringIO()
+    try:
+        from PIL import Image
+        Image.new("RGB", (8, 8)).save(sb.root / "input" / "V9.jpg")
+        with contextlib.redirect_stdout(out):
+            code = BV.main()
+    finally:
+        (BV.BOOKS, BV.BFV.submit, BV.BFV.INPUT_DIR, BV.BOOKS_DIR,
+         BV.BFV.normalize_orientation, sys.argv) = saved
+        book.write_text(orig_cfg, encoding="utf-8")
+
+    text = out.getvalue()
+    assert code == 0, "scriptet skal aldri stoppe en ordre"
+    warns = [l for l in text.splitlines() if "ADVARSEL" in l]
+    assert any("trist" in l and "ComfyUI svarte ikke" in l for l in warns), text
+    assert any("finnes-ikke" in l for l in warns), text
+
+    # En bok som ikke er med, skal ikke advare om noe - det er forventet.
+    saved_argv = sys.argv
+    sys.argv = ["build_variants.py", "V9", "--book", "dyreparken"]
+    out = _io.StringIO()
+    try:
+        with contextlib.redirect_stdout(out):
+            BV.main()
+    finally:
+        sys.argv = saved_argv
+    assert "ADVARSEL" not in out.getvalue(), out.getvalue()
+
+
+@test
+def test_bare_fotballstjernen_har_varianter(sb: Sandbox) -> None:
+    """Ingen andre boeker skal bruke variantsystemet ennaa (18.09.2026).
+
+    Og fotballstjernen skal be om noeyaktig trist paa side 04 og glad paa
+    side 14 - ellers vil scriptet lage noe ingen side bruker, eller en side
+    vente paa noe som aldri lages.
+    """
+    fv = str(FLOW / "face_variants")
+    if fv not in sys.path:
+        sys.path.insert(0, fv)
+    import build_variants as BV
+
+    assert BV.BOOKS == {"fotballstjernen"}, BV.BOOKS
+    real = FLOW.parent / "books" / "fotballstjernen" / "config.json"
+    cfg = json.loads(real.read_text(encoding="utf-8"))
+    got = {p["page_key"]: p.get("face_expression", "noytral")
+           for p in cfg["pages"] if p.get("face_expression", "noytral") != "noytral"}
+    assert got == {"page04": "trist", "page14": "glad"}, got
+    for expr in set(got.values()):
+        assert (FLOW / "face_variants" / "workflows" / f"{expr}.json").is_file(), expr
+
+
+@test
+def test_ombygging_fra_telegram_beholder_uttrykket(sb: Sandbox) -> None:
+    """regen_page og rerun_order_comfy skal velge samme ansikt som workeren.
+
+    Foer 18.09.2026 brukte begge alltid originalbildet. En side 04 i
+    fotballstjernen som ble bygget om fra Telegram, mistet det triste ansiktet
+    uten et ord.
+    """
+    import contextlib
+    import importlib.util
+    import io as _io
+
+    spec = importlib.util.spec_from_file_location(
+        "regen_page_test", str(FLOW / "regen_page.py"))
+    regen = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(regen)
+
+    (sb.root / "input" / "R1-trist.jpg").write_bytes(b"\xff\xd8\xff")
+    info = {"face_image": "R1.jpg", "book_slug": "fotballstjernen"}
+    try:
+        assert regen.page_face(info, {"face_expression": "trist"}) == "R1-trist.jpg"
+        assert regen.page_face(info, {"face_expression": "noytral"}) == "R1.jpg"
+        # Operatoerens eget valg vinner.
+        assert regen.page_face(info, {"face_expression": "trist"}, "ny.jpg") == "ny.jpg"
+        # Mangler glad i en bok som skal ha den: originalen, men det SIES.
+        out = _io.StringIO()
+        with contextlib.redirect_stdout(out):
+            got = regen.page_face(info, {"page_key": "page14",
+                                         "face_expression": "glad"})
+        assert got == "R1.jpg", got
+        assert "ADVARSEL" in out.getvalue(), out.getvalue()
+        # I en bok uten varianter er det forventet - ingen advarsel.
+        out = _io.StringIO()
+        with contextlib.redirect_stdout(out):
+            regen.page_face({"face_image": "R1.jpg", "book_slug": "dyreparken"},
+                            {"face_expression": "smil"})
+        assert "ADVARSEL" not in out.getvalue(), out.getvalue()
+    finally:
+        (sb.root / "input" / "R1-trist.jpg").unlink()
+
+
+@test
+def test_fotballstjernen_har_ingen_side_15(sb: Sandbox) -> None:
+    """Side 15 (gutten med pokalen) er borte - fra ALLE tre stedene.
+
+    Fortsett-eventyret-siden erstattet den paa hver ordre, saa den ble rendret
+    og aldri trykt. Staar den igjen i prepare- eller tekstscriptet uten aa
+    staa i config, blir det en ADVARSEL paa hver bygging - og en advarsel som
+    alltid staar paa, skjulte de tolv ekte i ordre 1528.
+    """
+    real = FLOW.parent / "books" / "fotballstjernen"
+    cfg = json.loads((real / "config.json").read_text(encoding="utf-8"))
+    keys = [p["page_key"] for p in cfg["pages"]]
+    assert "page15" not in keys and keys[-1] == "page14", keys
+    prep = (real / "script" / "prepare_order_fotballstjernen.py").read_text(encoding="utf-8")
+    assert '"page15"' not in prep, "prepare-scriptet har fortsatt page15"
+    for lang in ("nb", "nn", "sv", "en-US", "en-GB"):
+        text = (FLOW / "text" / lang / f"fotballstjernen-text-{lang}.py").read_text(encoding="utf-8")
+        assert "15(fotballstjernen)" not in text, f"{lang}: tekstscriptet har fortsatt side 15"
+
+
 def main() -> int:
     sandbox = Sandbox()
     # Importene maa skje ETTER at DP_ROOT er satt.

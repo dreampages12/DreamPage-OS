@@ -297,5 +297,7 @@ boten tilbake, men ComfyUI og flow gjorde det **ikke** — og da hoper ordrene s
 opp i køen uten at noe sier fra. En død bot merkes med en gang; en død worker
 ser ut som stillhet.
 
-Scheduled task **«DreamPage cleanup»** kjører daglig 04:30
+Scheduled task **«DreamPage cleanup»** kjører daglig 05:30
 (`tools/cleanup_variants.py`, fem sperrer som alle må åpne før noe slettes).
+Den gikk 04:30 fram til 18.09.2026 — midt i nattbruddet, da all utgående
+HTTPS er nede 04:30–05:05 — og feilet mot Gelato. Se `flow/worker/net.py`.

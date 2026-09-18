@@ -177,6 +177,33 @@ bug verdt å se på.
 python flow\worker\tests\test_drive_upload.py   # logikken, uten nett
 ```
 
+### «Ordren sto stille om natta» / «Forsinket varsel» i Telegram
+
+Hver natt ca. **04:30–05:05** er all utgående HTTPS nede på maskinen
+(`<urlopen error [Errno 2] No such file or directory>` i `state/dp_bot.log`,
+hver dag siden minst 12.08.2026). Årsaken ligger utenfor maskinen — ruter
+eller leverandør. Ordre 1532 døde i det vinduet 17.09.2026.
+
+Siden 18.09.2026 tåler flyten det:
+
+* `fetch_child_image` og `upload_and_draft` **venter** på nettet, i opptil
+  45 min, før de prøver. Loggen sier «nettet er nede … venter». Køen står
+  mens de venter — med vilje.
+* Et Telegram-varsel som ikke kommer fram, legges i `state/notify_outbox/`
+  og sendes når nettet er tilbake, merket «⏳ Forsinket varsel». Vaktmesteren
+  tømmer utboksen hvert 5. minutt.
+
+Ligger det filer i `state/notify_outbox/` på dagtid, er Telegram eller nettet
+nede *nå*. Tøm for hånd med `python flow\worker\notify.py flush`.
+
+### «Barnebildet kan ikke hentes (HTTP 404)»
+
+Serveren svarte, og svaret var nei — et nytt forsøk hjelper ikke, så ordren
+stopper med en gang (ordre 1546: WordPress-endepunktet
+`dreampage_preview_media` svarte 404). Skaff bildet, legg det som
+`input/<job_key>.jpg`, og be om retry. `fetch_child_image` bruker fila som
+ligger der.
+
 ### «ComfyUI svarer tregt / `/prompt` timer ut»
 
 Tung lokal RAM-bruk sulter ut ComfyUIs event-loop. En side gikk fra 69 s til
@@ -225,6 +252,60 @@ sider manuelt. `--no-drive` hopper over opplastingen. Uten `--gelato` lages
 **ikke** noe utkast, og det er med vilje.
 
 Kjeden avbryter på første feilende steg.
+
+---
+
+## Uttrykksvarianter (trist, glad)
+
+Barnebildet kan få en trist eller glad variant til sider der det passer
+historien. Siden 18.09.2026 er det **bare fotballstjernen** som bruker det:
+side 04 er `trist`, side 14 er `glad`.
+
+* **Hvilken side som får hvilket uttrykk**, står i `face_expression` i
+  `books/<slug>/config.json`.
+* **Hvilke bøker som får varianter i det hele tatt**, står i `BOOKS` øverst i
+  `flow/face_variants/build_variants.py`. Andre bøker får originalbildet på
+  alle sider, også der config sier `smil`.
+* **Hvordan et uttrykk ser ut**, er en Flux.2 Klein-prompt i
+  `flow/face_variants/workflows/<uttrykk>.json`.
+
+Variantene blir `input/<job_key>-trist.jpg` og `-glad.jpg`, cirka 2,5 min
+hver. Feiler en, får siden originalbildet og jobbloggen får en `[bilde]
+ADVARSEL`-linje. Ordren stopper ikke.
+
+Lage én på nytt for hånd (sjekk at ingen ordre går først):
+
+```powershell
+python flow\face_variants\build_variants.py 1541-b2 --book fotballstjernen --only glad --force
+```
+
+---
+
+## Workflow-lista i ComfyUI-GUI-et
+
+Lista viser bare det systemet faktisk kjører:
+
+| Fil i lista | Kilde |
+|---|---|
+| `DreamPage-bok.json` | `books/*/workflow_api.json` (alle bøker deler den) |
+| `DreamPage-variant-{barnebilde,glad,trist}.json` | `flow/face_variants/workflows/` |
+| `Head_Hair_Mask_FullSize_Fast.json` | operatørverktøy for headmasker, ikke generert |
+
+De fire første er **genererte visninger**. Endrer du en verdi der og lagrer,
+brukes den ikke av pipelinen, og den forsvinner ved neste sync — rediger
+kilden. Produksjonsfilene er API-format, og en API-fil åpnet fra workflow-
+lista gir et tomt lerret uten feilmelding; derfor konverteres de.
+
+```powershell
+python tools\comfy_workflows.py           # vis hva som ville skjedd
+python tools\comfy_workflows.py --sync    # skriv om lista (krever at ComfyUI kjører)
+python tools\comfy_workflows.py --check   # del av .\dreampage.ps1 test
+```
+
+De 41 gamle GUI-eksperimentene (`Main-styrken`, `Unsaved Workflow (2..9)`,
+`DreamPage_Klein9B_Studio` …) ble flyttet 18.09.2026 til
+`state\comfy-workflows-arkiv\`. Ingenting er slettet: trenger du en, flytt
+den tilbake — men da feiler `--check` til den er borte igjen.
 
 ---
 

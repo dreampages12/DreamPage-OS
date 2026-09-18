@@ -91,3 +91,7 @@ Thumbs.db
 *.backup-*
 *.bak
 *.bak-*
+
+# ComfyUI-frontenden (65 MB statiske filer fra pip-hjulet). Hentes paa nytt
+# med kommandoen i docs/SETUP-NEW-PC.md.
+/frontend/

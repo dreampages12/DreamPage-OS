@@ -1,5 +1,6 @@
 {
   "slug": "kongerikets-hemmelighet",
+  "driveFolderId": "12LvdWt0_Dz8EPPL_3q9zoo2rkSUdz8iX",
   "displayName": "Kongerikets Hemmelighet",
   "_status": "KLAR for testrender paa nb/nn. Historie, 14 innersider, headmasker, tekstscript (5 sprak), prepare-script og config er paa plass. GJENSTAAR: bakside-illustrasjon (script/bakside/kongerikets-hemmelighet/bakside.png), ryggrad (script/ryggrad/kongerikets-hemmelighet/ryggrad-nb.png) og egen tittellogo for en/sv (kongeriket-logo-en/-sv.png) - uten disse bygges ikke cover-PDF-en.",
   "orderBasePath": "C:/DreamPage-OS/books/kongerikets-hemmelighet/orders",

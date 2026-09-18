@@ -19,8 +19,9 @@ enkelt `DP_*`-klasse.** Headswappen i produksjon gjøres med hyllevare —
 FLUX.2 Klein + LoRA + LanPaint + InpaintCropAndStitch + Ultralytics
 ansiktsdeteksjon + den håndtegnede headmasken.
 
-De eneste `DP_*`-referansene finnes i
-`user/default/workflows/DreamPage_Klein9B_Studio.json`, og de peker på et
+De eneste `DP_*`-referansene finnes i `DreamPage_Klein9B_Studio.json` — som
+etter ryddingen 18.09.2026 ligger i `state/comfy-workflows-arkiv/`, ikke i
+ComfyUI-ets workflow-liste (se `tools/comfy_workflows.py`) — og de peker på et
 *annet* klassesett enn det den installerte noden registrerer i dag
 (`DP_DreamSwap`, `DP_SceneStudio`, `DP_ReviewBoard`… mot
 `DP_HeadSwapPipeline`, `DP_QualityCheck`…). Den studio-workflowen ville ikke

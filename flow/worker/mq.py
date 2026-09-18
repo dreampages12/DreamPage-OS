@@ -116,6 +116,13 @@ class Consumer:
         import pika
         self._connection = pika.BlockingConnection(self._params())
         self._channel = self._connection.channel()
+        # Leveringstagger gjelder bare paa kanalen de kom paa. En ny kanal
+        # teller fra 1 igjen, saa en gammel tagg acket her treffer en ANNEN
+        # melding - eller lukker kanalen med PRECONDITION_FAILED. Meldinger
+        # som ikke ble acket paa den gamle kanalen, leverer brokeren paa nytt,
+        # og da faar de en ny tagg (eller ackes som duplikat).
+        with self._tags_lock:
+            self._tags.clear()
         queue_name = self.conf["name"]
         # passive: koen eies av WooCommerce-siden av oppsettet. Vi skal lese
         # den, ikke definere den - en feil `durable` her ville feilet med
@@ -166,8 +173,6 @@ class Consumer:
 
         fresh = self.store.enqueue(job_key, payload, delivery_tag=tag,
                                    redelivered=bool(method.redelivered))
-        with self._tags_lock:
-            self._tags[job_key] = tag
 
         if not fresh:
             # Jobben er alt ferdig eller kjoerer. Ack med en gang: dette er
@@ -179,6 +184,14 @@ class Consumer:
             self._ack(tag)
             return
 
+        # Taggen huskes FOERST her, bare for en jobb som faktisk skal kjoere.
+        # Foer 18.09.2026 ble den lagret ogsaa for duplikater, som ackes med
+        # en gang ovenfor - og ble liggende. Duplikatet av 1536 (17.09 kl.
+        # 11:38) sto i et doegn som `unacked: 1` i /api/status med en tom koe:
+        # et varsel som alltid staar paa. Og den ville blitt acket en gang til
+        # hvis 1536 noen gang kom fram til et sjekkpunkt fra RabbitMQ.
+        with self._tags_lock:
+            self._tags[job_key] = tag
         self.log.info(f"{job_key} lagt paa den interne koeen",
                       redelivered=bool(method.redelivered),
                       depth=self.runner.depth() + 1)

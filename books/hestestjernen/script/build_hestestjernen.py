@@ -57,18 +57,35 @@ BRAND = "hestestjernen"
 # `_dp_line1_font()` falle tilbake til COVER_FONT (Playfair) ved aa sette
 # stien til en fil som ikke finnes... nei: vi setter den EKSPLISITT til
 # Playfair, saa det staar hva som faktisk brukes.
+#
+# 17.09.2026 (ordre 1517): brukeren ville ha linje 1 hoeyere opp og litt
+# mindre. Testerens 109/0.04/0.038 er derfor ikke lenger fasit for denne boka.
+# LINE1_SIZE er ca. 10 % ned og TOP_MARGIN fra 0.04 til 0.022.
+#
+# FELLA her: logoen er IKKE plassert uavhengig. Rendreren regner
+#     y2 = y1 + h1 - 0.15*h1 + h*LINE_SPACING
+# saa baade et lavere TOP_MARGIN og en mindre linje 1 drar LOGOEN opp ogsaa.
+# Brukeren ba bare om at linje 1 skulle flytte seg. LINE_SPACING er derfor
+# regnet ut PER SPRAAK slik at logoens y2 lander paa samme piksel som foer
+# (nb/nn 687, en 581, sv 586 paa en 4096-mal) - ulike verdier fordi h1 er
+# ulik naar linje 1 er ulik lang. Endrer du LINE1_SIZE eller TOP_MARGIN,
+# maa LINE_SPACING regnes om, ellers vandrer logoen.
 # ---------------------------------------------------------------------------
-LINE1_SIZE = {"nb": 109, "nn": 109, "en-US": 78, "en-GB": 78, "sv": 79}
+LINE1_SIZE = {"nb": 98, "nn": 98, "en-US": 70, "en-GB": 70, "sv": 71}
+TOP_MARGIN = 0.022
+LINE_SPACING = {"nb": 0.0649, "nn": 0.0649, "en-US": 0.0620,
+                "en-GB": 0.0620, "sv": 0.0623}
 
 
 def cover_consts(locale):
     return '''FRONT_COVER_LOGO_SCALE = 0.60
 FRONT_COVER_LOGO_X_OFFSET = 0
-FRONT_COVER_TOP_MARGIN = 0.04
-FRONT_COVER_LINE_SPACING = 0.038
+FRONT_COVER_TOP_MARGIN = %s
+FRONT_COVER_LINE_SPACING = %s          # holder logoen der den var, se kommentar over
 FRONT_COVER_LINE1_SIZE = %d / 1024          # andel av kortsiden (malen er 1024 px)
 FRONT_COVER_GOLD = ((255, 255, 255), (255, 255, 255))
-FRONT_COVER_SHADOW = (15, 35, 65)''' % LINE1_SIZE[locale]
+FRONT_COVER_SHADOW = (15, 35, 65)''' % (TOP_MARGIN, LINE_SPACING[locale],
+                                        LINE1_SIZE[locale])
 
 
 # Logoen inneholder HELE tittelen ("Hestestjerne"), saa linje 1 er bare

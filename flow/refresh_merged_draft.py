@@ -35,6 +35,33 @@ sys.path.insert(0, SCRIPT_DIR)
 from finish_merged_order import STATE_DIR, drive_upload, gelato, remote_size  # noqa: E402
 
 
+BR = chr(10)   # linjeskift i feilmeldinger
+
+
+def resolve_item_ref(oid: str, slug: str, refs: list[str]) -> str:
+    """Finn item-en som hoerer til ordren i DETTE utkastet.
+
+    To verktoey har laget sammenslaatte utkast med hver sin navnekonvensjon:
+    gelato_merge.py skriver "item-<ordre>", dp_merge.py "<ordre>-<slug>". Denne
+    gjettet paa den forste, saa hvert utkast fra dp_merge.py var umulig aa
+    oppdatere - ordre 1532-b2 (17.09.2026). Vi slaar opp i utkastet i stedet.
+
+    Ingen prefiks-match her med vilje: "1532" ville da truffet "1532-b1-...",
+    og feil bok ville blitt lastet opp paa nytt.
+    """
+    kandidater = [r for r in refs if r in ("item-" + oid, oid + "-" + slug)]
+    if len(kandidater) == 1:
+        return kandidater[0]
+    if not kandidater:
+        raise SystemExit(
+            "utkastet har ingen item for ordre " + oid + " (" + slug + ")." + BR
+            + "  proevde: item-" + oid + ", " + oid + "-" + slug + BR
+            + "  utkastet inneholder: " + ", ".join(refs))
+    raise SystemExit(
+        "ordre " + oid + " treffer flere item-er: " + ", ".join(kandidater)
+        + " - klarer ikke avgjoere hvilken som skal lastes opp paa nytt.")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--draft", required=True, help="id-en til det sammenslaatte utkastet")
@@ -46,13 +73,13 @@ def main() -> int:
     if not (args.apply or args.dry_run):
         ap.error("velg --dry-run eller --apply")
 
-    refresh = {}
+    bestilt = []
     for spec in args.refresh:
         oid, slug, name = spec.split(":", 2)
         pdf = f"C:/DreamPage-OS/books/{slug}/orders/{oid}/pdf/{name}_gelato.pdf"
         if not os.path.isfile(pdf):
             raise SystemExit("mangler " + pdf)
-        refresh["item-" + oid] = {"order_id": oid, "slug": slug, "name": name, "pdf": pdf}
+        bestilt.append({"order_id": oid, "slug": slug, "name": name, "pdf": pdf})
 
     st, old = gelato("GET", "/orders/" + args.draft)
     if st != 200:
@@ -62,10 +89,12 @@ def main() -> int:
                          f"({old.get('fulfillmentStatus')}) - avbryter")
 
     refs = [it["itemReferenceId"] for it in old["items"]]
-    ukjent = set(refresh) - set(refs)
-    if ukjent:
-        raise SystemExit(f"utkastet har ingen item {', '.join(sorted(ukjent))}. "
-                         f"Det inneholder: {', '.join(refs)}")
+    refresh = {}
+    for b in bestilt:
+        ref = resolve_item_ref(b["order_id"], b["slug"], refs)
+        if ref in refresh:
+            raise SystemExit("to --refresh peker paa samme item " + ref)
+        refresh[ref] = b
 
     s = old["shippingAddress"]
     print(f"utkast   {args.draft}  (ref {old.get('orderReferenceId')})")

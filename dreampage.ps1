@@ -27,6 +27,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $ROOT = $PSScriptRoot
 $IMAGE = Join-Path $ROOT 'DreamPage-image'
+# ComfyUI-frontenden, i frontend\<versjon>\. Bytt tallet for aa oppgradere
+# eller rulle tilbake - begge versjonene kan ligge side om side.
+$FRONTEND_VERSION = '1.43.18'
 $PY = 'C:\Users\tobia\AppData\Local\Programs\Python\Python310\python.exe'
 $LOGDIR = Join-Path $ROOT 'state\log'
 
@@ -121,6 +124,20 @@ $SERVICES = @(
             )
             $extra = Join-Path $ROOT 'config\extra_model_paths.yaml'
             if (Test-Path $extra) { $args += @('--extra-model-paths-config', $extra) }
+            # Frontend-en ligger UTENFOR DreamPage-image og utenfor det delte
+            # site-packages. ComfyUI 0.21 ber om 1.43.18; pip-pakken var
+            # 1.26.13 (18.09.2026). Aa oppgradere pip-pakken ville endret
+            # Python-miljoeet hele pipelinen kjoerer i - dette flagget kan
+            # fjernes igjen uten spor. Se docs/SETUP-NEW-PC.md.
+            #
+            # Mangler mappa, faller ComfyUI tilbake paa pip-frontenden. Det er
+            # ufarlig for ordrene (de bruker bare API-et), men det skal SIES.
+            $fe = Join-Path $ROOT "frontend\$FRONTEND_VERSION\comfyui_frontend_package\static"
+            if (Test-Path (Join-Path $fe 'index.html')) {
+                $args += @('--front-end-root', $fe)
+            } else {
+                Write-Warning "frontend $FRONTEND_VERSION mangler ($fe) - ComfyUI bruker den gamle fra pip"
+            }
             Start-Process -FilePath $PY -ArgumentList $args `
                 -WorkingDirectory $IMAGE -WindowStyle Minimized
         }
@@ -354,6 +371,17 @@ function Invoke-Ensure {
         } catch { Note "kunne ikke varsle: $($_.Exception.Message)" }
     }
 
+    # Varsler som ikke kom fram (nattbruddet 04:30-05:05) ligger i utboksen.
+    # Uten dette ville de ventet til NESTE varsel - som kan vaere timer unna.
+    # Python startes bare naar det faktisk ligger noe der.
+    $outbox = Join-Path $ROOT 'state\notify_outbox'
+    if (Get-ChildItem $outbox -Filter '*.json' -EA SilentlyContinue | Select-Object -First 1) {
+        try {
+            $res = & $PY (Join-Path $ROOT 'flow\worker\notify.py') 'flush'
+            Note "utboksen: $res"
+        } catch { Note "utboksen kunne ikke toemmes: $($_.Exception.Message)" }
+    }
+
     # Exit-koden blir 'Last Result' i scheduled task, saa den skal si sant.
     if ($failed) { return 1 } else { return 0 }
 }
@@ -522,12 +550,20 @@ function Invoke-Test {
     & $PY (Join-Path $ROOT 'tools\check_assets.py')
     if ($LASTEXITCODE -ne 0) { $failed += 'check_assets.py' }
 
+    # Viser GUI-ets workflow-liste fortsatt det vi faktisk kjoerer? Snakker
+    # ikke med ComfyUI - den sammenligner sha1-en filene baerer med kildene.
+    # Endrer noen en workflow_api.json uten aa synke, aapner operatoeren en
+    # graf som SER ut som produksjonen og ikke er det.
+    Say "`n--- comfy_workflows" Cyan
+    & $PY (Join-Path $ROOT 'tools\comfy_workflows.py') --check
+    if ($LASTEXITCODE -ne 0) { $failed += 'comfy_workflows.py --check' }
+
     Write-Host ''
     if ($failed) {
         Say "FEILET: $($failed -join ', ')" Red
         exit 1
     }
-    Say "alle $($files.Count + 1) testene bestaatt" Green
+    Say "alle $($files.Count + 2) testene bestaatt" Green
     exit 0
 }
 
