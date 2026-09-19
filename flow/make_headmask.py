@@ -28,6 +28,13 @@ from PIL import Image, ImageDraw, ImageFilter
 GROW_W = 2.05          # bredde / ansiktsboksens bredde
 GROW_H = 2.25          # hoyde  / ansiktsboksens hoyde
 SHIFT_Y = -0.05        # senterforskyvning opp, i andeler av boksens hoyde
+# Sideveis forskyvning, i andeler av boksens bredde (+ = hoyre).
+# Null for et ansikt rett forfra. Staar barnet i PROFIL, dekker
+# ansiktsboksen bare forsiden av hodet, mens skallen og haaret stikker ut
+# motsatt vei av blikket - og en ellipse sentrert paa boksen klipper
+# bakhodet av. Superbyen side 05 og 11 (19.09.2026) ble begge halve
+# masker paa den maaten. Bruk --shift-x sammen med --grow-w der.
+SHIFT_X = 0.0
 FEATHER = 0.06         # myk kant, andel av maskens hoyde
 
 
@@ -50,24 +57,42 @@ def _analyser():
     return _ANALYSER
 
 
-def detect_face(path: str):
-    """Returnerer (x, y, w, h) i piksler for det stoerste ansiktet."""
+def detect_face(path: str, near=None):
+    """Returnerer (x, y, w, h) i piksler for ett ansikt i bildet.
+
+    Uten `near` tas det stoerste. Det er feil naar malen har et ansikt som er
+    stoerre enn barnets: superbyen side 13 (19.09.2026) har et hologram av en
+    gammel superhelt som fyller halve oppslaget, og masken havnet paa DEN.
+    `near=(x, y)` velger i stedet ansiktet naermest punktet.
+    """
     import cv2
 
     img = np.array(Image.open(path).convert("RGB"))[:, :, ::-1]
     faces = _analyser().get(img)
     if not faces:
         return None
-    face = max(faces, key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
+    if near is None:
+        face = max(faces,
+                   key=lambda f: (f.bbox[2] - f.bbox[0]) * (f.bbox[3] - f.bbox[1]))
+    else:
+        nx, ny = near
+
+        def avstand(f):
+            cx = (f.bbox[0] + f.bbox[2]) / 2.0
+            cy = (f.bbox[1] + f.bbox[3]) / 2.0
+            return (cx - nx) ** 2 + (cy - ny) ** 2
+
+        face = min(faces, key=avstand)
     x1, y1, x2, y2 = face.bbox
     return (float(x1), float(y1), float(x2 - x1), float(y2 - y1))
 
 
 def build_mask(size, face, grow_w=GROW_W, grow_h=GROW_H,
-               shift_y=SHIFT_Y, feather=FEATHER) -> Image.Image:
+               shift_y=SHIFT_Y, feather=FEATHER,
+               shift_x=SHIFT_X) -> Image.Image:
     w, h = size
     fx, fy, fw, fh = face
-    cx = fx + fw / 2.0
+    cx = fx + fw / 2.0 + fw * shift_x
     cy = fy + fh / 2.0 + fh * shift_y
     rx = fw * grow_w / 2.0
     ry = fh * grow_h / 2.0
@@ -109,6 +134,13 @@ def main() -> int:
     ap.add_argument("--grow-w", type=float, default=GROW_W)
     ap.add_argument("--grow-h", type=float, default=GROW_H)
     ap.add_argument("--shift-y", type=float, default=SHIFT_Y)
+    ap.add_argument("--shift-x", type=float, default=SHIFT_X,
+                    help="sideveis forskyvning i andeler av ansiktsbredden "
+                         "(+ hoyre). Trengs paa profilhoder.")
+    ap.add_argument("--face-near", metavar="X,Y",
+                    help="velg ansiktet naermest dette punktet i stedet for "
+                         "det stoerste - naar malen har et stoerre ansikt enn "
+                         "barnets")
     ap.add_argument("--calibrate", nargs="*",
                     help="par av <bilde> <maske>")
     args = ap.parse_args()
@@ -121,12 +153,21 @@ def main() -> int:
     if not args.image or not args.out:
         ap.error("--image og --out kreves")
 
-    face = detect_face(args.image)
+    near = None
+    if args.face_near:
+        try:
+            nx, ny = [float(v) for v in args.face_near.split(",")]
+        except ValueError:
+            ap.error("--face-near tar to tall: X,Y")
+        near = (nx, ny)
+
+    face = detect_face(args.image, near)
     if not face:
         print("fant ingen ansikt i", args.image)
         return 1
     src = Image.open(args.image)
-    mask = build_mask(src.size, face, args.grow_w, args.grow_h, args.shift_y)
+    mask = build_mask(src.size, face, args.grow_w, args.grow_h, args.shift_y,
+                      shift_x=args.shift_x)
     mask.convert("RGB").save(args.out)
     a = np.array(mask)
     ys, xs = np.where(a > 32)
