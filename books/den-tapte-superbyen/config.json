@@ -2,6 +2,8 @@
   "slug": "den-tapte-superbyen",
   "displayName": "Den Tapte Superbyen",
   "_continuationOf": "den-skjulte-styrken",
+  "nextBookSlug": "den-glemte-helten",
+  "nextBookTitle": "Den Glemte Helten",
   "_ingenVarianter": "Alle sider staar med noytral med vilje. build_variants.py lager varianter BARE for boeker i sin BOOKS-mengde, og den er {fotballstjernen}. Et 'smil' her hadde betydd noytral likevel - og sett ut som en funksjon som virket.",
   "textScript": "C:/DreamPage-OS/flow/text/nb/den-tapte-superbyen-text-nb.py",
   "prepareScript": "C:/DreamPage-OS/books/den-tapte-superbyen/script/prepare_order_den_tapte_superbyen.py",

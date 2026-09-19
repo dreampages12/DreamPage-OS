@@ -904,5 +904,24 @@
       "logo_scale": 0.72,
       "logo_x_offset": 0
     }
+  },
+  "den-glemte-helten": {
+    "nb": {
+      "source": "claude:den-glemte-helten",
+      "title_node": "den-glemte-helten",
+      "line1_suffix": "og",
+      "line2": "",
+      "line2_image": "C:/DreamPage-OS/flow/text/logo/nb/helten-logo-nb.png",
+      "gold": "255, 255, 255",
+      "shadow": "25, 20, 5",
+      "font_small_path": "C:/DreamPage-OS/flow/pre/Fredoka-Bold.ttf",
+      "font_large_path": "",
+      "font_large": 96,
+      "font_small": 73,
+      "top_margin": 0.03,
+      "line_spacing": 0.045,
+      "logo_scale": 0.72,
+      "logo_x_offset": 0
+    }
   }
 }
