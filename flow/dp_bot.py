@@ -1837,6 +1837,90 @@ def next_face_image(info: dict) -> str:
     return (session or {}).get("face_image") or info["face_image"]
 
 
+def face_image_facts(path: str):
+    """(beskrivelse, advarsel) om fila slik pipelinen faktisk vil lese den."""
+    from PIL import Image
+    with Image.open(path) as img:
+        size = "%dx%d" % (img.width, img.height)
+        try:
+            orient = img.getexif().get(274)
+        except Exception:
+            orient = None
+    desc = "%s px · %d kB" % (size, os.path.getsize(path) // 1024)
+    warn = None
+    if orient not in (None, 0, 1):
+        # Ordre 1469: bildet saa rett ut i galleriet, men laa paa siden for
+        # oss - det var BARE EXIF-taggen som snudde det. Verken
+        # worker/steps.py eller face_variants/build_variants.py kaller
+        # exif_transpose, saa ansiktet gaar skjevt inn i headswappen.
+        # Operatoeren maatte gjette seg til det og sende et nytt bilde.
+        warn = ("EXIF-orientering %s — bildet ligger paa siden for pipelinen, "
+                "som ikke roterer det. Send et opprettet bilde med "
+                "<code>/nyttbilde</code>." % orient)
+    return desc, warn
+
+
+def show_face_image(chat_id, order_id: str) -> None:
+    """Vis barnebildet ordren faktisk bygges med.
+
+    Ordre 1553-b1 og -b3 stoppet begge paa at WordPress svarte HTTP 404 paa
+    det arkiverte bildet, og da finnes det ingen fil i input/ i det hele
+    tatt. Uten dette maatte man inn paa maskinen for aa se om bildet fantes,
+    hvilket av dem som gjaldt naar operatoeren hadde sendt et nytt, og om
+    det laa riktig vei.
+    """
+    info = dp_order.resolve(order_id)
+    name = next_face_image(info)
+    path = os.path.join(dp_order.INPUT_DIR, name)
+    rows = [[{"text": "📷 Nytt barnebilde", "callback_data": f"face|{order_id}||0"}],
+            [{"text": "◀ Tilbake", "callback_data": f"ord|{order_id}||0"}]]
+
+    if not os.path.isfile(path):
+        send(chat_id,
+             f"❌ Ordre <b>{order_id}</b> ({esc(info['child_name'])}) har "
+             f"<b>ingen</b> barnebilde paa maskinen.\n\n"
+             f"Ventet: <code>{esc(path)}</code>\n\n"
+             f"Det skjer naar WordPress svarer 404 paa det arkiverte bildet. "
+             f"Send et bilde med <code>/nyttbilde {order_id}</code>, eller "
+             f"legg fila der og prøv ordren om igjen.", rows)
+        return
+
+    desc, warn = face_image_facts(path)
+    lines = [f"<b>Barnebilde · ordre {order_id}</b>",
+             f"{esc(info['child_name'])} · {info['book_slug']}",
+             "",
+             f"Fil: <code>{esc(name)}</code>",
+             desc]
+    if name != info["face_image"]:
+        lines.append("↻ Erstatning sendt inn i oekta — denne slaar ordrens "
+                     "opprinnelige bilde.")
+    if warn:
+        lines.append("")
+        lines.append("⚠️ " + warn)
+
+    api("sendPhoto",
+        {"chat_id": chat_id, "parse_mode": "HTML",
+         "caption": "\n".join(lines)},
+        files={"photo": preview(path, name_hint=f"{order_id}-face")},
+        timeout=120)
+
+    # De andre filene som ligger paa ordren: uttrykksvarianter og eventuelle
+    # /nyttbilde-erstatninger. De navngis <job_key>-<noe>.jpg, saa prefikset
+    # maa ha bindestreken med - ellers ville "1553" dratt inn 1553-b1 og -b2,
+    # som er ANDRE ordrer til andre barn.
+    stem = os.path.splitext(info["face_image"])[0]
+    others = sorted(
+        f for f in glob.glob(os.path.join(dp_order.INPUT_DIR, stem + "-*"))
+        if os.path.splitext(f)[1].lower() in (".jpg", ".jpeg", ".png")
+        and os.path.basename(f) != name)
+    if others:
+        send(chat_id,
+             "Andre bilder paa denne ordren:\n"
+             + "\n".join(f"· <code>{esc(os.path.basename(f))}</code>"
+                         for f in others), rows)
+    else:
+        send(chat_id, "Ingen andre bilder ligger paa denne ordren.", rows)
+
 def menu_next(chat_id, order_id: str, message_id=None) -> None:
     info = dp_order.resolve(order_id)
     if not info["continue_code"]:
@@ -2123,6 +2207,7 @@ def menu_order(chat_id, order_id: str, message_id=None) -> None:
         [{"text": "👁 Se sidene", "callback_data": f"view|{order_id}||0"}],
         [{"text": "🖼 Bytt sider", "callback_data": f"pgs|{order_id}||0"}],
         [{"text": "📎 Last inn eget bilde", "callback_data": f"uplm|{order_id}||0"}],
+        [{"text": "📸 Se barnebildet", "callback_data": f"fvis|{order_id}||0"}],
         [{"text": "📷 Nytt barnebilde", "callback_data": f"face|{order_id}||0"}],
         [{"text": "🔁 Kjør hele boka på nytt",
           "callback_data": f"rerun|{order_id}||0"}],
@@ -2136,10 +2221,15 @@ def menu_order(chat_id, order_id: str, message_id=None) -> None:
         rows.insert(0, [{"text": f"⏸ Vis {page_label(stalled)} igjen",
                          "callback_data": f"again|{order_id}|{stalled}|0"}])
     if info["continue_code"]:
-        # Indeksen er talt fra rows-lista over; legger du til en knapp foer
-        # "Bygg PDF", maa den telles opp her ogsaa.
-        rows.insert(6, [{"text": "🔮 Fortsett-siden",
-                         "callback_data": f"nxt|{order_id}||0"}])
+        # Raden skal ligge rett foer "Bygg PDF". Indeksen var hardkodet til
+        # 6, med en lapp om aa telle opp hver gang noen la til en knapp over
+        # - og "Se barnebildet" var nettopp en slik knapp. Nа finnes raden
+        # paa callbacken sin, saa rekkefoelgen kan endres fritt.
+        at = next((i for i, row in enumerate(rows)
+                   if row and row[0]["callback_data"].startswith("build|")),
+                  len(rows) - 1)
+        rows.insert(at, [{"text": "🔮 Fortsett-siden",
+                          "callback_data": f"nxt|{order_id}||0"}])
     if len(variants) > 1:
         rows.insert(-1, [{"text": ("● " if name == current else "○ ")
                                   + body_label(name),
@@ -2238,6 +2328,7 @@ Kommandoene finnes fortsatt som snarveier:
 <code>/vis 1235</code> — se sidene slik de er i boka nå
 <code>/vis 1235 3,7 forside</code> — se bare disse sidene
 <code>/fix 1235 3,7 forside</code> — render nye varianter av sidene
+<code>/bilde 1235</code> — se barnebildet ordren bygges med
 <code>/nyttbilde 1235</code> — send nytt barnebilde, velg så hele boka eller enkeltsider
    «🚀 Hele boka automatisk» kjører alle sidene i ett strekk uten å spørre
    underveis — du får sidene samlet til slutt og kan lage om de dårlige.
@@ -2760,6 +2851,9 @@ def handle_callback(query: dict) -> None:
     elif action == "ord":
         menu_order(chat_id, order_id, message_id)
 
+    elif action == "fvis":
+        show_face_image(chat_id, order_id)
+
     elif action == "again":
         enqueue_view(order_id, chat_id, variants_for=page_key)
 
@@ -3233,6 +3327,11 @@ def handle_message(message: dict) -> None:
             send(chat_id, HELP)
         elif command == "/fix":
             cmd_fix(chat_id, args)
+        elif command in ("/bilde", "/barnebilde"):
+            if not args:
+                send(chat_id, "Bruk: <code>/bilde 1235</code>")
+            else:
+                show_face_image(chat_id, args[0])
         elif command in ("/nyttbilde", "/nyttfoto"):
             cmd_nyttbilde(chat_id, args)
         elif command == "/bygg":
