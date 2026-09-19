@@ -861,5 +861,48 @@
       "shadow_opacity": "200",
       "shadow_blur": "4"
     }
+  },
+  "den-forsvunne-prinsen": {
+    "nb": {
+      "source": "claude:den-forsvunne-prinsen",
+      "title_node": "den-forsvunne-prinsen",
+      "line1_suffix": "og den",
+      "line2": "",
+      "line2_image": "C:/DreamPage-OS/flow/text/logo/nb/prinsen-logo-nb.png",
+      "gold": "255, 255, 255",
+      "shadow": "60, 35, 70",
+      "font_small_path": "C:/DreamPage-OS/flow/pre/PlayfairDisplay.ttf",
+      "font_large_path": "",
+      "font_large": 96,
+      "font_small": 78,
+      "logo_scale": 0.78,
+      "top_margin": 0.03,
+      "line_spacing": 0.035,
+      "logo_x_offset": 0,
+      "line1_prefix": "Prinsesse",
+      "logo_shadow_opacity": 130,
+      "glow_color": "40,20,50",
+      "glow_opacity": 1.0,
+      "glow_radius_scale": 0.22
+    }
+  },
+  "den-eldgamle-dragen": {
+    "nb": {
+      "source": "claude:den-eldgamle-dragen",
+      "title_node": "den-eldgamle-dragen",
+      "line1_suffix": "og den",
+      "line2": "",
+      "line2_image": "C:/DreamPage-OS/flow/text/logo/nb/dragen-logo-nb.png",
+      "gold": "255, 255, 255",
+      "shadow": "25, 20, 5",
+      "font_small_path": "C:/DreamPage-OS/flow/pre/Fredoka-Bold.ttf",
+      "font_large_path": "",
+      "font_large": 96,
+      "font_small": 73,
+      "top_margin": 0.03,
+      "line_spacing": 0.045,
+      "logo_scale": 0.72,
+      "logo_x_offset": 0
+    }
   }
 }

@@ -1,9 +1,16 @@
 {
   "slug": "det-morke-fjellet",
   "displayName": "Det Mørke Fjellet",
-  "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript og bakside/ryggrad mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i den-skjulte-verdenen.",
   "_continuationOf": "den-skjulte-verdenen",
-  "_slugAlias": "det-mørke-fjellet (directory junction peker hit, saa begge skrivemaatene virker som next_book_slug)",
+  "nextBookSlug": "den-eldgamle-dragen",
+  "nextBookTitle": "Den Eldgamle Dragen",
+  "_slugAlias": "Det fantes en books/det-moerke-fjellet med oe, foerst som en kopi med utdatert config, saa en kort stund som junction hit. Begge deler er borte: os.listdir(books/) returnerte da boka TO ganger, og dp_bot sin recent_orders viste hver ordre dobbelt. resolve_slug ASCII-folder uansett, saa ordreveien trenger ingen alias. Kommer next_book_slug inn med oe, feiler load_config - men _continue_page svelger det og merker sida skipped med begrunnelse, saa ordren stopper ikke.",
+  "_assetsDeltMedVerdenen": "dreampage-first er foreloepig en kopi av den-skjulte-verdenen sin. Ryggrad og bakside er bokas egne.",
+  "_ingenVarianter": "Alle sider staar med noytral med vilje. build_variants.py lager varianter BARE for boeker i sin BOOKS-mengde, og den er {fotballstjernen}. Et 'smil' her hadde betydd noytral likevel - og sett ut som en funksjon som virket. Skal side 05 (dragen kommer loepende) faktisk smile, maa boka legges til i BOOKS og varianten sees paa med egne oeyne foerst.",
+  "textScript": "C:/DreamPage-OS/flow/text/nb/det-morke-fjellet-text-nb.py",
+  "prepareScript": "C:/DreamPage-OS/books/det-morke-fjellet/script/prepare_order_det_morke_fjellet.py",
+  "driveFolderId": "12LvdWt0_Dz8EPPL_3q9zoo2rkSUdz8iX",
+  "_driveFolderId": "Samme foreldermappe som den-skjulte-verdenen og de aatte andre boekene som deler den. Opplastingen lager en undermappe per ordre inni denne, saa den deles trygt.",
   "orderBasePath": "C:/DreamPage-OS/books/det-morke-fjellet/orders",
   "comfyOutputPrefix": "det-morke-fjellet/orders",
   "patchNodes": {
@@ -24,6 +31,90 @@
       "template_image": "forside(fjellet).png",
       "mask_image": "forside-headmask(fjellet).png",
       "face_expression": "noytral"
+    },
+    {
+      "page_key": "page01",
+      "template_image": "01(fjellet).png",
+      "mask_image": "01-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page02",
+      "template_image": "02(fjellet).png",
+      "mask_image": "02-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page03",
+      "template_image": "03(fjellet).png",
+      "mask_image": "03-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page04",
+      "template_image": "04(fjellet).png",
+      "mask_image": "04-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page05",
+      "template_image": "05(fjellet).png",
+      "mask_image": "05-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page06",
+      "template_image": "06(fjellet).png",
+      "mask_image": "06-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page07",
+      "template_image": "07(fjellet).png",
+      "mask_image": "07-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page08",
+      "template_image": "08(fjellet).png",
+      "mask_image": "08-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page09",
+      "template_image": "09(fjellet).png",
+      "mask_image": "09-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page10",
+      "template_image": "10(fjellet).png",
+      "mask_image": "10-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page11",
+      "template_image": "11(fjellet).png",
+      "mask_image": "11-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page12",
+      "template_image": "12(fjellet).png",
+      "mask_image": "12-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page13",
+      "template_image": "13(fjellet).png",
+      "mask_image": "13-headmask(fjellet).png",
+      "face_expression": "noytral"
+    },
+    {
+      "page_key": "page14",
+      "template_image": "14(fjellet).png",
+      "mask_image": "14-headmask(fjellet).png",
+      "face_expression": "noytral"
     }
   ],
   "expectedInnerPages": 30,
@@ -31,5 +122,10 @@
   "workflowApis": {
     "frontpage": "workflow_api.json",
     "innerpages": "workflow_api.json"
+  },
+  "textScripts": {
+    "nb": "C:/DreamPage-OS/flow/text/nb/det-morke-fjellet-text-nb.py",
+    "no": "C:/DreamPage-OS/flow/text/nb/det-morke-fjellet-text-nb.py",
+    "nb-no": "C:/DreamPage-OS/flow/text/nb/det-morke-fjellet-text-nb.py"
   }
 }

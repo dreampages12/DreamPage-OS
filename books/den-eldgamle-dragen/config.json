@@ -1,0 +1,34 @@
+{
+  "slug": "den-eldgamle-dragen",
+  "displayName": "Den Eldgamle Dragen",
+  "_status": "KUN FORSIDE. Innersidene, textScript og prepareScript mangler, saa boka kan IKKE produseres. Den finnes for at page99_next (QR-siden i det-morke-fjellet) skal faa et ekte bilde av neste bok - uten den blir den siden trykt med tittel og QR, men uten forsidebildet.",
+  "_continuationOf": "det-morke-fjellet",
+  "orderBasePath": "C:/DreamPage-OS/books/den-eldgamle-dragen/orders",
+  "comfyOutputPrefix": "den-eldgamle-dragen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(dragen).png",
+      "mask_image": "forside-headmask(dragen).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 30,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}
