@@ -24,6 +24,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -51,8 +52,24 @@ SHARED_DIRS = ("flow/text/logo", "flow/text/bakside",
 LOGO_REQUIRED_LOCALES = ("nb", "nn")
 
 
+sys.path.insert(0, os.path.join(ROOT, "flow"))
+from paths import resolve as _resolve_path  # noqa: E402
+
+
 def resolve(path: str) -> str:
-    return path if os.path.isabs(path) else os.path.join(ROOT, path)
+    """Stien slik den ser ut paa DENNE maskinen.
+
+    Gaar gjennom paths.resolve, som oversetter de gamle absolutte
+    `C:/DreamPage-OS/...`-stiene i configfilene til denne maskinens rot. Paa
+    Windows er det en identitet; paa en Linux-server er det forskjellen paa
+    at guarden sjekker riktige filer og at den melder at alt mangler.
+
+    `root=ROOT`, altsaa mappa DETTE scriptet ligger i - ikke DP_ROOT. Denne
+    guarden granskar installasjonen den er en del av. Uten det ville en
+    testkjoering med DP_ROOT satt til en sandkasse fatt "241 kunst-/fontstier
+    mangler" om den EKTE kunsten, og stoppet hver eneste jobb i testen.
+    """
+    return str(_resolve_path(path, root=Path(ROOT)))
 
 
 def scan_json(rel: str) -> list[tuple[str, str]]:
@@ -273,6 +290,28 @@ def scan_script_root_paths() -> list[tuple[str, str]]:
     return found
 
 
+def scan_preview_config() -> list[tuple[str, str]]:
+    """Kunst- og fontstier i config/preview/ (PREVIEW-modus).
+
+    Glob, ikke en liste med filnavn: bokfilene der legges til én av gangen
+    naar en ny bok skal kunne forhaandsvises, og en liste her ville vaert
+    utdatert fra foerste gang noen glemte aa oppdatere den. Det er den samme
+    grunnen til at `dreampage.ps1 test` kjoerer ALLE testfilene i mappa i
+    stedet for en navngitt liste.
+
+    Filene sjekkes ogsaa paa en bok-PC. De inneholder ingen hemmeligheter, og
+    en preview-logo som mangler skal oppdages naar noen kjoerer testene - ikke
+    foerste gang en kunde ber om en forhaandsvisning.
+    """
+    found: list[tuple[str, str]] = []
+    base = os.path.join(ROOT, "config", "preview")
+    for path in sorted(glob.glob(os.path.join(base, "**", "*.json"),
+                                 recursive=True)):
+        rel = os.path.relpath(path, ROOT).replace(os.sep, "/")
+        found += scan_json(rel)
+    return found
+
+
 def audit() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
     """(alle stier, de som mangler). Selve sjekken, uten utskrift.
 
@@ -287,6 +326,7 @@ def audit() -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
                 "config/flow.json",
                 "config/merge_orders.json"):
         found += scan_json(rel)
+    found += scan_preview_config()
     found += scan_text_scripts()
     found += scan_cover_logos()
     found += scan_script_root_paths()

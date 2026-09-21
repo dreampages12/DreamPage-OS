@@ -19,6 +19,21 @@ bestiller.
 **Ingen kode her bestiller noe.** Pipelinen stopper ved utkastet. Det er med
 vilje, og det skal den fortsette å gjøre.
 
+## Servermodus: BOOK eller PREVIEW
+
+`config/flow.json` → `"mode"` sier hva denne maskinen er til. Den avgjør to
+ting, og bare de to: hvilken RabbitMQ-kø workeren lytter på, og hvilken
+pipeline den kjører.
+
+| Modus | Kø | Pipeline |
+|---|---|---|
+| `book` | `dreampage-jobs` | bokproduksjon, fram til Gelato-utkastet |
+| `preview` | `preview-jobs` | forhåndsvisninger til nettbutikken |
+
+**Denne maskinen står i `book`.** Alt under gjelder den modusen.
+`docs/preview-modus.md` beskriver den andre. `.\dreampage.ps1 mode` viser og
+bytter; en ukjent verdi er en feil, ikke «da tar vi book».
+
 ## Ordreveien, verifisert
 
 ```
@@ -62,6 +77,7 @@ C:\Users\<bruker>\.n8n\config          (encryptionKey)
 | `state/ output/ input/ models/ tmp/` | ikke i git |
 
 `docs/ARCHITECTURE.md` forklarer hvordan delene henger sammen.
+`docs/preview-modus.md` er PREVIEW-modus: kø, pipeline, bokdata og levering.
 `docs/RUNBOOK.md` er drift og feilsøking.
 `docs/SETUP-NEW-PC.md` er å sette opp en ny maskin.
 
@@ -143,8 +159,10 @@ Konkret, når du skriver kode her:
 * Utleder du en sti relativt til `__file__`, gå **oppover til du finner et
   holdepunkt** (slik `_dp_find_root` leter etter `books/`). Ikke tell mapper med
   `dirname(dirname(...))` — det brekker neste gang noe flyttes.
-* Bruk `flow/paths.py`. Ikke hardkod `C:\DreamPage-OS`. (Det ligger fortsatt 60+
-  slike igjen i gammel kode; ikke legg til flere.)
+* Bruk `flow/paths.py`: `ROOT`, `under("state/x")` for våre egne mapper, og
+  `resolve()` for stier som kommer fra konfigurasjon eller payload. De 116
+  hardkodede `C:\DreamPage-OS` som lå i gammel kode er borte;
+  `tools/check_portability.py` fanger nye, og kjøres av `dreampage.ps1 test`.
 * Legger du til en kunst- eller fontsti, sørg for at `tools/check_assets.py`
   finner den. Den leser stier ut av JSON-konfigurasjonen og ut av tekstscriptenes
   **syntakstre** — den har ingen egen liste som kan bli utdatert.
@@ -159,9 +177,13 @@ Konkret, når du skriver kode her:
 .\dreampage.ps1 status    # hva lever, hva står i køen, hvor står ordren
 .\dreampage.ps1 down      # nekter å stoppe midt i en ordre uten -Force
 .\dreampage.ps1 logs      # følg flow-loggen
-.\dreampage.ps1 test      # ALLE testene + check_assets
+.\dreampage.ps1 test      # ALLE testene + check_assets + check_portability
 .\dreampage.ps1 ensure    # vaktmesteren (scheduled task, hvert 5. min)
+.\dreampage.ps1 mode      # book eller preview
 ```
+
+På Linux heter den `./dreampage.sh` og tar de samme kommandoene
+(`docs/SETUP-LINUX.md`).
 
 Hvor stoppet ordre X, og hvorfor:
 
@@ -199,6 +221,24 @@ eller listen — ikke skriv en ny if-gren i runneren.
 **Hemmeligheter ligger i `config/secrets.json`** (gitignorert), lest via
 `flow/dp_secrets.py`. Aldri i kildekoden. Git-historikken er skrubbet ren én
 gang allerede.
+
+**Koden skal kjøre på Windows OG Linux.** Denne maskinen er Windows og blir
+det en stund til; nye maskiner settes opp på Linux. Derfor:
+
+* Ingen hardkodede stier. Bruk `flow/paths.py` — `ROOT`, `under("state/x")`,
+  og `resolve()` for stier som kommer fra konfigurasjon eller payload.
+* **En `if windows:` i produksjonskoden er en feil.** Er noe forskjellig,
+  hører det hjemme i `flow/dp_platform.py`, bak et navn som sier hva det
+  gjør. I dag: oppetid, `~/.n8n`, kjørbare filer, hvilken vaktmester.
+* Linux bryr seg om store og små bokstaver i filnavn. Windows gjør ikke, så
+  den feilen er usynlig herfra — `tools/check_portability.py` sjekker hvert
+  filnavn konfigurasjonen peker på mot det disken faktisk heter, og kjøres av
+  `.\dreampage.ps1 test`.
+* Supervisoren finnes i to utgaver (`dreampage.ps1`, `dreampage.sh` →
+  `tools/dreampage.py`). Tjenestelista må stemme i begge;
+  `test_supervisorene_er_enige` holder dem sammen.
+
+`docs/SETUP-LINUX.md` er oppsettet på Linux.
 
 ## Før du gjør noe utoverrettet
 

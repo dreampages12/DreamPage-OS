@@ -1,0 +1,45 @@
+# Forslag foer datasettgjennomgang, ikke en godkjenning eller ferdig tuning.
+model:
+  identity_dim: 64
+  structure_dim: 16
+  token_grid: 4
+dataset:
+  manifest: local_data/enrolled/v1/pairs/pairs.train.jsonl
+  peer_manifests: []
+  registry_path: local_data/enrolled/v1/pairs/dataset_registry.json
+  resolution: 256
+  reference_count: 1
+  allow_synthetic: false
+  source_crops: true
+objective:
+  name: supervised_contrastive
+  temperature: 0.1
+  identities_per_batch: 4
+optimizer:
+  name: adamw
+  lr: 0.0001
+  betas: [0.9, 0.999]
+  weight_decay: 0.01
+scheduler:
+  name: constant
+  warmup_steps: 50
+training:
+  device: cuda
+  precision: fp32
+  seed: 1234
+  max_steps: 1000
+  gradient_clip: 1.0
+  checkpoint_every: 100
+  log_every: 10
+  cpu_threads: 2
+  tracker: jsonl
+  output_dir: runs/unmanaged-identity-pilot
+  verify_dataset_fingerprint: true
+validation:
+  manifest: local_data/enrolled/v1/pairs/pairs.validation.jsonl
+  split: validation
+  every: 100
+  seed: 4321
+  identities_per_batch: 2
+  max_batches: 8
+  metric: validation/retrieval_top1

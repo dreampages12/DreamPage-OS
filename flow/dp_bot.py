@@ -48,27 +48,33 @@ sys.path.insert(0, SCRIPT_DIR)
 
 import dp_merge
 import dp_order
+import drive_upload
 import dp_testbook
 import regen_page
 import render_next_cover
 import page_files
 import reprint_order
 
-CONFIG_PATH = r"C:\DreamPage-OS\config\dp_bot.json"
-STATE_DIR = r"C:\DreamPage-OS\state\reprint"
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
+CONFIG_PATH = under("config/dp_bot.json")
+STATE_DIR = under("state/reprint")
 # Egen state for fortsett-forsiden. Ikke i sidevalg-økta: den har en
 # stage-maskin (picking -> rendering -> built) som fortsett-siden ikke er en
 # del av, og å blande dem ville latt en halvferdig forside stoppe et sidebytte.
-NEXT_STATE_DIR = r"C:\DreamPage-OS\state\next_cover"
+NEXT_STATE_DIR = under("state/next_cover")
 # Et bygg tar minutter og lever bare i minnet. Dør boten underveis, er jobben
 # borte, og «Bygger …» blir stående som siste melding for alltid. Markøren
 # gjør et avbrutt bygg synlig ved neste oppstart.
-INFLIGHT_DIR = r"C:\DreamPage-OS\state\reprint\inflight"
-PREVIEW_DIR = r"C:\DreamPage-OS\tmp\dp_bot_previews"
-LOG_PATH = r"C:\DreamPage-OS\state\dp_bot.log"
+INFLIGHT_DIR = under("state/reprint/inflight")
+PREVIEW_DIR = under("tmp/dp_bot_previews")
+LOG_PATH = under("state/dp_bot.log")
 
 PREVIEW_MAX_WIDTH = 1600      # Telegram: <=10 MB og bredde+høyde <=10000
-UPLOAD_DIR = r"C:\DreamPage-OS\tmp\dp_bot_uploads"
+UPLOAD_DIR = under("tmp/dp_bot_uploads")
 
 # Bot API tar 50 MB per dokument. Coverne er 3-6 MB og går rett gjennom,
 # men innersider (54-68 MB) og gelato-PDF-en (57-74 MB) gjør det ALDRI -
@@ -623,7 +629,9 @@ def stop_everything(chat_id, reset: bool = False) -> None:
     CANCEL.set()
 
     dropped = 0
-    for pending in (JOBS, VIEW_JOBS):
+    # Datasett-koeen toemmes ogsaa: trykker du "stopp alt arbeid", skal ikke en
+    # kvart gigabyte opplasting ligge og vente paa aa starte etterpaa.
+    for pending in (JOBS, VIEW_JOBS, DATASET_JOBS):
         while True:
             try:
                 pending.get_nowait()
@@ -667,7 +675,7 @@ def stop_everything(chat_id, reset: bool = False) -> None:
     threading.Timer(5.0, CANCEL.clear).start()
 
 
-LAST_CHAT_PATH = r"C:\DreamPage-OS\state\dp_bot_last_chat.json"
+LAST_CHAT_PATH = under("state/dp_bot_last_chat.json")
 
 
 def remember_chat(chat_id) -> None:
@@ -1701,31 +1709,44 @@ def job_publish(order_id: str, chat_id, extra: dict) -> None:
             {"text": "📄 Hent PDF", "callback_data": f"pdf|{order_id}||0"}]])
         return
 
-    reprint_order.merge_guard(order_id)
-
-    # Er denne ordren den PRIMÆRE i et samlet utkast, ville et nytt enkelt-
-    # utkast her slette det samlede og etterlate kunden med én bok for lite.
-    # Å bygge på nytt er greit; det er publiseringen som er farlig.
-    combined = dp_merge.merged_primary(order_id) if make_draft else None
-    if combined and not extra.get("force"):
-        others = [o for o in combined.get("merged_orders", []) if str(o) != str(order_id)]
+    # Ligger ordren i et samlet utkast, er et enkelt-utkast her farlig fra
+    # BEGGE sider: den PRIMAERE eier utkastet, og et nytt ville slettet det;
+    # den SEKUNDAERE ligger under en annen referanse, og et nytt ville blitt
+    # et duplikat ved siden av. To trykte boker for en betalt, begge veier.
+    # Aa bygge paa nytt er greit; det er publiseringen som er farlig.
+    #
+    # Sekundaerordren traff for bare merge_guard, som kaster SystemExit og ber
+    # operatoren slette utkastet i Gelato for hand. Ordre 1582 (21.09.2026)
+    # sto slik etter sammenslaaingen med 1583: ingen knapp, og et raad som er
+    # feil naar du staar i botten. Begge sider skal fa samme vei videre.
+    group = dp_merge.merged_group(order_id) if make_draft else []
+    if group and not extra.get("force"):
+        others = [o for o in group if str(o) != str(order_id)]
+        draft_id = dp_merge.merged_draft_id(order_id)
         send(chat_id,
              f"⛔ <b>{order_id}</b> ligger i et samlet utkast "
-             f"(<code>{combined.get('draft_id')}</code>) sammen med "
+             f"(<code>{esc(draft_id or 'ukjent')}</code>) sammen med "
              f"<b>{', '.join(others)}</b>.\n\n"
-             "Lager jeg et utkast for denne ordren alene, slettes det samlede "
-             "og kunden får én bok for lite. Slå dem sammen på nytt i stedet — "
-             "da blir alle bøkene med, i nyeste versjon.", [
-                 # Alle de andre skal med, ikke bare den første: et samlet
-                 # utkast kan inneholde tre bøker like gjerne som to.
+             "Lager jeg et utkast for denne ordren alene, får kunden feil "
+             "antall bøker. Slå dem sammen på nytt i stedet — da blir alle "
+             "bøkene med, i nyeste versjon.", [
+                 # Gruppas EGEN rekkefolge, ikke denne ordren forst: den
+                 # forste blir orderReferenceId, og bytter den, skifter det
+                 # samlede utkastet referanse midt i en ombygging.
                  [{"text": "🔗 Slå sammen på nytt",
-                   "callback_data": "mrgB|" + str(order_id) + "||"
-                                    + ",".join([str(order_id)] + [str(o) for o in others])}]
-                 if others else [],
+                   "callback_data": "mrgB|" + str(group[0]) + "||"
+                                    + ",".join(str(o) for o in group)}],
                  [{"text": "📤 Bare Drive (ingen utkast)",
                    "callback_data": f"publish|{order_id}||0"}],
              ])
         return
+
+    # Bakstopp for alt som ikke gikk i greina over. Bare naar vi faktisk skal
+    # lage et utkast: «Bare Drive» ror ingen utkast (upload_and_draft
+    # returnerer for slette-lokka), og knappen over tilbyr nettopp den veien
+    # - da kan ikke sperren staa i den.
+    if make_draft:
+        reprint_order.merge_guard(order_id, force=bool(extra.get("force")))
 
     with STATE_LOCK:
         session = load_state(order_id)
@@ -2110,7 +2131,7 @@ def job_next_apply(order_id: str, chat_id, extra: dict) -> None:
 # --------------------------------------------------------------------------
 # Menyer — alt skal kunne gjøres med knapper, uten å huske syntaks
 # --------------------------------------------------------------------------
-BOOKS_DIR = r"C:\DreamPage-OS\books"
+BOOKS_DIR = under("books")
 
 
 def recent_orders(limit: int = 8) -> list[tuple[str, str]]:
@@ -2134,6 +2155,7 @@ def menu_main(chat_id, message_id=None) -> None:
             for order_id, slug in recent_orders()]
     rows.append([{"text": "🔗 Slå sammen ordre", "callback_data": "mrg|||0"},
                  {"text": "🧪 Test en bok", "callback_data": "tst|||0"}])
+    rows.append([{"text": "🧠 Datasett til trening", "callback_data": "dset|||0"}])
     rows.append([{"text": "🔄 Oppdater", "callback_data": "menu|||0"},
                  {"text": "🛑 Stopp arbeid", "callback_data": "stop|||0"}])
     busy = JOBS.qsize()
@@ -2343,6 +2365,9 @@ ingenting du har laget blir overskrevet.
 <code>/slaasammen 1281 1282 1283</code> — to eller flere bøker i ett Gelato-utkast
 <code>/navn 1281 Lavrans</code> — rett barnets navn (kunder skriver ofte VERSALER)
 <code>/test</code> — bygg en testbok fra bilde + navn (ingen Drive/Gelato/n8n)
+🧠 <b>Datasett til trening</b> (i hovedmenyen, eller <code>/datasett</code>) —
+   samler før/etter/person for én side i en <code>swap_NN</code>-mappe i Drive.
+   Boten henter malen, den faceswappede siden og barnebildet selv.
 <code>/status 1235</code> — hvor ordren står
 <code>/avbryt 1235</code> — forkast en enkelt økt
 <code>/stopp</code> — stopp alt arbeid nå, behold valgene dine
@@ -2528,7 +2553,7 @@ def handle_photo(chat_id, message: dict) -> None:
         session = face_waiting[0]
         order_id = session["order_id"]
         path = download_file(file_id, UPLOAD_DIR)
-        dest = os.path.join(r"C:\DreamPage-OS\input",
+        dest = os.path.join(under("input"),
                             f"{order_id}-ny{dt.datetime.now().strftime('%m%d%H%M')}.jpg")
         from PIL import Image
         with Image.open(path) as img:
@@ -2804,6 +2829,287 @@ def apply_upload(chat_id, order_id: str, page_key: str) -> None:
         [{"text": "🔨 Bygg PDF på nytt", "callback_data": f"build|{order_id}||0"}],
         [{"text": "◀ Til ordren", "callback_data": f"ord|{order_id}||0"}],
     ])
+
+
+# --------------------------------------------------------------------------
+# Datasett til modelltrening: foer/etter/person opp i Drive
+#
+# swap_01..swap_09 ble laget for haand, og de navnene er fasiten: undermappe
+# "swap_NN" i datasett-mappa, og tre filer som heter "foer", "etter" og
+# "person". Doeper du om noe av dette, ser et paringsskript bare en mappe med
+# to filer - og et halvt sett er verre enn ingen.
+#
+# Bildene hentes fra maskinen, ikke fra chatten: etter-bildet er 8192x4096 og
+# rundt 50 MB, og en bot faar ikke hente filer over 20 MB fra Telegram. Da er
+# det ogsaa boten som VET hvilken malvariant siden ble swappet fra, i stedet
+# for at operatoeren maa finne den riktige selv.
+# --------------------------------------------------------------------------
+DATASET_PARENT = "1PBC0wEbrOO4ZM5gEoFkaTQqVfcttiC76"
+DATASET_PREFIX = "swap_"
+# Egen koe og egen traad. Et sett er ~50 MB opplasting; laa det i JOBS, ville
+# det staatt bak et bygg - og et bygg skal like lite vente paa et datasett.
+DATASET_JOBS: queue.Queue = queue.Queue()
+# chat_id -> {"folder", "order_id", "page_key", "files"}. I minnet, som
+# PENDING_UPLOAD: ingenting er lastet opp foer du har sett bildene og sagt ja.
+PENDING_DATASET: dict = {}
+PENDING_DATASET_NAME: dict = {}
+
+
+def dataset_parent_id() -> str:
+    """Drive-mappa settene ligger i. Kan overstyres i config/dp_bot.json."""
+    return str(config().get("dataset_parent") or DATASET_PARENT).strip()
+
+
+def dataset_next_name(names: list[str]) -> tuple[str, int]:
+    """(neste ledige swap_NN, hvor mange sett som finnes fra foer).
+
+    Bredden arves fra mappene som ER der (swap_09 -> swap_10), ellers ville
+    sorteringen i Drive sluttet aa stemme ved det tiende settet.
+    """
+    numbers = []
+    width = 2
+    for name in names:
+        match = re.fullmatch(DATASET_PREFIX + r"(\d+)", (name or "").strip())
+        if match:
+            numbers.append(int(match[1]))
+            width = max(width, len(match[1]))
+    nxt = (max(numbers) + 1) if numbers else 1
+    return f"{DATASET_PREFIX}{nxt:0{width}d}", len(numbers)
+
+
+def valid_dataset_name(raw: str) -> str | None:
+    """Rens et mappenavn skrevet i chatten, eller None hvis det ikke gaar an."""
+    name = (raw or "").strip().strip("/").strip()
+    if not name or len(name) > 60:
+        return None
+    # "|" ville brutt callback_data i to, og skilletegn fra stier har ingenting
+    # i et mappenavn aa gjoere.
+    if any(ch in name for ch in "|/\\\n\r\t"):
+        return None
+    return name
+
+
+def dataset_files(order_id: str, page_key: str) -> tuple[list[tuple[str, str, str]], list[str]]:
+    """(slot, Drive-navn, sti) for de tre bildene, og det som maa sies om dem.
+
+    Kaster hvis ett av de tre mangler, eller hvis etter-bildet er byte-identisk
+    med malen: da ble siden aldri faceswappet, og et slikt par laerer modellen
+    aa gjoere ingenting.
+    """
+    info = dp_order.resolve(order_id)
+    page = next((p for p in info["config"].get("pages", [])
+                 if p.get("page_key") == page_key), None)
+    if not page:
+        raise SystemExit(f"{info['book_slug']} har ingen {page_key}.")
+
+    # Foer-bildet er malen ComfyUI FAKTISK lastet, altsaa etter kropps-, haar-
+    # og hudvariantene. Tok vi standardmalen her, ville settet loeyet om hva
+    # swappen begynte med for hver ordre som bruker en variant.
+    chosen = dp_order.apply_variants(page, dp_order.body_variant(info),
+                                     dp_order.hair_variant(info),
+                                     dp_order.skin_variant(info))
+    template = chosen.get("template_image") or ""
+    before = os.path.join(dp_order.INPUT_DIR, template) if template else ""
+    if before and not os.path.isfile(before):
+        # Rot-input/ er det ComfyUI laster; books/<slug>/base/ er det prepare
+        # kopierer fra. De er ikke alltid like, og for noen boeker finnes malen
+        # bare i den ene.
+        alt = os.path.join(BOOKS_DIR, info["book_slug"], "base", template)
+        if os.path.isfile(alt):
+            before = alt
+
+    # audit_page gir baade fila i ordrens input/ og svaret paa om den er raa.
+    row = page_files.audit_page(info, page)
+    after = row.get("path") or ""
+    person = os.path.join(dp_order.INPUT_DIR, next_face_image(info))
+
+    missing = [label for label, path in (("før", before), ("etter", after),
+                                         ("person", person))
+               if not path or not os.path.isfile(path)]
+    if missing:
+        raise SystemExit(
+            f"fant ikke {', '.join(missing)} for {page_label(page_key)} i "
+            f"ordre {order_id}.\nmal: <code>{esc(template or '?')}</code>\n"
+            f"input/: <code>{esc(os.path.basename(after) or '—')}</code>\n"
+            f"barnebilde: <code>{esc(os.path.basename(person))}</code>")
+    if row["status"] == "raa":
+        raise SystemExit(
+            f"{page_label(page_key)} i ordre {order_id} er byte-identisk med "
+            f"malen <code>{esc(row['raw_as'] or '')}</code> — den er aldri "
+            "faceswappet. Et slikt par hører ikke i et treningssett.")
+
+    notes = []
+    if row["status"] == "usikker":
+        notes.append("⚠️ Fant ingen mal å sammenligne etter-bildet med "
+                     "(typisk høyre halvdel av en delt side). Se selv at "
+                     "ansiktet er byttet.")
+    # Advarselen gjelder BARE delte sider: der heter malen "04(bok)" mens fila
+    # i input/ heter "04-right(bok)", og da er før og etter ikke samme bilde.
+    # Sammenligningen maa skje mot malen UTEN variantsuffiks - ellers advarte
+    # den paa hver eneste kort- eller mork-ordre, og en advarsel som alltid
+    # staar paa varsler ingenting (ordre 1528).
+    plain_stem = os.path.splitext(page.get("template_image") or "")[0]
+    if plain_stem != row["stem"]:
+        notes.append(f"⚠️ Malen heter <code>{esc(os.path.basename(before))}</code> "
+                     f"og siden <code>{esc(os.path.basename(after))}</code> — "
+                     "delt side. Se at det er samme oppslag.")
+    # Ikke en advarsel, men verdt aa se: hvilken malvariant swappen startet fra.
+    variants = [label(name) for label, name, default in (
+        (body_label, dp_order.body_variant(info), dp_order.DEFAULT_BODY_VARIANT),
+        (hair_label, dp_order.hair_variant(info), dp_order.DEFAULT_HAIR_VARIANT),
+        (skin_label, dp_order.skin_variant(info), dp_order.DEFAULT_SKIN_VARIANT),
+    ) if name != default]
+    if variants:
+        notes.append("Malvariant: " + ", ".join(variants))
+
+    files = []
+    for slot, label, path in (("foer", "før", before), ("etter", "etter", after),
+                              ("person", "person", person)):
+        ext = os.path.splitext(path)[1].lower() or ".png"
+        files.append((slot, label + ext, path))
+    return files, notes
+
+
+def menu_dataset_orders(chat_id, folder: str, message_id=None) -> None:
+    rows = [[{"text": f"{order_id} · {slug}",
+              "callback_data": f"dso|{order_id}||{folder}"}]
+            for order_id, slug in recent_orders()]
+    rows.append([{"text": "✖ Avbryt", "callback_data": "dsx|||0"}])
+    text = (f"🧠 <b>{esc(folder)}</b> — hvilken ordre skal settet hentes fra?\n\n"
+            "<i>Er ordren eldre, skriv nummeret rett i chatten.</i>")
+    if message_id:
+        api("editMessageText", {"chat_id": chat_id, "message_id": message_id,
+                                "text": text, "parse_mode": "HTML",
+                                "reply_markup": {"inline_keyboard": rows}})
+    else:
+        send(chat_id, text, rows)
+
+
+def menu_dataset_pages(chat_id, folder: str, order_id: str, message_id=None) -> None:
+    info = dp_order.resolve(order_id)
+    buttons = []
+    for page in info["config"].get("pages", []):
+        key = page["page_key"]
+        label = "forside" if key == "page00" else key.replace("page", "")
+        buttons.append({"text": label,
+                        "callback_data": f"dsp|{order_id}|{key}|{folder}"})
+    rows = [buttons[i:i + 4] for i in range(0, len(buttons), 4)]
+    rows.append([{"text": "◀ Annen ordre", "callback_data": f"dsn|{folder}||0"},
+                 {"text": "✖ Avbryt", "callback_data": "dsx|||0"}])
+    text = (f"🧠 <b>{esc(folder)}</b> — ordre {order_id} · "
+            f"{esc(info['book_slug'])}\n\nHvilken side?")
+    if message_id:
+        api("editMessageText", {"chat_id": chat_id, "message_id": message_id,
+                                "text": text, "parse_mode": "HTML",
+                                "reply_markup": {"inline_keyboard": rows}})
+    else:
+        send(chat_id, text, rows)
+
+
+def dataset_confirm(chat_id, folder: str, order_id: str, page_key: str) -> None:
+    """Vis de tre bildene og stien til hver, og be om et ja."""
+    files, notes = dataset_files(order_id, page_key)
+    PENDING_DATASET[chat_id] = {"folder": folder, "order_id": order_id,
+                                "page_key": page_key, "files": files}
+    lines = [f"🧠 <b>{esc(folder)}</b> — ordre {order_id} · "
+             f"{page_label(page_key)}", ""]
+    for _, name, path in files:
+        lines.append(f"<b>{esc(name)}</b> ← <code>{esc(path)}</code> "
+                     f"({os.path.getsize(path) / 1e6:.1f} MB)")
+    if notes:
+        lines += [""] + notes
+    send_album(chat_id, [preview(path, name_hint=f"ds-{order_id}-{slot}")
+                         for slot, _, path in files], "",
+               captions=[f"<b>{esc(name)}</b>" for _, name, _ in files])
+    send(chat_id, "\n".join(lines), [
+        [{"text": f"📤 Last opp til {folder}",
+          "callback_data": f"dsu|{order_id}|{page_key}|{folder}"}],
+        [{"text": "◀ Annen side", "callback_data": f"dso|{order_id}||{folder}"}],
+        [{"text": "✖ Avbryt", "callback_data": "dsx|||0"}],
+    ])
+
+
+def job_dataset_name(chat_id) -> None:
+    """Foresla neste mappenavn, lest ut av Drive - ikke av et lokalt tall."""
+    token = drive_upload.access_token()
+    names = [f.get("name") or "" for f in
+             drive_upload.list_folders(token, dataset_parent_id())]
+    suggestion, count = dataset_next_name(names)
+    # Ingen swap-mapper i det hele tatt betyr nesten alltid feil mappe-ID, ikke
+    # at datasettet er tomt. Da skal det staa her, ikke bli et stille "swap_01"
+    # i en tilfeldig Drive-mappe.
+    warning = ("" if count else
+               "\n⚠️ Fant ingen <code>swap_NN</code>-mapper her. Sjekk at "
+               "<code>dataset_parent</code> peker på riktig Drive-mappe før du "
+               "laster opp.\n")
+    send(chat_id,
+         f"🧠 <b>Datasett til trening</b>\n{count} sett i Drive fra før."
+         f"{warning}\nNeste mappe: <b>{esc(suggestion)}</b>", [
+             [{"text": f"✅ Bruk {suggestion}",
+               "callback_data": f"dsn|{suggestion}||0"}],
+             [{"text": "⌨️ Skriv eget navn", "callback_data": "dsnm|||0"}],
+             [{"text": "🔄 Oppdater", "callback_data": "dset|||0"},
+              {"text": "◀ Tilbake", "callback_data": "menu|||0"}],
+         ])
+
+
+def job_dataset_send(chat_id, extra: dict) -> None:
+    folder = extra["folder"]
+    files = extra["files"]
+    token = drive_upload.access_token()
+    folder_id = drive_upload.find_or_create_folder(token, folder,
+                                                   dataset_parent_id())
+    # Drive tillater to filer med samme navn i samme mappe. Laster vi opp i en
+    # mappe som alt har "før.png", ville duplikatet ligget der uten at noe sa
+    # fra, og settet hatt to motstridende svar.
+    clash = [name for _, name, _ in files
+             if drive_upload.find_by_name(token, name, folder_id)]
+    if clash:
+        raise SystemExit(f"<b>{esc(folder)}</b> har allerede "
+                         f"{esc(', '.join(clash))}. Velg et annet mappenavn — "
+                         "ingenting er lastet opp.")
+
+    for _, name, path in files:
+        send(chat_id, f"⏳ <code>{esc(name)}</code> "
+                      f"({os.path.getsize(path) / 1e6:.0f} MB) → "
+                      f"<b>{esc(folder)}</b> …")
+        mime = mimetypes.guess_type(name)[0] or "application/octet-stream"
+        drive_upload.upload(token, path, folder_id, mime, name)
+
+    PENDING_DATASET.pop(chat_id, None)
+    log(f"datasett {folder}: ordre {extra.get('order_id')} "
+        f"{extra.get('page_key')} -> Drive {folder_id}")
+    send(chat_id,
+         f"✅ <b>{esc(folder)}</b> er lastet opp: "
+         + ", ".join(f"<code>{esc(name)}</code>" for _, name, _ in files)
+         + f"\n\nhttps://drive.google.com/drive/folders/{folder_id}", [
+             [{"text": "➕ Nytt sett", "callback_data": "dset|||0"}],
+             [{"text": "◀ Hovedmeny", "callback_data": "menu|||0"}],
+         ])
+
+
+def dataset_loop() -> None:
+    while True:
+        kind, chat_id, extra = DATASET_JOBS.get()
+        try:
+            if kind == "name":
+                job_dataset_name(chat_id)
+            elif kind == "send":
+                job_dataset_send(chat_id, extra)
+        except SystemExit as error:
+            log(f"datasett {kind} stoppet: {strip_tags(str(error))}")
+            send(chat_id, f"❌ {error}")
+        except Exception as error:
+            log(traceback.format_exc())
+            send(chat_id, f"❌ datasett feilet: {esc(error)}")
+        except BaseException as error:               # noqa: BLE001
+            # Samme skanse som i worker_loop: doer traaden, blir "Laster opp
+            # ..." staaende som siste melding for alltid.
+            log(traceback.format_exc())
+            send(chat_id, f"❌ datasett stoppet på en trådrepende feil: "
+                          f"{esc(type(error).__name__)}: {esc(error)}")
+        finally:
+            DATASET_JOBS.task_done()
 
 
 def advance(order_id: str, chat_id) -> None:
@@ -3091,7 +3397,7 @@ def handle_callback(query: dict) -> None:
     elif action == "tstb":
         books = dict(dp_testbook.testable_books())
         title = books.get(order_id, order_id)
-        config_path = os.path.join(r"C:\DreamPage-OS\books", order_id, "config.json")
+        config_path = os.path.join(under("books"), order_id, "config.json")
         variants = ["standard"]
         try:
             with open(config_path, encoding="utf-8-sig") as fh:
@@ -3243,6 +3549,45 @@ def handle_callback(query: dict) -> None:
         PENDING_UPLOAD.pop(chat_id, None)
         send(chat_id, f"✖ Ingen side byttet i <b>{order_id}</b>.")
 
+    elif action == "dset":
+        # Drive-oppslaget tar sekunder og skal ikke ligge i UI-traaden.
+        DATASET_JOBS.put(("name", chat_id, {}))
+
+    elif action == "dsn":
+        # Mappenavnet ligger i order_id-feltet her - callback_data har fire
+        # faste felt, og et datasett har ingen ordre enda.
+        PENDING_DATASET[chat_id] = {"folder": order_id}
+        menu_dataset_orders(chat_id, order_id, message_id)
+
+    elif action == "dsnm":
+        PENDING_DATASET_NAME[chat_id] = True
+        send(chat_id, "⌨️ Skriv mappenavnet i neste melding.\n"
+                      "<i>Send /avbrytdatasett for å la det være.</i>")
+
+    elif action == "dso":
+        menu_dataset_pages(chat_id, value, order_id, message_id)
+
+    elif action == "dsp":
+        dataset_confirm(chat_id, value, order_id, page_key)
+
+    elif action == "dsu":
+        # Lastes opp fra det du SAA, ikke fra en ny utledning: er mappa eller
+        # ordren en annen enn i meldingen du trykket i, er noe galt.
+        pending = PENDING_DATASET.get(chat_id)
+        if (not pending or pending.get("folder") != value
+                or pending.get("order_id") != order_id
+                or pending.get("page_key") != page_key):
+            send(chat_id, "Fant ikke settet lenger (boten kan ha startet på "
+                          "nytt). Velg side på nytt.",
+                 [[{"text": "🧠 Datasett", "callback_data": "dset|||0"}]])
+        else:
+            DATASET_JOBS.put(("send", chat_id, dict(pending)))
+
+    elif action == "dsx":
+        PENDING_DATASET.pop(chat_id, None)
+        PENDING_DATASET_NAME.pop(chat_id, None)
+        send(chat_id, "✖ Ingenting lastet opp til datasettet.")
+
     elif action == "build":
         ask_build(chat_id, order_id)
 
@@ -3304,6 +3649,31 @@ def handle_message(message: dict) -> None:
         apply_name(chat_id, PENDING_NAME.pop(chat_id), text)
         return
 
+    if chat_id in PENDING_DATASET_NAME and text and not text.startswith("/"):
+        folder = valid_dataset_name(text)
+        if not folder:
+            send(chat_id, "Det navnet går ikke an. Skriv et mappenavn uten "
+                          "<code>/</code>, <code>\\</code> eller <code>|</code>.")
+            return
+        PENDING_DATASET_NAME.pop(chat_id, None)
+        PENDING_DATASET[chat_id] = {"folder": folder}
+        menu_dataset_orders(chat_id, folder)
+        return
+
+    # Midt i datasett-flyten er et ordrenummer valget av ordre, ikke et oensket
+    # om aa aapne ordremenyen - ellers naar du aldri eldre ordre enn de aatte
+    # nyeste.
+    pending_set = PENDING_DATASET.get(chat_id)
+    if (pending_set and not pending_set.get("order_id") and text
+            and not text.startswith("/")):
+        token = order_token(text)
+        if token:
+            try:
+                menu_dataset_pages(chat_id, pending_set["folder"], token)
+            except SystemExit as error:
+                send(chat_id, f"❌ {esc(error)}")
+            return
+
     if not text.startswith("/"):
         # Bare et ordrenummer holder - da slipper du menyen innom.
         token = order_token(text)
@@ -3360,6 +3730,12 @@ def handle_message(message: dict) -> None:
                 menu_name(chat_id, args[0])
             else:
                 send(chat_id, "Bruk: <code>/navn 1281 Lavrans</code>")
+        elif command in ("/datasett", "/dataset"):
+            DATASET_JOBS.put(("name", chat_id, {}))
+        elif command == "/avbrytdatasett":
+            PENDING_DATASET.pop(chat_id, None)
+            PENDING_DATASET_NAME.pop(chat_id, None)
+            send(chat_id, "Greit — ingenting lastet opp til datasettet.")
         elif command == "/avbrytnavn":
             PENDING_NAME.pop(chat_id, None)
             send(chat_id, "Greit — navnet står som det er.")
@@ -3417,6 +3793,7 @@ def main() -> int:
     threading.Thread(target=worker_loop, daemon=True).start()
     threading.Thread(target=ui_loop, daemon=True).start()
     threading.Thread(target=view_loop, daemon=True).start()
+    threading.Thread(target=dataset_loop, daemon=True).start()
     threading.Thread(target=warm_cache, daemon=True).start()
     threading.Thread(target=recover_sessions, daemon=True).start()
     threading.Thread(target=recover_builds, daemon=True).start()

@@ -104,6 +104,43 @@ def _server_conf() -> dict:
         return {}
 
 
+def _platform_block() -> dict:
+    """OS, versjon, Python og vaktmester. Kaster aldri.
+
+    En statusrute som krasjer er en server som ser doed ut, saa dette
+    svarer noe uansett hva /etc/os-release inneholder.
+    """
+    try:
+        import dp_platform
+        return dp_platform.describe()
+    except Exception:                                   # noqa: BLE001
+        return {"os": "ukjent"}
+
+
+def mode_block() -> dict:
+    """Hva denne maskinen er til: bok eller forhaandsvisning.
+
+    Trygt aa sende ut: det er tre navn, ingen kundedata og ingen filstier.
+    Koenavnet er med fordi det er det foerste en flaatestyrer trenger naar en
+    jobb "forsvant" - da er svaret ofte at meldingen ligger paa en koe ingen
+    paa denne maskinen lytter paa.
+
+    Kaster aldri. Er "mode" skrevet feil, starter ikke workeren i det hele
+    tatt (se main.py); at statusvisningen likevel svarer noe er bedre enn at
+    overvaakingen blir blind i det oeyeblikket noe er galt.
+    """
+    import config as flow_config
+    try:
+        name = flow_config.mode()
+        queue_name = flow_config.queue().get("name")
+        import pipeline as pipeline_mod
+        return {"name": name, "queue": queue_name,
+                "pipeline": pipeline_mod.active_name()}
+    except Exception as exc:                            # noqa: BLE001
+        return {"name": "ugyldig", "queue": None, "pipeline": None,
+                "error": type(exc).__name__}
+
+
 def server() -> dict:
     """Hvem er denne serveren. Uforanderlig gjennom prosessens levetid."""
     global _server_cache
@@ -115,6 +152,15 @@ def server() -> dict:
             "label": str(conf.get("label") or socket.gethostname()),
             "role": str(conf.get("role") or "production"),
             "region": str(conf.get("region") or "") or None,
+            # Hvilket OS maskinen kjoerer. Trygt aa sende ut - det er tre
+            # navn og ingen stier - og noedvendig i en flaate der halvparten
+            # av maskinene er Windows og resten Linux: en feil som bare
+            # rammer den ene halvparten er umulig aa se uten dette.
+            "platform": _platform_block(),
+            # Modusen er en egenskap ved SERVEREN, ikke ved en jobb, saa den
+            # hoerer hjemme her - da faar baade /api/status, /summary og /id
+            # den uten at tre steder maa huske aa ta den med.
+            "mode": mode_block()["name"],
         }
     return dict(_server_cache)
 
@@ -151,16 +197,13 @@ def _version() -> dict:
 def _uptime_s() -> dict:
     """Oppetid for API-prosessen og for maskinen.
 
-    GetTickCount64 er et enkelt kall inn i kernel32 - ingen avhengighet, og
-    billigere enn aa lese noe fra disk.
+    Maskinens oppetid leses gjennom flow/dp_platform.py: kernel32 paa
+    Windows, /proc/uptime paa Linux. Den forskjellen skal ikke staa her -
+    det er hele grunnen til at dp_platform finnes. Se docs/SETUP-LINUX.md.
     """
-    machine = None
-    try:
-        import ctypes
-        machine = int(ctypes.windll.kernel32.GetTickCount64() // 1000)
-    except (AttributeError, OSError):
-        pass
-    return {"api_s": int(time.time() - _STARTED), "machine_s": machine}
+    import dp_platform
+    return {"api_s": int(time.time() - _STARTED),
+            "machine_s": dp_platform.machine_uptime_s()}
 
 
 # ---------------------------------------------------------------------------
@@ -361,6 +404,10 @@ def summary(runner=None, consumer=None, store=None) -> dict:
         "label": full["server"]["label"],
         "hostname": full["server"]["hostname"],
         "role": full["server"]["role"],
+        # Hva maskinen er til. En flaatevisning som viser bok- og
+        # preview-servere i samme liste trenger dette for aa sende en jobb
+        # til riktig sted - og for aa se at ingen har byttet modus i vanvare.
+        "mode": full["server"]["mode"],
         "status": full["status"],
         "busy": full["workload"]["busy"],
         "waiting": full["workload"]["waiting"],

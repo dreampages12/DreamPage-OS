@@ -3,8 +3,41 @@
 ComfyUI is an integration layer. The stack in `src/dreampage_headswap/` runs, trains and is
 tested without it, and no model logic lives in the node package.
 
-Nothing in this document has been applied to the running ComfyUI installation. The production
-workflow is untouched.
+The integration is installed in DreamPage OS. The separate Studio workflow uses normal
+Klein 9B; book production workflows remain separate.
+
+## Test workflow: ordinary Klein 9B
+
+Open **LAB-DreamPage-HeadSwap** in DreamPage Image's workflow list. Refresh the browser
+after updating the extension. Select the three inputs in group 02:
+
+1. **Person**: a sharp portrait showing the full head and hair.
+2. **Original scene**: the image in which the head should be replaced.
+3. **Headmask**: a matching image of exactly the scene's dimensions. White permits edits;
+   black protects the original. Keep `mask_channel = red` for a grayscale mask.
+
+Click **Run**. Group 06 shows the final image and a before/after review board. Files go to
+the configured ComfyUI output directory under `DreamPage/Studio/`. Start with the supplied
+4 steps, fixed seed, native sampler and zero color correction. Inspect hair, likeness,
+pose and the neck seam; the protected-pixel check does not certify visual quality.
+
+Mobile JPEG/MPO containers are supported: `mpo_frame = 0` selects the primary photo.
+The report records the container, embedded frame count and selected frame. Additional
+frames may be alternate views or HDR gain maps; leave this at zero for normal photos.
+Actual animations are still rejected. Source files are never modified by the loader.
+
+The graph includes all nine **DreamPage/Studio** nodes: LoadPhoto, ReferenceStudio,
+IdentityEncoder, SceneStudio, SwapPrompt, KleinConditioning, DreamSwap, SeamFinish and
+ReviewBoard. Optional `view_2` and `view_3` on ReferenceStudio accept additional photos
+of the same person. Optional source masks isolate the head in wider reference photos.
+
+IdentityEncoder uses the pretrained FLUX.2 VAE; it is not a newly trained face encoder.
+SeamFinish performs deterministic blending. No LoRA, custom trained checkpoint,
+training execution or automatic dataset enrollment is involved.
+
+Rebuild and install from the OS root with `python tools/headswap.py studio`.
+The builder checks live node schemas and available model/image selections before writing.
+Previous installed workflow revisions are backed up under `state/headswap/workflow-backups`.
 
 ## Installing
 
@@ -16,7 +49,8 @@ New-Item -ItemType Junction -Path C:\DreamPage-OS\DreamPage-image\custom_nodes\d
 ```
 
 The junction means the nodes ComfyUI loads and the nodes the tests import are the same files.
-Restart ComfyUI and the seven nodes appear under **DreamPage/HeadSwap**.
+On a new installation, restart ComfyUI when idle. Seven checkpoint-based nodes appear
+under **DreamPage/HeadSwap** and nine native inference nodes under **DreamPage/Studio**.
 
 ## Conventions
 
@@ -95,13 +129,12 @@ providers that do not exist yet, so today the honest outcomes are `RETRY`, which
 preservation with unavailable identity and realism metrics, and `FAIL`, which means protected
 pixels moved.
 
-## Nodes that were deliberately not built
+## Native and checkpoint-based paths
 
-`DP_DreamSwap` and `DP_DreamRefine` as separate graph nodes would require exposing the pipeline's
-internal stages as public API, or duplicating the sampling loop inside the node package. The
-second is how integration layers start owning model logic, which is the thing this package is
-supposed to avoid. Splitting them is worth doing behind a proper stage API. It is a decision for
-the project lead, not a side effect of writing nodes.
+`DP_DreamSwap` now exists in the native Studio path and delegates sampling to ComfyUI.
+The older checkpoint-based pipeline described above is a separate integration; it requires
+appropriate trained weights and is not part of the ordinary Klein 9B Studio workflow.
+There is no trained standalone `DP_DreamRefine` node in this workflow.
 
 ## Testing
 

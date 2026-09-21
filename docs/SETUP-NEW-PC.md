@@ -14,12 +14,24 @@ bygget på en maskin som kanskje mangler modeller, kunst eller riktig
 
 Bestem derfor **først** hva denne maskinen er:
 
-| | Hva den gjør | Hvordan |
-|---|---|---|
-| **Utvikling** | kode, tester, ingen ekte ordre | start flow med `--no-mq` |
-| **Produksjon** | tar ekte ordre fra køen | bare **én** slik maskin om gangen |
+| | Modus | Kø | Hva den gjør |
+|---|---|---|---|
+| **Utvikling** | — | ingen | kode, tester, ingen ekte ordre. Start flow med `--no-mq` |
+| **Forhåndsvisning** | `preview` | `preview-jobs` | forhåndsvisninger til nettbutikken. Koster ingenting, trykker ingenting |
+| **Produksjon** | `book` | `dreampage-jobs` | hele bokproduksjonen. Bare **én** slik maskin om gangen |
 
-Resten av guiden gjelder begge. Forskjellen er ett flagg i steg 8.
+```powershell
+.\dreampage.ps1 mode              # hva står den til nå
+.\dreampage.ps1 mode preview      # bytt (krever restart av flow)
+```
+
+En ny maskin bør som regel settes til `preview` først: da kan hele oppsettet
+verifiseres uten at en feil et sted koster en kunde en bok. En preview-PC
+trenger i tillegg `supabase` i `config/secrets.json` — uten den stopper den
+**før** GPU-en, med en beskjed om nettopp det. Se `docs/preview-modus.md`.
+
+Resten av guiden gjelder alle tre. Forskjellen er ett flagg i steg 8, og
+modusen du setter i steg 6.
 
 ---
 
@@ -48,11 +60,17 @@ git clone <remote> C:\DreamPage-OS
 cd C:\DreamPage-OS
 ```
 
-Bruk **`C:\DreamPage-OS`** hvis du kan. Stiene utledes riktignok fra
-`flow/paths.py`, men det ligger fortsatt rundt 60 hardkodede `C:\DreamPage-OS`
-igjen i gammel kode. De skal bort, men de er der nå.
+Stien er fri. Alle stier utledes fra `flow/paths.py`, og de 116 hardkodede
+`C:\DreamPage-OS` som lå i gammel kode er borte — `tools/check_portability.py`
+kjøres av `.\dreampage.ps1 test` og fanger nye.
+
+De absolutte stiene som fortsatt står i `books/*/config.json` og
+`config/next_book_titles.json` oversettes når de leses (`paths.resolve`), så
+de virker uansett hvor treet ligger.
 
 Trenger du et annet sted, sett `DP_ROOT` i miljøet — `paths.py` respekterer den.
+
+**Skal maskinen kjøre Linux?** Se `docs/SETUP-LINUX.md` i stedet.
 
 ---
 
@@ -87,7 +105,7 @@ kopieres ikke, slik at det bare finnes én kopi å redigere:
 # som administrator
 New-Item -ItemType SymbolicLink `
   -Path C:\DreamPage-OS\DreamPage-image\custom_nodes\dreampage-headswap `
-  -Target C:\DreamPage-OS\nodes\dreampage-headswap
+  -Target C:\DreamPage-OS\nodes\dreampage-headswap\comfyui_dreampage_headswap
 ```
 
 De øvrige tredjeparts-nodene produksjonen bruker er listet av:

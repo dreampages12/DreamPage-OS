@@ -1,5 +1,12 @@
 # Training
 
+**Current entry point (2026-09-20):** use the versioned run manager described in
+[DreamPage OS MODEL-TRAINING.md](../../../docs/MODEL-TRAINING.md).
+The older direct CLIs now require `--approval`; direct trainer functions also enforce
+dataset approval before GPU setup or optimizer creation. Historical training/test commands
+below are not authorized to run while dataset approval is pending. Use the isolated `.venv`,
+not the Python environment serving production ComfyUI.
+
 What is actually implemented, what it costs to run, and what each milestone has to show before
 the next one starts. `docs/ARCHITECTURE.md` explains why the pieces are shaped this way;
 `docs/ROADMAP.md` holds the gates.
@@ -64,7 +71,7 @@ single-identity objective.
 | File | Purpose |
 | --- | --- |
 | `configs/training/tiny.yaml` | CPU development on the tiny backbone. Runs today. |
-| `configs/training/flux_klein_base_4b.yaml` | The BASE 4B adapter run. Needs a reviewed local snapshot. |
+| `configs/training/flux_klein_9b_photoreal_pilot.yaml` | The Klein 9B adapter pilot. Needs reviewed 9B components. |
 | `configs/training/identity_encoder_tiny.yaml` | DreamFace on its own contrastive objective. Runs today. |
 | `configs/models/*.yaml` | Model shape only, for reuse across training and inference. |
 | `configs/inference/tiny_smoke.yaml` | Mechanics smoke test. |
@@ -184,7 +191,7 @@ device.
 Distributed training is implemented with DistributedDataParallel, NCCL on Linux CUDA and Gloo
 elsewhere, with gradient accumulation that suppresses synchronization on all but the last micro
 step, and per-rank checkpoints. It has not been validated on more than one process. FLUX plus
-distributed is refused outright: sharding a 4B backbone is its own integration milestone, not a
+distributed is refused outright: sharding a 9B backbone is its own integration milestone, not a
 flag.
 
 Gradient clipping is on by default, and a non-finite gradient norm aborts the step rather than
@@ -198,23 +205,19 @@ the learning rate, per step.
 
 ## The FLUX contract environment
 
-The BASE 4B bridge is verified against the real Diffusers classes, with tiny random configs and
-a toy local vocabulary. No weights are downloaded and no face data is involved. The tested and
-pinned Diffusers version is **0.37.1**, with Transformers **4.56.2** in the isolated environment.
-All ten contract tests passed. On an older install the integration tests skip with a precise reason.
+The pinned environment is Diffusers **0.37.1** and Transformers **4.56.2**.
+The earlier tiny-library contracts are historical mechanics evidence, not evidence
+that the real 9B model has been loaded or trained. Do not execute the optimizer/backward
+contract suite until dataset/training approval; the current safe 9B tests are
+`tests/test_klein_9b_target.py`.
 
-```powershell
-.venv-flux-test\Scripts\python scripts/verify_flux_contract.py --output runs/flux-contract/report.json
-```
+The active loader requires an explicit 9B model ID, matching distilled/base flag,
+9B architecture, a reviewed provenance receipt and verified component file hashes.
+The existing ComfyUI single-file transformer can be reused through Diffusers' supported
+single-file loader, with the explicit local 9B config. It is never treated as a complete
+pipeline by itself. Normal distilled 9B uses guidance 1; BASE 9B is never selected implicitly.
 
-The report records library versions, interpreter paths and the measured evidence, and states
-`pretrained_base_4b_executed: false`. Keep that environment separate; do not upgrade the
-ComfyUI installation in place to obtain it.
-
-Loading a real snapshot additionally requires `dreampage_provenance.json` beside it, naming the
-model id, the source revision, `license: Apache-2.0` and `commercial_use_reviewed: true`. A
-snapshot that declares `is_distilled` or whose transformer config does not match the audited
-BASE 4B shape is refused. That is what stops a renamed 9B checkpoint from entering the stack.
+See [9B component acquisition and current access blocker](../../../docs/MODEL-TRAINING.md).
 
 ## Evidence gates
 

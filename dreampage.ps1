@@ -5,6 +5,12 @@
 #   .\dreampage.ps1 status    hva lever, hva staar i koen, hvor er ordrene
 #   .\dreampage.ps1 restart
 #   .\dreampage.ps1 logs      foelg flow-loggen
+#   .\dreampage.ps1 mode      hva denne PC-en er til: book eller preview
+#   .\dreampage.ps1 mode preview     bytt modus (krever restart)
+#
+# BOOK er hele bokproduksjonen: koen dreampage-jobs, sider, PDF, Gelato-utkast.
+# PREVIEW er forhaandsvisninger til nettbutikken: koen preview-jobs, ett bilde,
+# ingenting som koster penger. Se docs/preview-modus.md.
 #
 # Bare metal og PowerShell, ikke Docker: CUDA paa Windows krever WSL2 og gir
 # et lag til uten tilsvarende gevinst.
@@ -15,13 +21,18 @@
 [CmdletBinding()]
 param(
     [Parameter(Position = 0)]
-    [ValidateSet('up', 'down', 'restart', 'status', 'logs', 'models', 'test', 'ensure')]
+    [ValidateSet('up', 'down', 'restart', 'status', 'logs', 'models', 'test', 'ensure', 'mode')]
     [string]$Command = 'status',
 
     # Hopp over modellsjekken. up bruker den selv etter foerste gang.
     [switch]$SkipModels,
     # down/restart nekter aa stoppe midt i en ordre uten denne.
-    [switch]$Force
+    [switch]$Force,
+    # `.\dreampage.ps1 mode preview` - hva denne server-PC-en er til.
+    # Utelatt viser bare hva den staar til naa.
+    [Parameter(Position = 1)]
+    [ValidateSet('', 'book', 'preview')]
+    [string]$Mode = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -90,6 +101,36 @@ function Test-OurComfy {
     return $true
 }
 
+# Hva denne server-PC-en er til: 'book' eller 'preview'. Staar i
+# config/flow.json -> mode, og avgjoer hvilken RabbitMQ-koe flow lytter paa og
+# hvilken pipeline den kjoerer.
+#
+# Leses gjennom Python og ikke ved aa parse JSON her, av samme grunn som
+# ComfyUI-porten leses ETT sted: to tolkninger av den samme filen er to
+# steder aa ta feil. tools/server_mode.py er den ene tolkningen.
+function Get-ServerMode {
+    try {
+        $raw = & $PY (Join-Path $ROOT 'tools\server_mode.py') '--json' 2>$null
+        if ($LASTEXITCODE -eq 0 -and $raw) { return ($raw | ConvertFrom-Json) }
+    } catch {}
+    return $null
+}
+
+function Show-ServerMode {
+    $m = Get-ServerMode
+    Head 'servermodus'
+    if (-not $m) {
+        Say '  kunne ikke lese modusen (tools/server_mode.py svarte ikke)' Red
+        return $null
+    }
+    $color = if ($m.mode -eq 'book') { 'Green' } else { 'Cyan' }
+    Say ("  {0}   koe={1}   pipeline={2}" -f $m.mode.ToUpper(), $m.queue, $m.pipeline) $color
+    if ($m.env_override) {
+        Say "  MERK: DP_MODE=$($m.env_override) i miljoeet overstyrer fila" Yellow
+    }
+    return $m
+}
+
 function Get-ApiToken {
     $path = Join-Path $ROOT 'config\api.json'
     if (-not (Test-Path $path)) { return $null }
@@ -109,6 +150,7 @@ function Get-ApiToken {
 $SERVICES = @(
     @{
         Name  = 'comfyui'
+        Modes = @('book', 'preview')
         Match = 'DreamPage-image.main\.py'
         Port  = (Get-ComfyPort)
         # --output/--input/--models utenfor DreamPage-image er selve grunnen
@@ -164,6 +206,7 @@ $SERVICES = @(
     },
     @{
         Name  = 'flow'
+        Modes = @('book', 'preview')
         Match = 'worker[\\/]main\.py'
         Port  = 8765
         Start = {
@@ -196,6 +239,7 @@ $SERVICES = @(
     },
     @{
         Name  = 'mockup'
+        Modes = @('book')
         Match = 'dp-mockup-server'
         Port  = 8790
         Start = {
@@ -210,6 +254,7 @@ $SERVICES = @(
     },
     @{
         Name  = 'dp_bot'
+        Modes = @('book')
         Match = 'dp_bot\.py'
         Port  = $null
         Start = {
@@ -230,6 +275,7 @@ $SERVICES = @(
         # dashbord-tilgang vi ikke har. To cloudflared-prosesser side om
         # side er helt normalt.
         Name  = 'tunnel-status'
+        Modes = @('book', 'preview')
         Match = 'dp-01-status'
         Port  = $null
         Start = {
@@ -249,6 +295,7 @@ $SERVICES = @(
     },
     @{
         Name  = 'tunnel'
+        Modes = @('book', 'preview')
         Match = 'cloudflared'
         Port  = $null
         Start = {
@@ -266,6 +313,28 @@ $SERVICES = @(
         Wait   = 30
     }
 )
+
+# Tjenestene som hoerer hjemme i DENNE modusen.
+#
+# I bokmodus er det alle seks, akkurat som foer. I preview-modus faller to
+# bort, og det er ikke ryddighet:
+#
+#   dp_bot   operatoerbotten poller Telegram med ETT token. To pollere paa
+#            samme token spiser hverandres oppdateringer - det er derfor
+#            ensure_dp_bot.ps1 finnes i det hele tatt. En preview-PC som
+#            startet sin egen bot ville stjaalet kommandoer fra bok-PC-en,
+#            og /bygg kunne havnet paa en maskin uten ordren.
+#   mockup    lager produktbilder for WooCommerce ut fra ferdige bokordre.
+#            En preview-PC har ingen ordre.
+#
+# Ukjent eller manglende Modes-noekkel betyr "alle moduser", saa en tjeneste
+# som legges til senere ikke blir usynlig fordi noen glemte noekkelen.
+function Get-ActiveServices {
+    $mode = 'book'
+    $m = Get-ServerMode
+    if ($m -and $m.mode) { $mode = [string]$m.mode }
+    $SERVICES | Where-Object { (-not $_.Modes) -or ($_.Modes -contains $mode) }
+}
 
 # ---------------------------------------------------------------------------
 # Kjorer det en ordre?
@@ -337,7 +406,7 @@ function Invoke-Ensure {
     $started = 0; $failed = 0
     $startedNames = @(); $failedNames = @()
     try {
-        foreach ($svc in $SERVICES) {
+        foreach ($svc in (Get-ActiveServices)) {
             $alive = $false
             try { $alive = [bool](& $svc.Health) } catch { $alive = $false }
             if ($alive) { continue }
@@ -387,6 +456,7 @@ function Invoke-Ensure {
 }
 function Invoke-Up {
     Head 'DreamPage OS: up'
+    [void](Show-ServerMode)
 
     if (-not (Test-Path $IMAGE)) {
         Say "  ComfyUI mangler: $IMAGE" Red
@@ -408,7 +478,7 @@ function Invoke-Up {
 
     if (-not $SkipModels) { [void](Invoke-Models) }
 
-    foreach ($svc in $SERVICES) {
+    foreach ($svc in (Get-ActiveServices)) {
         Head "start: $($svc.Name)"
         if (& $svc.Health) { Say '  lever allerede' Green; continue }
         & $svc.Start
@@ -468,9 +538,19 @@ function Invoke-Down {
     Say '  tunnelen er en Windows-tjeneste og blir staaende (den eksponerer bare API-et)' Gray
 }
 
+function Invoke-Mode {
+    if (-not $Mode) { [void](Show-ServerMode); return 0 }
+    & $PY (Join-Path $ROOT 'tools\server_mode.py') $Mode
+    return $LASTEXITCODE
+}
+
 function Invoke-Status {
+    # Modusen foerst. Alt under - hvilken koe som telles, hvilke tjenester som
+    # skal leve, hva "ordre" i det hele tatt betyr - avhenger av den.
+    [void](Show-ServerMode)
+
     Head 'tjenester'
-    foreach ($svc in $SERVICES) {
+    foreach ($svc in (Get-ActiveServices)) {
         $procs = @(Get-Proc $svc.Match)
         $alive = & $svc.Health
         $mark = if ($alive) { 'OPP ' } else { 'NED ' }
@@ -558,12 +638,22 @@ function Invoke-Test {
     & $PY (Join-Path $ROOT 'tools\comfy_workflows.py') --check
     if ($LASTEXITCODE -ne 0) { $failed += 'comfy_workflows.py --check' }
 
+    # Ville dette treet kjoert paa Linux? Nye maskiner settes opp der, og
+    # forskjellene er usynlige herfra: en hardkodet C:-sti, eller et filnavn
+    # med feil bokstav - Windows aapner `Georgia.TTF` selv om fila heter
+    # `Georgia.ttf`, Linux gjoer det ikke. Sjekken kjoeres HER, paa maskinen
+    # der feilen ikke gjoer noe, i stedet for foerste gang noen setter opp
+    # maskin nummer to. Se docs/SETUP-LINUX.md.
+    Say "`n--- check_portability" Cyan
+    & $PY (Join-Path $ROOT 'tools\check_portability.py')
+    if ($LASTEXITCODE -ne 0) { $failed += 'check_portability.py' }
+
     Write-Host ''
     if ($failed) {
         Say "FEILET: $($failed -join ', ')" Red
         exit 1
     }
-    Say "alle $($files.Count + 2) testene bestaatt" Green
+    Say "alle $($files.Count + 3) testene bestaatt" Green
     exit 0
 }
 
@@ -576,4 +666,5 @@ switch ($Command) {
     'logs'    { Invoke-Logs }
     'models'  { if (Invoke-Models) { exit 0 } else { exit 1 } }
     'test'    { Invoke-Test }
+    'mode'    { exit (Invoke-Mode) }
 }

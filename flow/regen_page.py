@@ -50,10 +50,10 @@ for _stream in (sys.stdout, sys.stderr):
 # Porten staar ett sted: config/flow.json -> comfy.url, lest av paths.py.
 # En hardkodet port her var forskjellen paa at botten virket og at den stille
 # snakket med feil ComfyUI-instans under overgangen.
-from paths import COMFY_URL as COMFY  # noqa: E402
+from paths import COMFY_URL as COMFY, under  # noqa: E402
 
 
-OUTPUT_ROOT = r"C:\DreamPage-OS\output"
+OUTPUT_ROOT = under("output")
 RENDER_TIMEOUT = 15 * 60
 
 
@@ -388,13 +388,13 @@ def render_variants(info: dict, page_key: str, count: int = 3,
     workflow_file = (config.get("workflowApi")
                      or (config.get("workflowApis") or {}).get("innerpages")
                      or "workflow_api.json")
-    workflow_path = os.path.join(r"C:\DreamPage-OS\books", info["book_slug"], workflow_file)
+    workflow_path = os.path.join(under("books"), info["book_slug"], workflow_file)
     with open(workflow_path, encoding="utf-8-sig") as fh:
         base_prompt = json.load(fh)
 
     face = page_face(info, page, face_image)
     print(f"    barnebilde: {face}", flush=True)
-    if not os.path.isfile(os.path.join(r"C:\DreamPage-OS\input", face)):
+    if not os.path.isfile(os.path.join(under("input"), face)):
         raise SystemExit(f"fant ikke barnebildet C:/DreamPage-OS/input/{face}")
 
     prefix = config.get("comfyOutputPrefix", f"{info['book_slug']}/orders")

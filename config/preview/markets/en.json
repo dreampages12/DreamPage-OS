@@ -1,0 +1,13 @@
+{
+  "_": "Amerikansk/generell engelsk. \"en\" er noekkelen i next_book_titles.json; logoene ligger i flow/text/logo/en-US/.",
+  "title_lang": "en",
+  "logo_locale": "en-US",
+  "_script_language": "Hvilket av bokas tekstscript historien hentes fra i et innerside-preview (textScripts i books/<slug>/config.json). Side 7 i forhaandsvisningen skal vaere side 7 i boka - paa det spraaket kunden faar den trykt.",
+  "script_language": "en-US",
+  "aliases": {
+    "regnbuens-skatt": "regnbuen"
+  },
+  "defaults": {
+    "workflow_api": ""
+  }
+}

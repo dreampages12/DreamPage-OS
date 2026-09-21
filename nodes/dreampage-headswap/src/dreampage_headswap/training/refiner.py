@@ -112,6 +112,8 @@ def validate_refiner(system, dataset, objective, *, settings, device, dtype, sam
 
 
 def train_refiner(config, resume=None):
+    from .experiments import authorize_training
+    authorize_training(config, "refiner")
     if int(os.getenv("WORLD_SIZE", "1")) != 1:
         raise ValueError("Refiner trainer currently supports a single process; distributed refinement is not validated")
     settings, data, validation = config.get("training", {}), config["dataset"], config.get("validation", {})
@@ -142,6 +144,9 @@ def train_refiner(config, resume=None):
         raise ValueError("Refiner dataset is smaller than one batch")
     system, teacher_meta = build_refinement_system(config, device=device)
     review = verify_teacher(config["teacher"], teacher_meta, [train_data, val_data])
+    from ..utils.checkpoint import initialize_weights
+    initialize_weights(system, config, component="refiner", resume=resume,
+                       teacher_sha256=teacher_meta["checkpoint_sha256"])
     if val_data is not None and set(teacher_meta.get("training_identity_ids", [])) & {r["identity_id"] for r in val_data.rows}:
         raise ValueError("Refiner validation identities overlap the teacher's training identities")
     objective = RefinementObjective(config["losses"])
@@ -204,6 +209,7 @@ def train_refiner(config, resume=None):
             if step == 1 or step % log_every == 0:
                 print(json.dumps({"step": step, **metrics}), flush=True)
             metadata = {"component": "dreamrefine_system", "teacher": teacher_meta, "teacher_review": review,
+                        "training_identity_ids": sorted(set(settings.get("training_identity_lineage", [])) | {r["identity_id"] for r in train_data.rows}),
                         "dataset_fingerprint": fingerprint, "synthetic": all(r.get("synthetic") is True for r in train_data.rows),
                         "identity_quality_validated": False, "production_ready": False}
             if val_data is not None and (step == steps or (val_interval and step % val_interval == 0)):
@@ -230,8 +236,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
     parser.add_argument("--resume")
+    parser.add_argument("--approval", required=True)
     args = parser.parse_args()
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
+    config.setdefault("training", {})["dataset_approval"] = args.approval
     print(json.dumps(train_refiner(config, args.resume), indent=2))
 
 

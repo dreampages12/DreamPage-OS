@@ -1,0 +1,36 @@
+[Unit]
+# Vaktmesteren for HELE stacken: starter det som er nede, og sier fra naar
+# den ikke faar det opp igjen.
+#
+# Dette er motstykket til scheduled task "DreamPage ensure" paa Windows, og
+# den gjoer noeyaktig det samme - selve logikken ligger i tools/dreampage.py
+# og er delt. Grunnen til at den finnes: fram til 16.09.2026 hadde bare
+# operatoerboten en vaktmester. Etter en omstart kom boten tilbake, men
+# ComfyUI og flow gjorde det IKKE - og da hoper ordrene seg opp i RabbitMQ
+# uten at noe sier fra. En doed bot merkes med en gang; en doed worker ser
+# ut som stille.
+#
+# MERK: dette er en systemd-enhet for BRUKEREN (systemctl --user), ikke for
+# systemet. ComfyUI trenger GPU-tilgang og brukerens miljoe, og en
+# system-enhet ville kjort som root med et annet HOME - da finner
+# flow/dp_platform.py verken ~/.n8n eller brukerens venv.
+Description=DreamPage OS - vaktmester (starter det som er nede)
+Documentation=file:%h/DreamPage-OS/docs/SETUP-LINUX.md
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/DreamPage-OS
+# DP_PYTHON peker paa tolken. Uten den ville systemd brukt systemets python3,
+# som ikke har avhengighetene fra requirements.txt.
+Environment=DP_PYTHON=%h/DreamPage-OS/.venv/bin/python
+ExecStart=%h/DreamPage-OS/.venv/bin/python %h/DreamPage-OS/tools/dreampage.py ensure
+# En kald ComfyUI kan bruke minutter paa aa svare. `ensure` har sin egen
+# laasefil for det, men timeouten maa vaere lengre enn den lengste ventetiden
+# i tjenestelista (comfyui: 300 s) pluss litt.
+TimeoutStartSec=600
+# Exitkoden sier sant: 1 betyr at noe ikke lot seg starte. La den vaere
+# synlig i `systemctl --user status`, ikke skjult bak en restart-loekke.
+SuccessExitStatus=0
+
+[Install]
+WantedBy=default.target

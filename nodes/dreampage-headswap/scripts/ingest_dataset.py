@@ -34,7 +34,12 @@ from dreampage_headswap.data.preprocessing import decoded_pixel_sha256
 from dreampage_headswap.data.records import RightsMetadata, load_identities, write_jsonl
 from dreampage_headswap.evaluation.benchmark import save_json
 
-CAPTURE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff"}
+CAPTURE_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".bmp", ".tif", ".tiff", ".heic", ".heif"}
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+except ImportError:
+    pass  # Manglende HEIC-stoette rapporteres som lesefeil, ikke som manglende bilde.
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -114,6 +119,10 @@ def main(argv: list[str] | None = None) -> int:
             key = f"{identity_id}/{capture.stem}"
             row = {"identity_id": identity_id, "image_id": capture.stem, "source": str(capture), "accepted": False}
             destination = output / "images" / identity_id / f"{capture.stem}.png"
+            if destination.exists():
+                row["reason"] = "duplicate_capture_stem_use_distinct_names"
+                report_rows.append(row)
+                continue
             try:
                 row.update(_normalize(capture, destination))
             except (OSError, ValueError) as error:

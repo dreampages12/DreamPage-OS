@@ -1,0 +1,13 @@
+{
+  "_": "Norsk bokmaal. Tittelparametrene hentes fra config/next_book_titles.json under noekkelen \"nb\", og logoene fra flow/text/logo/nb/.",
+  "title_lang": "nb",
+  "logo_locale": "nb",
+  "_script_language": "Hvilket av bokas tekstscript historien hentes fra i et innerside-preview (textScripts i books/<slug>/config.json). Side 7 i forhaandsvisningen skal vaere side 7 i boka - paa det spraaket kunden faar den trykt.",
+  "script_language": "nb",
+  "aliases": {
+    "regnbuens-skatt": "regnbuen"
+  },
+  "defaults": {
+    "workflow_api": ""
+  }
+}

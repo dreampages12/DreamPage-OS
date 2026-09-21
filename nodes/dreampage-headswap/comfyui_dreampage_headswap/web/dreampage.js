@@ -9,10 +9,32 @@ const STUDIO_NODES = new Set([
 ]);
 const statusWidgets = new WeakMap();
 
+function readableReport(text) {
+    try {
+        const report = JSON.parse(text);
+        const lines = [];
+        if (report.shape) lines.push(`Bilde: ${report.shape[1]} × ${report.shape[0]} px`);
+        if (report.mask_channel) lines.push(`Maskekanal: ${report.mask_channel} · hvitt kan endres`);
+        if (report.reference_count) lines.push(`Identitetsreferanser: ${report.reference_count}`);
+        if (report.reference_order) lines.push(`Bilderekkefølge: ${report.reference_order.join(" → ")}`);
+        if (report.scene_mode) lines.push(`Scenereferanse: ${report.scene_mode}`);
+        if (report.engine) lines.push(`Klein 9B · ${report.engine} · ${report.steps} steg · seed ${report.seed}`);
+        if (report.elapsed_seconds !== undefined) lines.push(`Sampling: ${report.elapsed_seconds.toFixed(1)} s`);
+        if (report.outside_mask_exact !== undefined) {
+            lines.push(report.outside_mask_exact ? "Beskyttede piksler: uendret" : "FEIL: piksler utenfor masken er endret");
+            lines.push("Vurder selv identitet, hår, uttrykk og realisme i resultatet.");
+        }
+        if (report.prompt) lines.push(report.prompt);
+        return lines.length ? lines.join("\n") : text.slice(0, 24000);
+    } catch {
+        return text.slice(0, 24000);
+    }
+}
+
 function addStatus(node) {
     if (statusWidgets.has(node)) return statusWidgets.get(node);
     const { widget } = ComfyWidgets.STRING(
-        node, "studio_status", ["STRING", { multiline: true, default: "Ready · report appears after execution" }], app,
+        node, "studio_status", ["STRING", { multiline: true, default: "Klar · rapport vises etter kjøring" }], app,
     );
     widget.options ??= {};
     widget.options.serialize = false;
@@ -49,7 +71,7 @@ app.registerExtension({
             const report = message?.dp_report?.[0];
             if (typeof report === "string") {
                 // The built-in text widget displays data only: no HTML/DOM injection.
-                addStatus(this).value = report.slice(0, 24000);
+                addStatus(this).value = readableReport(report);
                 this.setDirtyCanvas(true, true);
             }
             return result;

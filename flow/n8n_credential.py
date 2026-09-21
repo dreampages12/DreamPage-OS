@@ -16,13 +16,20 @@ import argparse
 import base64
 import hashlib
 import json
+import os
 import sqlite3
 import sys
 
 from Crypto.Cipher import AES
 
-CONFIG = r"C:\Users\tobia\.n8n\config"
-DB = r"C:\Users\tobia\.n8n\database.sqlite"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import dp_platform  # noqa: E402
+
+# n8n sin SQLite. Stien utledes av hjemmemappa, ikke av et brukernavn:
+# `Path.home()` gir C:\Users\<bruker>\.n8n paa Windows og ~/.n8n paa
+# Linux. DP_N8N_HOME overstyrer. Se flow/dp_platform.py.
+CONFIG = str(dp_platform.n8n_config())
+DB = str(dp_platform.n8n_db())
 
 
 def evp_bytes_to_key(password: bytes, salt: bytes, key_len: int, iv_len: int):

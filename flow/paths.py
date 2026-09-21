@@ -22,6 +22,123 @@ from pathlib import Path
 # flow/paths.py -> flow/ -> DreamPage-OS/
 ROOT = Path(os.environ.get("DP_ROOT") or Path(__file__).resolve().parent.parent)
 
+
+# ---------------------------------------------------------------------------
+# Stier som kommer UTENFRA: konfigurasjon, payloads, gamle filer
+#
+# `books/<slug>/config.json` og `config/next_book_titles.json` er fulle av
+# absolutte stier som starter med `C:/DreamPage-OS/`. Det var riktig da alt
+# bare fantes paa én Windows-maskin, og det er 435 av dem. Paa en Linux-
+# server finnes ikke den disken, og hver eneste av dem ville pekt i tomme
+# luften.
+#
+# Svaret er IKKE aa skrive om 435 stier i 30 configfiler. Det er aa oversette
+# dem naar de leses: alt som ligger under den gamle roten, ligger under DENNE
+# roten. Paa Windows er de to det samme, saa oversettelsen er en identitet og
+# ingenting endrer seg. Paa Linux virker den samme configfila.
+#
+# Det gjoer ogsaa at en configfil kan skrives RELATIVT ("flow/text/nb/x.py"),
+# og det er formen nye oppfoeringer skal ha.
+# ---------------------------------------------------------------------------
+LEGACY_ROOT = "c:/dreampage-os"
+
+# Navnet foer 16.09.2026. I koden er det bare kommentarer igjen, men gamle
+# ordre-payloads i state/orders/ kan fortsatt baere slike stier, og en
+# reprint leser dem.
+#
+# `C:/ComfyUI` kan IKKE oversettes som én rot: mappa ble splittet i fire da
+# den ble til DreamPage OS (se tools/migrate/rewrite_paths.py), og
+# `C:/ComfyUI/script/nb/` ble `flow/text/nb/` - ikke `<ROOT>/script/nb/`.
+# Derfor staar bare de mappene som BEHOLDT navnet sitt her. Alt annet under
+# den roten lar vi ligge, slik at det feiler med sin egen sti i
+# feilmeldingen i stedet for aa peke et sted som ser riktig ut og ikke er det.
+LEGACY_COMFY_ROOT = "c:/comfyui"
+LEGACY_COMFY_KEPT = ("input", "output", "models", "books", "state", "tmp")
+
+
+def resolve(value, *, base: Path | None = None, root: Path | None = None) -> Path:
+    """En sti fra konfigurasjon eller payload -> en sti paa DENNE maskinen.
+
+    Tre tilfeller, i denne rekkefoelgen:
+
+      1. Under en gammel, hardkodet rot  -> flyttes til ROOT.
+         "C:/DreamPage-OS/flow/text/nb/x.py" -> <ROOT>/flow/text/nb/x.py
+      2. Relativ                          -> under ROOT (eller `base`).
+         "flow/text/nb/x.py"                 -> <ROOT>/flow/text/nb/x.py
+      3. Absolutt ellers                  -> urort.
+         En font i /usr/share eller C:/Windows er ikke vaar, og skal ikke
+         flyttes. Peker den ingen steder, feiler den DER den brukes - med
+         stien i feilmeldingen.
+
+    Gjoer ingen I/O og sjekker ikke at fila finnes. Det er med vilje: den som
+    kaller vet hva en manglende fil betyr hos seg, og `tools/check_assets.py`
+    er stedet som sier fra foer noe rendres.
+
+    `root` overstyrer ROOT. Trengs av verktoey som skal granske DEN
+    installasjonen de selv ligger i, og ikke den DP_ROOT peker paa - ellers
+    ville `tools/check_assets.py` granska en testsandkasse naar den kjoeres
+    fra en test, og meldt at all kunst mangler.
+    """
+    here = root or ROOT
+    text = str(value or "").strip().replace("\\", "/")
+    if not text:
+        return Path("")
+
+    lowered = text.lower()
+    if lowered == LEGACY_ROOT or lowered.startswith(LEGACY_ROOT + "/"):
+        rest = text[len(LEGACY_ROOT):].lstrip("/")
+        return (here / rest) if rest else here
+
+    if lowered.startswith(LEGACY_COMFY_ROOT + "/"):
+        rest = text[len(LEGACY_COMFY_ROOT):].lstrip("/")
+        if rest.split("/", 1)[0].lower() in LEGACY_COMFY_KEPT:
+            return here / rest
+        # Resten av den gamle mappa ble splittet i fire. Ikke gjett.
+        return Path(text)
+
+    path = Path(text)
+    # "/usr/share/..." er absolutt paa Linux, men `is_absolute()` er False paa
+    # Windows fordi den mangler diskbokstav. Uten denne linja ville en
+    # POSIX-sti i en configfil blitt til <ROOT>/usr/share/... naar den ble
+    # lest paa Windows - altsaa en stille feil paa nettopp den maskinen der
+    # stien ikke gir mening.
+    if text.startswith("/") or path.is_absolute():
+        return path
+    # En "C:/..."-sti er absolutt paa Windows, men BARE et rart filnavn paa
+    # Linux. Uten dette ville en ukjent Windows-rot blitt til en mappe som
+    # heter "C:" under ROOT - altsaa en stille feil paa nettopp den maskinen
+    # der stien ikke kan virke.
+    if len(text) > 1 and text[1] == ":" and text[0].isalpha():
+        return path
+    return (base or here) / text
+
+
+def resolve_str(value, *, base: Path | None = None,
+                root: Path | None = None) -> str:
+    """Som resolve(), men som streng med / - formen scriptene sender videre
+    paa kommandolinja og skriver i JSON."""
+    if not str(value or "").strip():
+        # Tom inn, tom ut. Path("") blir til ".", og "." som filsti er en
+        # mappe som finnes - altsaa en tom verdi som ser gyldig ut.
+        return ""
+    return str(resolve(value, base=base, root=root)).replace("\\", "/")
+
+
+def under(*parts: str) -> str:
+    """En sti under ROOT, som streng med PLATTFORMENS separator.
+
+    Dette er erstatningen for de 116 hardkodede `r"C:\\DreamPage-OS\\..."` i
+    koden. Den gir bevisst en `str` og ikke en `Path`: stedene som byttes ut
+    sender verdien videre til `os.path.join`, `open`, en kommandolinje eller
+    en f-streng, og en `Path` der ville endret oppfoerselen paa maater som
+    ikke er synlige i diffen.
+
+    Separatoren er plattformens, saa resultatet paa Windows er BYTE FOR BYTE
+    det den hardkodede strengen var - se
+    tools/migrate/unhardcode_paths.py --verify.
+    """
+    return str(ROOT.joinpath(*parts)) if parts else str(ROOT)
+
 # ---------------------------------------------------------------------------
 # Toppmapper
 #
@@ -54,6 +171,10 @@ TMP = ROOT / "tmp"
 ORDERS_STATE = STATE / "orders"          # <job_key>.json - payloadcachen
 ORDERS_INDEX = ORDERS_STATE / "_index.json"
 GELATO_DRAFTS = STATE / "gelato_drafts"
+# Statusfilene for forhaandsvisninger (PREVIEW-modus). Én fil per job_id, med
+# samme innhold som den som lastes opp til Supabase. Den lokale kopien er det
+# eneste sporet som finnes naar nettet var nede da jobben ble ferdig.
+PREVIEW_JOBS = STATE / "preview_jobs"
 NEXT_COVER = STATE / "next_cover"
 REPRINT_STATE = STATE / "reprint"
 JOBS_DB = STATE / "jobs.sqlite"          # fase 3
@@ -158,3 +279,31 @@ def comfy_dir(job_key: str, slug: str, comfy_output_prefix: str | None = None) -
 
 def order_state_path(job_key: str) -> Path:
     return ORDERS_STATE / f"{job_key}.json"
+
+
+# ---------------------------------------------------------------------------
+# PREVIEW-modus
+#
+# Forhaandsvisninger har ingen bokmappe og ingen ordre: de har en job_id fra
+# nettbutikken og lever bare til bildet er levert. De faar derfor sin egen
+# gren under output/, og hver jobb sin EGEN mappe.
+#
+# Det siste er ikke ryddighet, det er den samme regelen som for boeker:
+# sidenoekkelen ("page00") er lik i alle boeker og i alle preview-jobber, og
+# "er siden ferdig?" maa kunne stilles uten at to samtidige jobber ser
+# hverandres filer. Da to bokordre fikk lov til det 14.09.2026, hoppet de
+# over hverandres sider.
+# ---------------------------------------------------------------------------
+PREVIEW_CONFIG = CONFIG / "preview"       # markets/ og books/<market>/
+
+
+def preview_dir(job_id: str) -> Path:
+    return OUTPUT / "preview" / str(job_id)
+
+
+def preview_comfy_dir(job_id: str) -> Path:
+    return preview_dir(job_id) / "comfy"
+
+
+def preview_state_path(job_id: str) -> Path:
+    return PREVIEW_JOBS / f"{job_id}.json"

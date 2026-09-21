@@ -36,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import config as flow_config  # noqa: E402
 import steps  # noqa: E402
 import steps_post  # noqa: E402
+import steps_preview  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -194,12 +195,79 @@ FULL_PIPELINE: tuple[Step, ...] = PAGES_PIPELINE + (
          retries=0, timeout_s=600, optional=True),
 )
 
+# ---------------------------------------------------------------------------
+# PREVIEW-MODUS: forhaandsvisningen til nettbutikken.
+#
+# Én side, ett bilde, tjue sekunder - og ingenting som koster penger. Den
+# deler side-loekka, jobb-DB-en, loggen og koe-semantikken med bokpipelinen,
+# fordi det er infrastruktur. Det som er annerledes er arbeidsflyten, og den
+# staar her, som data, paa samme maate som bokens.
+#
+# Den kjoerer bare naar serveren staar i PREVIEW-modus (config/flow.json ->
+# "mode"). En bok-PC har denne listen staaende ubrukt.
+#
+# Ingen PDF, ingen Drive, ingen Gelato, ingen WooCommerce. At en preview-jobb
+# ikke kan bestille eller trykke noe er ikke en regel noen maa huske - det er
+# at stegene ikke finnes i denne listen.
+# ---------------------------------------------------------------------------
+PREVIEW_PIPELINE: tuple[Step, ...] = (
+    Step("check_delivery", steps_preview.check_delivery,
+         "Er sinken (Supabase) satt opp? Staar FOERST av samme grunn som "
+         "check_assets i bokpipelinen: en jobb som rendrer ferdig og saa "
+         "ikke kan levere, brukte GPU-tid paa ingenting.",
+         retries=0, timeout_s=60),
+
+    Step("validate_preview_job", steps_preview.validate_preview_job,
+         "Payload -> bok, marked, side, mal og tittel. Sjekker mal, maske, "
+         "workflow og line2-logoen MENS det fortsatt er gratis aa stoppe.",
+         retries=0, timeout_s=60),
+
+    Step("status_processing", steps_preview.status_processing,
+         "Skriv `processing` i statusfila, saa frontenden kan vise fremdrift. "
+         "Sidespor.",
+         retries=1, timeout_s=60, optional=True),
+
+    Step("fetch_child_image", steps_preview.fetch_child_image,
+         "Last ned barnets bilde til input/preview-<job_id>.jpg.",
+         # Samme tall som bokpipelinen, av samme grunn: dette er det eneste
+         # steget som er avhengig av internett midt i jobben, og utgaaende
+         # HTTPS er nede paa denne maskinen 04:30-05:05 hver natt.
+         retries=4, timeout_s=300, retry_delay_s=30),
+
+    Step("render_preview_page", steps_preview.render_preview_page,
+         "Én side gjennom ComfyUI, i jobbens EGEN mappe. Sjekkpunkt: sida "
+         "ligger paa disk og skal ikke rendres om igjen om meldingen kommer "
+         "tilbake.",
+         retries=1, timeout_s=1800, checkpoint=True),
+
+    Step("render_preview_text", steps_preview.render_preview_text,
+         "Tittel + logo (omslag) eller historietekst (innerside), med de "
+         "SAMME rendrerne boka trykkes med.",
+         retries=1, timeout_s=600),
+
+    Step("deliver_preview", steps_preview.deliver_preview,
+         "Last opp bildet, skriv `completed`, POST callback. Bildet foerst - "
+         "en `completed` med en URL som ikke finnes er verre enn en spinner.",
+         retries=2, timeout_s=600, checkpoint=True),
+
+    Step("notify_preview", steps_preview.notify_preview,
+         "Telegram, hvis preview.notify_each er paa. Sidespor.",
+         retries=1, timeout_s=60, optional=True),
+
+    Step("cleanup_preview", steps_preview.cleanup_preview,
+         "Slett den raa ComfyUI-sida naar bildet er levert. Sidespor.",
+         retries=0, timeout_s=120, optional=True),
+)
+
 PIPELINES: dict[str, tuple[Step, ...]] = {
     # Fase 2: flow eier side-loekka, n8n gjoer resten. Dette er den aktive.
     "pages": PAGES_PIPELINE,
     # Fase 5: flow eier alt fram til Gelato-utkastet. Settes aktiv naar
     # "pages" er verifisert paa ekte ordre og n8n-workflowen deaktiveres.
     "full": FULL_PIPELINE,
+    # PREVIEW-modus. Velges IKKE av ACTIVE, men av servermodusen - se
+    # active_name() under.
+    "preview": PREVIEW_PIPELINE,
 }
 
 # FASE 5 ER AKTIV fra 16.09.2026.
@@ -226,8 +294,27 @@ PIPELINES: dict[str, tuple[Step, ...]] = {
 ACTIVE = "full"
 
 
+def active_name() -> str:
+    """Navnet paa pipelinen denne serveren skal kjoere.
+
+    To lag, og de svarer paa to forskjellige spoersmaal:
+
+      servermodus   HVA denne maskinen er til - bok eller forhaandsvisning.
+                    Staar i config/flow.json ("mode") og velger koe og
+                    pipeline sammen. Se flow/worker/config.py.
+      ACTIVE        hvilken BOKpipeline som er den aktive ("pages"/"full").
+                    Det er et valg om hvor langt flow eier ordreveien, og
+                    begrunnelsen staar der ACTIVE staar.
+
+    Derfor overstyrer modusen aldri ACTIVE for boeker: bokmodus har
+    pipeline=null i modus-tabellen og faller tilbake hit.
+    """
+    name = flow_config.mode_conf().get("pipeline")
+    return str(name) if name else ACTIVE
+
+
 def active() -> tuple[Step, ...]:
-    return PIPELINES[ACTIVE]
+    return PIPELINES[active_name()]
 
 
 def by_name(name: str) -> tuple[Step, ...]:
@@ -240,10 +327,10 @@ def describe(name: str | None = None) -> dict:
     """Pipelinen som JSON - grunnlaget for GET /api/workflows og for
     flow-visningen i panelet. Panelet tegner bokser og piler av dette og
     trenger ikke vite hva et steg gjoer."""
-    key = name or ACTIVE
+    key = name or active_name()
     return {
         "name": key,
-        "active": key == ACTIVE,
+        "active": key == active_name(),
         "steps": [
             {
                 "name": s.name,

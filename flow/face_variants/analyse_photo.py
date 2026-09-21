@@ -41,10 +41,53 @@ import sys
 import cv2
 import numpy as np
 
+# DreamPage-roten finnes ved aa gaa OPPOVER til mappa som har books/ og flow/
+# i seg - ikke ved aa telle mapper med dirname(dirname(...)), som brekker
+# neste gang noe flyttes, og ikke ved aa hardkode en diskbokstav, som ikke
+# finnes paa en Linux-server. Samme moenster som _dp_find_root i
+# tekstscriptene; se CLAUDE.md.
+def _dp_find_root(start):
+    cur = os.path.dirname(os.path.abspath(start))
+    while True:
+        if (os.path.isdir(os.path.join(cur, "books"))
+                and os.path.isdir(os.path.join(cur, "flow"))):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            raise RuntimeError("fant ingen DreamPage-rot (mappe med books/ "
+                               "og flow/) over " + str(start))
+        cur = parent
+
+
+DP_ROOT = _dp_find_root(__file__)
+
+sys.path.insert(0, os.path.join(DP_ROOT, "flow"))
+import dp_platform  # noqa: E402
+
+
+def under(*parts):
+    """En sti under DreamPage-roten, med plattformens separator.
+
+    "/" i argumentet deles opp, slik at under("state/reprint") gir
+    noeyaktig samme streng som under("state", "reprint") - og samme
+    streng som flow/paths.py sin under(). Uten oppdelingen ville
+    Windows fatt en sti med begge separatorer i seg. Den virker, men
+    den er ikke den samme strengen koden hadde foer.
+    """
+    bits = [b for part in parts for b in str(part).split("/") if b]
+    return os.path.join(DP_ROOT, *bits)
+
 HERE = os.path.dirname(os.path.abspath(__file__))
-MODEL = "C:/DreamPage-OS/models/mediapipe/face_landmarker.task"
+MODEL = under("models/mediapipe/face_landmarker.task")
 REGISTRY = os.path.join(HERE, "workflows", "tools.json")
-CLAUDE = os.environ.get("DP_CLAUDE_BIN", "C:/Users/tobia/.local/bin/claude.exe")
+# Claude-binaeren. DP_CLAUDE_BIN vinner; ellers letes den opp paa PATH,
+# som er der den ligger paa en Linux-server. Den gamle standarden var
+# stien i ÉN brukers hjemmemappe paa ÉN Windows-maskin.
+CLAUDE = (os.environ.get("DP_CLAUDE_BIN")
+          or dp_platform.which("claude",
+                              os.path.expanduser("~/.local/bin/claude.exe"),
+                              os.path.expanduser("~/.local/bin/claude"))
+          or "claude")
 
 IDX = dict(up_in=13, lo_in=14, up_out=0, lo_out=17, c_l=61, c_r=291,
            cheek_l=234, cheek_r=454, eye_l_up=159, eye_l_lo=145,

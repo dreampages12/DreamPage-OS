@@ -307,3 +307,117 @@ person first for quality feedback. Instructions cover framing, pose/expression/l
 photo-realism, actual identity consistency for AI-generated variants, original files and source/
 rights records. No images have been added, enrolled, generated or trained in this session.
 The current next step is reviewing the user's supplied first batch; dataset approval is still pending.
+
+
+## Session 9 — Native Klein Studio (2026-09-15; retrospective handoff)
+
+Nine native nodes were added alongside the original seven: DP_LoadPhoto,
+DP_ReferenceStudio, DP_IdentityEncoder, DP_SceneStudio, DP_SwapPrompt,
+DP_KleinConditioning, DP_DreamSwap, DP_SeamFinish and DP_ReviewBoard.
+The editable Studio graph uses normal Klein 9B without a newly trained LoRA.
+IdentityEncoder here packages pretrained VAE references; it is not a trained DreamFace.
+Native-resolution identity suppression, explicit masks/reference order, geometry,
+protected-pixel copying and review diagnostics have inference-only contract tests.
+
+An earlier 9B inference completed, but exposed a decoder difference between ComfyUI's
+image loader and Pillow when comparing saved pixels. DP_LoadPhoto was added to make
+photo decoding explicit. The latest graph has not received a new full GPU/visual
+validation after migration. No training or model-quality certification is implied.
+
+## Session 10 — DreamPage OS migration and reusable training (2026-09-20)
+
+User requested auditing Claude's migration and preparing repeatable training for new
+runs, resumed runs and further training existing models. Dataset approval is still
+mandatory; only photorealistic training images are allowed. No optimization was run.
+
+Audit: source/training/config/script inventories survived under the canonical
+`nodes/dreampage-headswap` project. `local_data` moved too. The running ComfyUI on the
+OS-configured port 8189 reports all 16 DP nodes; the custom-node junction and editable
+package resolve to the OS copy. The BASE 4B provenance receipt lists 20 files and all
+are present with expected sizes. Full 15.98 GB rehashing was not repeated during production.
+No existing production job was interrupted or new GPU job submitted.
+
+Implemented:
+- OS `config/headswap.json` and `tools/headswap.py`: doctor, isolated environment setup,
+  idempotent receiving folders, LAB workflow installation. No production service hooks.
+- New training `.venv`: torch 2.5.1+cu121, diffusers 0.37.1, transformers 4.56.2,
+  HEIC decoding and separate dependencies. Production Python was not upgraded.
+- `training/manage.py`: immutable named plans, pending approval request, exact content
+  binding, code hash inventory, attempt history, environment metadata and checkpoint hashes.
+  Fresh starts new weights/adapters; resume restores the existing trainer state;
+  finetune initializes only model weights and starts a new optimizer/RNG schedule.
+- All three trainers now check explicit dataset approval before GPU setup/optimization.
+  Production-role OS servers refuse training. No automatic user approval is generated.
+- Parent lineage prevents ancestor training identities becoming held-out evaluation people.
+  Refiner warm starts require the same frozen teacher. Synthetic fixture weights are rejected.
+- Crash recovery records operator confirmation and checkpoint hashes without starting work.
+  Dataset fingerprint v2 uses image contents rather than host-specific absolute paths;
+  generated pairs/registry now use portable relative paths.
+- HEIC intake catalogue, error/duplicate/dimension reports, original preservation and
+  existing enrolment's HEIC-to-PNG support. Receiving folders now cover 20 people and
+  25 swap sets. No user images have arrived, and nothing was enrolled.
+- Studio builder uses the running server's schemas and explicit URL. Installed
+  LAB-DreamPage-HeadSwap.json (30 nodes, 28 links, 6 groups); GUI sync preserves it.
+- Fixed the new-PC custom-node symlink target and corrected the obsolete claim that
+  Studio's nodes were missing. See OS docs/MODEL-TRAINING.md for run and server instructions.
+
+Verification: 118 focused, non-training tests passed: 21 managed-run/intake checks,
+8 checkpoint/gate checks, 48 native Studio checks, 22 ingest/report checks and 19 data/pair
+checks. The managed lifecycle test substitutes a metadata-only fake runner; checkpoint
+loading tests use mocks. No model optimization, backward pass or optimizer step occurred.
+Python syntax compilation and isolated `pip check` passed. OS portability and GUI workflow
+checks passed. The broad legacy training suite was deliberately not run under AGENTS.md's
+approval constraint. Real fresh/resume/finetune GPU execution remains unverified pending
+approved data. No claims of final realism/identity quality or Linux GPU validation.
+
+Remaining: receive images; inspect visual quality, rights, identity mappings and masks;
+create complete versioned split manifests; show the exact review/hash to Tobias and wait
+for approval. Only then benchmark memory and execute the first supervised pilot. BASE 4B
+adapter checkpoints cannot be installed as Klein 9B LoRAs; that is a separate integration.
+
+
+## Session 11 — User correction: Klein 9B only (2026-09-21)
+
+Tobias explicitly rejected the 4B training target and selected the 9B model.
+The active OS target, training pilot, inference preset, factory and model loader now
+use black-forest-labs/FLUX.2-klein-9B. Normal/distilled 9B is the default; BASE 9B
+is a separate explicit profile and is never substituted automatically. Retired 4B
+presets/acquisition scripts are under configs/archive/4b and scripts/archive/4b.
+Existing 4B weight files were not deleted, loaded, or used as initialization.
+AGENTS.md records the binding target correction for future agents.
+
+The actual existing models/diffusion_models/flux-2-klein-9b.safetensors was read with
+streaming SHA256 (small buffers; no tensor loading). Its 18,157,185,168 bytes match
+upstream exactly: 0975d6b77b5f510b99547d6724a208e36527df654e8f6134f59ece3f9f30da58.
+Official model revision: 92196c8e11f7b6cf2b7493e037d8c5345c559216.
+Receipt: OS state/headswap/klein-9b-transformer.json. This confirms the installed
+standard 9B source, not merely a filename or matching architecture.
+
+The loader now enforces 9B dimensions (12288 text width, 128 latent channels,
+8 double / 24 single blocks, 32 heads of 128), explicit distilled/base selection,
+guidance 1 for distilled, and component hashes. It supports reusing the installed
+single-file transformer with Diffusers' local single-file loader and a separate
+9B component snapshot. No implicit downloads, 4B fallback or automatic variant swap.
+Both planning and direct swap training refuse a non-9B model target.
+
+Added prepare_klein_9b.py: inventory-only by default; optional acquisition of the
+22 support files (16,565,610,332 bytes), with exact revision and upstream hashes.
+It reuses the existing verified 9B transformer, never duplicates it, and does not
+invent commercial-use review. Official transformer/config.json access was attempted
+normally with the account's existing credentials and returned GatedRepoError.
+No terms were accepted and no gated access workaround was used. Access to official
+components remains a concrete prerequisite; model/data review remains required.
+
+Verification: 17 focused 9B tests and 29 managed-run/checkpoint tests passed without
+optimization. Small CPU test doubles verify loader plumbing; actual 9B parameters
+were not instantiated and no optimizer/backward/forward model run occurred. Python
+syntax compilation passed. The runtime doctor recognizes the local 9B file and
+reports the missing component snapshot instead of claiming training readiness.
+
+The current pilot trains DreamFace and custom DreamSwap adapters around frozen 9B
+weights. It is a proprietary checkpoint package, not an already exportable native
+ComfyUI LoRA. Full 9B loading, memory/performance and quality/optimization validation
+remain pending access and explicit dataset approval. No training has started.
+
+Additional focused verification: four existing loader/factory refusal tests passed.
+Total for this correction: 50 non-training checks. Full 9B execution remains pending.

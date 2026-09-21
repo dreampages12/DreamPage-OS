@@ -9,6 +9,31 @@ WooCommerce → RabbitMQ (dreampage-jobs) → flow → ComfyUI → PDF → Drive
             → Gelato-utkast → Telegram → mennesket bestiller
 ```
 
+## Servermodus: BOOK eller PREVIEW
+
+`config/flow.json` → `"mode"` sier hva denne maskinen er til. Den avgjør to
+ting, og bare de to: hvilken RabbitMQ-kø workeren lytter på, og hvilken
+pipeline den kjører.
+
+| Modus | Kø | Pipeline | Hva den gjør |
+|---|---|---|---|
+| `book` | `dreampage-jobs` | `full` | hele bokproduksjonen, fram til Gelato-utkastet |
+| `preview` | `preview-jobs` | `preview` | forhåndsvisninger til nettbutikken. Koster ingenting, trykker ingenting |
+
+```powershell
+.\dreampage.ps1 mode             # hva står den til nå
+.\dreampage.ps1 mode preview     # bytt (krever restart av flow)
+```
+
+**`dreampage-jobs` er én kø med én konsument.** Kobler maskin nummer to seg
+på i BOOK-modus, fordeler RabbitMQ ordrene mellom dem, og halvparten av
+kundene får boka si bygget på en maskin som kanskje mangler modeller eller
+kunst. Derfor: **bare én maskin i BOOK-modus om gangen.** En ny maskin bør
+settes til `preview` først.
+
+En ukjent verdi er en feil, ikke «da tar vi book» — se
+`test_ukjent_modus_er_en_feil`. Detaljene står i `docs/preview-modus.md`.
+
 ## Hvor ting er
 
 | Mappe | Hva |
@@ -24,6 +49,7 @@ WooCommerce → RabbitMQ (dreampage-jobs) → flow → ComfyUI → PDF → Drive
 | `archive/` | utrangerte n8n-patcheskript, med §7-gjennomgangen |
 | `tools/` | migrering og modellmanifest |
 | `config/` | `flow.json` i git; `secrets.json`, `api.json`, `dp_bot.json` **ikke** |
+| `deploy/systemd/` | vaktmesteren på Linux — motstykket til Task Scheduler |
 | `models/ state/ output/ input/ tmp/` | ikke i git |
 
 **`DreamPage-image/` er hellig.** Mappa har vårt navn, men innholdet er uendret
@@ -41,8 +67,12 @@ ikke distribusjon, men å smelte den inn i vår kode ville smittet lisensen.)
 .\dreampage.ps1 status    # hva lever, hva står i køen, hvilke ordre feilet
 .\dreampage.ps1 down      # nekter å stoppe midt i en ordre uten -Force
 .\dreampage.ps1 logs      # følg flow-loggen
-.\dreampage.ps1 test      # alle testfilene + check_assets
+.\dreampage.ps1 test      # alle testfilene + check_assets + check_portability
+.\dreampage.ps1 mode      # book eller preview
 ```
+
+På Linux: `./dreampage.sh` med de samme kommandoene. Samme kode, samme config,
+samme kø — se `docs/SETUP-LINUX.md`.
 
 Panelet: `http://127.0.0.1:8765/panel` — lim inn et token fra `config/api.json`.
 
@@ -135,8 +165,12 @@ bevares, fordi produksjonskode leser SQLite-fila direkte:
 | `CLAUDE.md` | **les først.** Regler, feilklasser, konvensjoner |
 | `docs/ARCHITECTURE.md` | hvordan delene henger sammen, og hvorfor |
 | `docs/RUNBOOK.md` | drift, feilsøking, ny bok, kjente skjevheter |
-| `docs/SETUP-NEW-PC.md` | sette opp en ny maskin |
+| `docs/SETUP-NEW-PC.md` | sette opp en ny maskin på Windows |
+| `docs/SETUP-LINUX.md` | sette opp en ny maskin på Linux |
+| `docs/preview-modus.md` | PREVIEW-modus: kø, pipeline, bokdata og levering |
 | `docs/ordreveien.md` | hvordan en ordre faktisk kommer inn, verifisert |
+| `docs/MODEL-TRAINING.md` | headswap-modellen: datasett, trening, evaluering |
+| `config/preview/README.md` | hva preview leser, og hvorfor det er så lite der |
 
 ### Det som gjenstår
 
@@ -151,5 +185,10 @@ bevares, fordi produksjonskode leser SQLite-fila direkte:
    `/api/jobs`, blir et `/bygg` synlig i panelet, overlever en botrestart og
    serialiseres mot ordrekøen av konstruksjon.
 
-3. **Rundt 60 hardkodede `C:\DreamPage-OS`-stier** i gammel kode, selv om
-   `flow/paths.py` finnes for å hindre nettopp det.
+3. **De siste hardkodede `C:\DreamPage-OS`-stiene.** Python-koden er ren —
+   `tools/check_portability.py` er grønn, og den kjøres av
+   `.\dreampage.ps1 test`. Det som står igjen er ~26 treff i PowerShell, og
+   de er ikke like farlige: de fleste ligger i engangsskriptene under
+   `tools/migrate/`, som aldri skal kjøres igjen. To er levende og bør
+   ryddes den dagen boten flyttes til Linux:
+   `flow/ensure_dp_bot.ps1` og `flow/start_dp_bot.ps1`.

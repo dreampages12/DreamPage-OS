@@ -25,7 +25,7 @@ def result(values, report):
 
 class DP_LoadPhoto:
     CATEGORY = CATEGORY
-    DESCRIPTION = "Load one still photo with Pillow into CPU float32. Keeps a defined RGB pixel baseline for exact final PNG checks. Also exposes a chosen mask channel; white is editable. Animated inputs are rejected."
+    DESCRIPTION = "Load one still photo with Pillow into CPU float32. MPO mobile photos use the explicitly selected frame (0 = primary photo). Keeps a defined RGB pixel baseline. White mask pixels are editable. Animated GIF/WebP/PNG inputs are rejected."
     FUNCTION = "load"
     RETURN_TYPES = ("IMAGE", "MASK", "STRING")
     RETURN_NAMES = ("image", "mask", "report")
@@ -38,24 +38,32 @@ class DP_LoadPhoto:
         files = sorted(p.name for p in Path(folder_paths.get_input_directory()).iterdir()
                        if p.is_file() and p.suffix.lower() in supported)
         return {"required": {"image": (files, {"image_upload": True}),
-                             "mask_channel": (["red", "green", "blue", "alpha"], {"default": "red"})}}
+                             "mask_channel": (["red", "green", "blue", "alpha"], {"default": "red"})},
+                "optional": {"mpo_frame": ("INT", {"default": 0, "min": 0, "max": 99,
+                    "tooltip": "MPO only: 0 selects the primary photo. Other embedded frames may be gain maps or alternate views."})}}
 
     @classmethod
-    def IS_CHANGED(cls, image, mask_channel="red"):
+    def IS_CHANGED(cls, image, mask_channel="red", mpo_frame=0):
         import folder_paths
         return hashlib.sha256(Path(folder_paths.get_annotated_filepath(image)).read_bytes()).hexdigest()
 
     @classmethod
-    def VALIDATE_INPUTS(cls, image, mask_channel="red"):
+    def VALIDATE_INPUTS(cls, image, mask_channel="red", mpo_frame=0):
         import folder_paths
         return True if folder_paths.exists_annotated_filepath(image) else "Selected photo does not exist"
 
-    def load(self, image, mask_channel="red"):
+    def load(self, image, mask_channel="red", mpo_frame=0):
         import folder_paths
         path = Path(folder_paths.get_annotated_filepath(image))
         with Image.open(path) as file:
-            if getattr(file, "n_frames", 1) != 1:
+            frames = getattr(file, "n_frames", 1)
+            container = file.format
+            if frames != 1 and container != "MPO":
                 raise ValueError("DreamPage requires one still photo, not an animation or multiple frames")
+            if isinstance(mpo_frame, bool) or not isinstance(mpo_frame, int) or not 0 <= mpo_frame < frames:
+                raise ValueError("Selected MPO frame does not exist in this photo")
+            # Mobil-JPEG kan inneholde et gain map; velg aldri alle bilder som en batch.
+            file.seek(mpo_frame)
             oriented = ImageOps.exif_transpose(file)
             if oriented.mode in {"I", "F", "I;16", "I;16B", "I;16L"}:
                 raise ValueError("Convert high-bit-depth images explicitly to 8-bit sRGB before loading")
@@ -72,6 +80,7 @@ class DP_LoadPhoto:
                   "file_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                   "decoded_rgb_sha256": hashlib.sha256(pixels.tobytes()).hexdigest(),
                   "mask_channel": mask_channel, "alpha_inverted": False,
+                  "container": container, "embedded_frames": frames, "selected_frame": mpo_frame,
                   "training_enrollment": False}
         return result((array_to_image(pixels), array_to_mask(mask)), report)
 

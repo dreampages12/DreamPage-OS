@@ -34,6 +34,11 @@ sys.path.insert(0, SCRIPT_DIR)
 
 from finish_merged_order import STATE_DIR, drive_upload, gelato, remote_size  # noqa: E402
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 
 BR = chr(10)   # linjeskift i feilmeldinger
 
@@ -76,7 +81,7 @@ def main() -> int:
     bestilt = []
     for spec in args.refresh:
         oid, slug, name = spec.split(":", 2)
-        pdf = f"C:/DreamPage-OS/books/{slug}/orders/{oid}/pdf/{name}_gelato.pdf"
+        pdf = under(f"books/{slug}/orders/{oid}/pdf/{name}_gelato.pdf")
         if not os.path.isfile(pdf):
             raise SystemExit("mangler " + pdf)
         bestilt.append({"order_id": oid, "slug": slug, "name": name, "pdf": pdf})
@@ -118,7 +123,7 @@ def main() -> int:
         ref = it["itemReferenceId"]
         if ref in refresh:
             b = refresh[ref]
-            with open(f"C:/DreamPage-OS/books/{b['slug']}/config.json", encoding="utf-8-sig") as fh:
+            with open(under(f"books/{b['slug']}/config.json"), encoding="utf-8-sig") as fh:
                 parent = json.load(fh)["driveFolderId"]
             up = drive_upload(b["pdf"], parent, b["order_id"])
             url = up.get("downloadUrl")

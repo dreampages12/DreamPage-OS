@@ -1,6 +1,6 @@
 {
   "id": "bfb24945-19a3-5a8d-8e02-96e7b9ae798e",
-  "revision": 1,
+  "revision": 2,
   "last_node_id": 30,
   "last_link_id": 28,
   "nodes": [
@@ -20,10 +20,10 @@
       "mode": 0,
       "inputs": [],
       "outputs": [],
-      "title": "DreamPage  /  Klein 9B Studio",
+      "title": "DreamPage  /  START HER",
       "properties": {},
       "widgets_values": [
-        "START HERE\nUse your existing Klein 9B, Qwen3-8B and FLUX.2 VAE.\nChoose the three images in group 02, then run.\n4 steps · fixed seed · native sampler · no LoRA loaded.\nThis workflow performs inference only."
+        "1. Velg person, originalbilde og tilhørende hodemaske i gruppe 02.\n2. Trykk Run. Se resultat og før/etter i gruppe 06.\n3. Bytt bare én innstilling om gangen; behold samme seed.\nVanlig Klein 9B · 4 steg · ingen LoRA eller trening.\nTestresultater lagres under DreamPage/Studio."
       ],
       "color": "#24343d",
       "bgcolor": "#17252c"
@@ -260,6 +260,14 @@
           }
         },
         {
+          "name": "mpo_frame",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "mpo_frame"
+          }
+        },
+        {
           "name": "upload",
           "type": "IMAGEUPLOAD",
           "widget": {
@@ -297,6 +305,7 @@
       "widgets_values": [
         "26063001.jpg",
         "red",
+        0,
         "image"
       ],
       "color": "#355e51",
@@ -331,6 +340,14 @@
           "link": null,
           "widget": {
             "name": "mask_channel"
+          }
+        },
+        {
+          "name": "mpo_frame",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "mpo_frame"
           }
         },
         {
@@ -371,6 +388,7 @@
       "widgets_values": [
         "forside(dyreparken).jpg",
         "red",
+        0,
         "image"
       ],
       "color": "#355e51",
@@ -405,6 +423,14 @@
           "link": null,
           "widget": {
             "name": "mask_channel"
+          }
+        },
+        {
+          "name": "mpo_frame",
+          "type": "INT",
+          "link": null,
+          "widget": {
+            "name": "mpo_frame"
           }
         },
         {
@@ -445,6 +471,7 @@
       "widgets_values": [
         "forside-headmask(dyreparken).png",
         "red",
+        0,
         "image"
       ],
       "color": "#355e51",

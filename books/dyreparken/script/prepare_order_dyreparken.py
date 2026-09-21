@@ -4,13 +4,46 @@ import shutil
 from pathlib import Path
 from PIL import Image
 
+# DreamPage-roten finnes ved aa gaa OPPOVER til mappa som har books/ og flow/
+# i seg - ikke ved aa telle mapper med dirname(dirname(...)), som brekker
+# neste gang noe flyttes, og ikke ved aa hardkode en diskbokstav, som ikke
+# finnes paa en Linux-server. Samme moenster som _dp_find_root i
+# tekstscriptene; se CLAUDE.md.
+def _dp_find_root(start):
+    cur = os.path.dirname(os.path.abspath(start))
+    while True:
+        if (os.path.isdir(os.path.join(cur, "books"))
+                and os.path.isdir(os.path.join(cur, "flow"))):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            raise RuntimeError("fant ingen DreamPage-rot (mappe med books/ "
+                               "og flow/) over " + str(start))
+        cur = parent
+
+
+DP_ROOT = _dp_find_root(__file__)
+
+
+def under(*parts):
+    """En sti under DreamPage-roten, med plattformens separator.
+
+    "/" i argumentet deles opp, slik at under("state/reprint") gir
+    noeyaktig samme streng som under("state", "reprint") - og samme
+    streng som flow/paths.py sin under(). Uten oppdelingen ville
+    Windows fatt en sti med begge separatorer i seg. Den virker, men
+    den er ikke den samme strengen koden hadde foer.
+    """
+    bits = [b for part in parts for b in str(part).split("/") if b]
+    return os.path.join(DP_ROOT, *bits)
+
 # === KONFIGURASJON ==========================
 # Juster disse hvis du endrer struktur senere
-BOOK_ROOT = Path(r"C:\DreamPage-OS\books\dyreparken")
+BOOK_ROOT = Path(under("books/dyreparken"))
 BASE_DIR = BOOK_ROOT / "base"
 ORDERS_DIR = BOOK_ROOT / "orders"
-COMFY_OUTPUT_ROOT = Path(r"C:\DreamPage-OS\output") / "dyreparken" / "orders"
-SHARED_SCRIPT_DIR = Path(r"C:\DreamPage-OS\flow")
+COMFY_OUTPUT_ROOT = Path(under("output")) / "dyreparken" / "orders"
+SHARED_SCRIPT_DIR = Path(under("flow"))
 EXTRA_INPUT_FILES = [
     "dreampage-first.png",
     "blank-back.png",

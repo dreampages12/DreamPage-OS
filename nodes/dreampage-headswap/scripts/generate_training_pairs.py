@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from collections import Counter
 from pathlib import Path
 
@@ -39,6 +40,13 @@ def main(argv: list[str] | None = None) -> int:
     if output_dir.exists() and any(output_dir.iterdir()):
         raise ValueError("Use a fresh empty pairs directory; stale split manifests must not survive regeneration")
     output_dir.mkdir(parents=True, exist_ok=True)
+    # Manifestet skal foelge med datasettet til Linux eller en annen rotmappe.
+    for row in rows:
+        for key in ("source", "template", "ground_truth", "headmask"):
+            row[key] = Path(os.path.relpath(row[key], output_dir)).as_posix()
+        for key in ("sources", "source_headmasks"):
+            if key in row:
+                row[key] = [Path(os.path.relpath(p, output_dir)).as_posix() for p in row[key]]
     written: dict[str, str] = {}
     for split in sorted({row["split"] for row in rows}):
         path = output_dir / f"pairs.{split}.jsonl"

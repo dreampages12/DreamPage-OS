@@ -213,7 +213,7 @@ class CheckpointTests(unittest.TestCase):
 class BackboneFactoryTests(unittest.TestCase):
     def test_flux_backbone_refuses_to_load_without_a_reviewed_local_snapshot(self):
         with self.assertRaisesRegex(ValueError, "weights_path"):
-            build_model({"model": {"backbone": "flux_klein"}})
+            build_model({"model": {"backbone": "flux_klein", "model_id": "black-forest-labs/FLUX.2-klein-9B"}})
 
     def test_unknown_backbone_is_rejected(self):
         with self.assertRaises(ValueError):

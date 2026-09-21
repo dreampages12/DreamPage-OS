@@ -25,6 +25,11 @@ sys.path.insert(0, SCRIPT_DIR)
 sys.path.insert(0, os.path.dirname(SCRIPT_DIR))
 import dp_secrets  # noqa: E402
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 # Laa hardkodet her til 2026-09-15. Naa i config/secrets.json (.gitignore).
 GELATO_KEY = dp_secrets.gelato_api_key()
 # Cloudflare svarer 403 "error code: 1010" paa urllib sin standard User-Agent.
@@ -93,7 +98,7 @@ def main() -> int:
     # lenger under sin egen orderReferenceId. Uten denne sperren ville soeket
     # nedenfor komme tomt tilbake og vi ville laget et DUPLIKAT ved siden av
     # det sammenslaatte utkastet - to trykte boeker for en betalt.
-    merge_state = f"C:/DreamPage-OS/state/gelato_drafts/{args.order}.json"
+    merge_state = under(f"state/gelato_drafts/{args.order}.json")
     if os.path.isfile(merge_state) and not args.force:
         with open(merge_state, encoding="utf-8") as fh:
             state = json.load(fh)
@@ -109,11 +114,11 @@ def main() -> int:
         raise SystemExit(f"execution {args.execution} gjelder ordre "
                          f"{payload.get('order_id')}, ikke {args.order}")
 
-    with open(f"C:/DreamPage-OS/books/{args.slug}/config.json", encoding="utf-8-sig") as fh:
+    with open(under(f"books/{args.slug}/config.json"), encoding="utf-8-sig") as fh:
         cfg = json.load(fh)
     parent = cfg["driveFolderId"]
 
-    pdf_dir = f"C:/DreamPage-OS/books/{args.slug}/orders/{args.order}/pdf"
+    pdf_dir = under(f"books/{args.slug}/orders/{args.order}/pdf")
     cover = f"{pdf_dir}/{args.name}_cover.pdf"
     gelato_pdf = f"{pdf_dir}/{args.name}_gelato.pdf"
     inner = f"{pdf_dir}/{args.name}_innersider.pdf"

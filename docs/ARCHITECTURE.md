@@ -5,6 +5,50 @@ for å endre noe, les `CLAUDE.md` først — reglene der er ikke smakssaker.
 
 ---
 
+## 0. Servermodus: hva denne maskinen er til
+
+`config/flow.json` → `"mode"` avgjør to ting, og bare de to: hvilken
+RabbitMQ-kø serveren lytter på, og hvilken pipeline den kjører.
+
+```
+DreamPage OS  (config/flow.json -> mode)
+  ├── BOOK     -> dreampage-jobs -> DreamPage Flow: Book Generation   (kap. 1)
+  └── PREVIEW  -> preview-jobs   -> DreamPage Flow: Preview Generation
+```
+
+**Denne maskinen står i `book`.** Resten av dette dokumentet beskriver den
+modusen. Preview-modus har sitt eget: `docs/preview-modus.md`.
+
+Alt annet er felles — jobb-DB, API, panel, logg, status, avbrudd, retry,
+ack-semantikk og side-løkka mot ComfyUI. Det er infrastruktur, og den skal
+ikke finnes i to utgaver. Det som er forskjellig er arbeidsflyten, og den
+står som en liste i `pipeline.py` i begge tilfeller.
+
+```powershell
+.\dreampage.ps1 mode              # hva står den til
+.\dreampage.ps1 mode preview      # bytt (krever restart)
+```
+
+### Windows og Linux
+
+Denne maskinen kjører Windows. Nye maskiner settes opp på Linux, og det er
+**samme kode** — ingen gren, ingen fork. Forskjellene ligger tre steder:
+
+| | |
+|---|---|
+| `flow/dp_platform.py` | oppetid, `~/.n8n`, kjørbare filer, hvilken vaktmester |
+| `dreampage.ps1` / `dreampage.sh` → `tools/dreampage.py` | supervisoren |
+| `deploy/systemd/` | vaktmesteren, motstykket til Task Scheduler |
+
+Alt annet er felles fordi stiene utledes fra `flow/paths.py` og aldri
+hardkodes. `tools/check_portability.py` kjøres av `dreampage.ps1 test` og
+finner de tre tingene som faktisk brekker: hardkodede stier, filnavn med feil
+bokstav (usynlig på Windows, dødelig på Linux) og Windows-bare API-er.
+
+Se `docs/SETUP-LINUX.md`.
+
+---
+
 ## 1. Fra kjøp til trykk
 
 ```

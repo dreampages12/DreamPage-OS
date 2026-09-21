@@ -17,9 +17,14 @@ import numpy as np
 import torch
 from PIL import Image
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 Image.MAX_IMAGE_PIXELS = None
 
-MODEL = r"C:\DreamPage-OS\models\upscale_models\4x-UltraSharp.pth"
+MODEL = under("models/upscale_models/4x-UltraSharp.pth")
 TILE = 512          # kildepiksler per rute
 OVERLAP = 32        # kildepiksler som beregnes ekstra og kastes
 

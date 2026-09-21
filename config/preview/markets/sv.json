@@ -1,0 +1,13 @@
+{
+  "_": "Svensk. Tittelparametre under \"sv\" i next_book_titles.json, logoer i flow/text/logo/sv/.",
+  "title_lang": "sv",
+  "logo_locale": "sv",
+  "_script_language": "Hvilket av bokas tekstscript historien hentes fra i et innerside-preview (textScripts i books/<slug>/config.json). Side 7 i forhaandsvisningen skal vaere side 7 i boka - paa det spraaket kunden faar den trykt.",
+  "script_language": "sv",
+  "aliases": {
+    "regnbuens-skatt": "regnbuen"
+  },
+  "defaults": {
+    "workflow_api": ""
+  }
+}

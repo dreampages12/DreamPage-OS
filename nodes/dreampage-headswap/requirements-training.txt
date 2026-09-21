@@ -1,0 +1,12 @@
+# Eget venv; disse versjonene skal ikke installeres i produksjonens Python.
+# PyTorch 2.5.1+cu121 installeres separat av tools/headswap.py setup-env.
+diffusers==0.37.1
+transformers==4.56.2
+accelerate==1.12.0
+huggingface-hub==0.35.1
+safetensors>=0.4,<1
+numpy==1.26.4
+Pillow==12.2.0
+scipy==1.15.3
+PyYAML==6.0.2
+pillow-heif==1.1.1

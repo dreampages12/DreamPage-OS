@@ -602,17 +602,15 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
         {
             "filename": "01(fotball-vm).png",
             "type": "inner",
-            "side": "right",
+            "side": "left",
             "blocks": [{
                 "text": p(
-                    "Noen dager etter den store finalen var (Navn) tilbake på treningsbanen.\n"
-                    "Alt så helt vanlig ut, helt til treneren ropte ham bort.\n"
-                    "I hånden holdt han en konvolutt med et lite norsk flagg på.\n"
-                    "(Navn) kjente hjertet begynne å hamre."
+                    "Etter den store kampen får (Navn) en helt spesiell beskjed.\n"
+                    "En speider har sett ham spille, og nå er han invitert til landslagssamling."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "treneren", "konvolutt", "flagg"],
+                "highlights": [child_name, "speider", "landslagssamling"],
             }],
         },
 
@@ -623,14 +621,12 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "En landslagsspeider hadde sittet på tribunen under finalen.\n"
-                    "Han hadde sett at (Navn) kjempet videre da kampen ble vanskelig.\n"
-                    "Nå ville de se ham igjen.\n"
-                    "(Navn) åpnet brevet: han var invitert til landslagssamling."
+                    "På samlingen trener (Navn) sammen med mange andre flinke barn.\n"
+                    "Han gir alt han har og håper at treneren legger merke til ham."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "landslagsspeider", "brevet", "landslagssamling"],
+                "highlights": [child_name, "samlingen", "treneren"],
             }],
         },
 
@@ -638,17 +634,16 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
         {
             "filename": "03(fotball-vm).png",
             "type": "inner",
-            "side": "left",
+            "side": "right",
             "blocks": [{
                 "text": p(
-                    "På samlingen møtte (Navn) spillere han aldri hadde sett før.\n"
-                    "De var raske. Veldig raske.\n"
-                    "Allerede i den første øvelsen mistet han ballen. Så én gang til.\n"
-                    "Men han husket hva treneren hadde lært ham, og jaget ballen igjen."
+                    "Til slutt leser treneren opp navnene på spillerne som skal til VM.\n"
+                    "Så hører (Navn) sitt eget navn.\n"
+                    "Han skal spille for Norge!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "raske", "ballen", "treneren"],
+                "highlights": [child_name, "treneren", "VM", "Norge"],
             }],
         },
 
@@ -659,14 +654,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "På slutten av dagen leste landslagstreneren opp navnene.\n"
-                    "Det var bare én plass igjen på laget som skulle til VM.\n"
-                    "(Navn) hørte mange andre bli valgt, men ikke sitt eget navn.\n"
-                    "Så løftet treneren blikket, og alt ble stille."
+                    "VM starter mot Tyskland, men kampen blir tøff.\n"
+                    "Da dommeren blåser av, står det 2–0 til Tyskland.\n"
+                    "Det var ikke starten Norge hadde håpet på."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "landslagstreneren", "plass", "stille"],
+                "highlights": [child_name, "Tyskland", "dommeren", "Norge"],
             }],
         },
 
@@ -677,14 +671,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "«(Navn)!»\n"
-                    "Lagkameratene jublet, og (Navn) fikk landslagsdrakten i hendene.\n"
-                    "På brystet satt det norske flagget.\n"
-                    "Nå var det ikke lenger bare trening. Han skulle spille for Norge."
+                    "(Navn) sitter stille i garderoben etter tapet.\n"
+                    "For første gang begynner han å lure på om VM-eventyret kan være over\n"
+                    "før det egentlig har begynt."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "landslagsdrakten", "flagget", "Norge"],
+                "highlights": [child_name, "garderoben", "VM-eventyret"],
             }],
         },
 
@@ -695,14 +688,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Flyet landet i vertslandet.\n"
-                    "Gjennom vinduet så (Navn) enorme stadioner og flagg fra hele verden.\n"
-                    "På hotellet fikk laget vite hvem de skulle møte først:\n"
-                    "et av verdens beste lag. VM hadde begynt."
+                    "Treneren samler laget.\n"
+                    "«Én kamp bestemmer ikke hvem vi er.»\n"
+                    "(Navn) ser på lagkameratene. De er ikke ferdige ennå."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "vertslandet", "stadioner", "verden"],
+                "highlights": [child_name, "Treneren", "lagkameratene"],
             }],
         },
 
@@ -713,14 +705,12 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Den første kampen gikk ikke slik Norge håpet.\n"
-                    "Motstanderne scoret. Så scoret de igjen.\n"
-                    "(Navn) mistet ballen i et viktig angrep, og kampen endte med tap.\n"
-                    "I garderoben sa nesten ingen noe."
+                    "Norge kjemper seg videre, og neste store utfordring er Brasil.\n"
+                    "(Navn) løper ut på banen klar for en av de største kampene i livet sitt."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "Norge", "ballen", "garderoben"],
+                "highlights": [child_name, "Norge", "Brasil", "banen"],
             }],
         },
 
@@ -731,14 +721,12 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "«Dere er ikke her fordi alt alltid går perfekt,» sa treneren.\n"
-                    "«Dere er her fordi dere reiser dere igjen.»\n"
-                    "(Navn) tenkte på sitt aller første bomskudd hjemme på banen.\n"
-                    "Så reiste han seg: «Da vinner vi den neste.»"
+                    "Brasil presser hardt, men (Navn) nekter å gi seg.\n"
+                    "Han dribler mellom motstanderne og leter etter åpningen som Norge trenger."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "treneren", "bomskudd", "neste"],
+                "highlights": [child_name, "Brasil", "dribler", "Norge"],
             }],
         },
 
@@ -749,32 +737,41 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Den neste kampen ble vill. Norge lå under, og tiden rant ut.\n"
-                    "(Navn) fikk ballen på kanten og driblet forbi den ene, så den andre.\n"
-                    "Han kunne skutt selv, men foran mål sto en lagkamerat helt alene.\n"
-                    "(Navn) sendte ballen inn. Mål! 1–1."
+                    "Da sluttsignalet går, bryter jubelen løs.\n"
+                    "Norge har slått Brasil!\n"
+                    "Nå er de bare én kamp unna VM-finalen."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "vill", "driblet", "lagkamerat"],
+                "highlights": [child_name, "jubelen", "Brasil", "VM-finalen"],
             }],
         },
 
-        # Side 10
+        # Side 10 - venstre kvadrat (comfy-headswap, ingen tekst)
         {
-            "filename": "10(fotball-vm).png",
+            "filename": "10(fotball-vm-left).png",
             "type": "inner",
+            "square": True,
+            "blocks": [],
+        },
+
+        # Side 10 - hoyre kvadrat (statisk bilde, baerer teksten)
+        {
+            "filename": "10(fotball-vm-right).png",
+            "type": "inner",
+            "square": True,
             "side": "right",
+            "no_split": True,
+            "box_frac": [0.07, 0.76, 0.93, 0.98],
             "blocks": [{
                 "text": p(
-                    "Det sto bare sekunder igjen da ballen havnet hos (Navn) igjen.\n"
-                    "Tribunen reiste seg.\n"
-                    "Han løp mot mål mens forsvarerne kom fra begge sider.\n"
-                    "(Navn) så målet og trakk foten bakover."
+                    "I semifinalen mot Argentina står det 2–2 mot slutten.\n"
+                    "Så får (Navn) sjansen.\n"
+                    "Han scorer — og sender Norge til VM-finalen."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "sekunder", "Tribunen", "målet"],
+                "highlights": [child_name, "semifinalen", "Argentina", "VM-finalen"],
             }],
         },
 
@@ -785,43 +782,30 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Skuddet suste mot hjørnet. Keeperen strakte seg, men rakk den ikke.\n"
-                    "MÅL! Lagkameratene stormet mot (Navn), og Norge var videre.\n"
-                    "Så vant de den neste kampen. Og den neste.\n"
-                    "Helt til bare fire lag var igjen i hele verden."
+                    "(Navn) står i spillertunnelen og ser ut mot stadion.\n"
+                    "På den andre siden venter Spania.\n"
+                    "Bare én kamp står mellom Norge og VM-pokalen."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "Keeperen", "videre", "verden"],
+                "highlights": [child_name, "spillertunnelen", "Spania", "VM-pokalen"],
             }],
         },
 
-        # Side 12 - venstre kvadrat (comfy-headswap, ingen tekst)
+        # Side 12
         {
-            "filename": "12(fotball-vm-left).png",
+            "filename": "12(fotball-vm).png",
             "type": "inner",
-            "square": True,
-            "blocks": [],
-        },
-
-        # Side 12 - hoyre kvadrat (statisk bilde, baerer teksten)
-        {
-            "filename": "12(fotball-vm-right).png",
-            "type": "inner",
-            "square": True,
-            "side": "right",
-            "no_split": True,
-            "box_frac": [0.07, 0.66, 0.93, 0.98],
+            "side": "left",
             "blocks": [{
                 "text": p(
-                    "Semifinalen ble den tøffeste kampen (Navn) hadde spilt.\n"
-                    "Det sto uavgjort helt mot slutten da motstanderne kom alene mot mål.\n"
-                    "(Navn) spurtet tilbake og klarte akkurat å stoppe angrepet.\n"
-                    "Sekunder senere kontret Norge, og lagkameraten scoret. Finale!"
+                    "Finalen blir jevn og nervepirrende.\n"
+                    "Begge lag får sjanser, men ingen klarer å avgjøre.\n"
+                    "Mot slutten står det fortsatt 1–1."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "Semifinalen", "spurtet", "Finale"],
+                "highlights": [child_name, "Finalen", "sjanser"],
             }],
         },
 
@@ -829,17 +813,17 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
         {
             "filename": "13(fotball-vm).png",
             "type": "inner",
-            "side": "left",
+            "side": "right",
             "blocks": [{
                 "text": p(
-                    "Finaledagen kom, og (Navn) sto i spillertunnelen.\n"
-                    "Foran ham lå den største stadion han noen gang hadde sett.\n"
-                    "Ved siden av banen glitret VM-pokalen under lysene.\n"
-                    "Én kamp. Det var alt som gjensto. Så åpnet dørene seg."
+                    "Så får (Navn) ballen.\n"
+                    "Han ser åpningen, skyter —\n"
+                    "MÅL!\n"
+                    "Norge leder 2–1."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "spillertunnelen", "stadion", "lysene"],
+                "highlights": [child_name, "ballen", "MÅL", "Norge"],
             }],
         },
 
@@ -850,14 +834,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Finalen sto 1–1 da Norge fikk frispark like utenfor sekstenmeteren.\n"
-                    "(Navn) la ballen til rette, løp frem og skjøt. Rett i krysset!\n"
-                    "Da dommeren blåste av, løftet lagkameratene (Navn) opp i konfettien.\n"
-                    "Han hadde vært fotballstjerne. Nå var han verdensmester."
+                    "Sluttsignalet går.\n"
+                    "Norge har slått Spania 2–1 og vunnet Fotball-VM!\n"
+                    "(Navn) jubler med laget. Han er verdensmester."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "frispark", "krysset", "verdensmester"],
+                "highlights": [child_name, "Sluttsignalet", "Fotball-VM", "verdensmester"],
             }],
         },
 
@@ -869,7 +852,7 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "blocks": [{
                 "text": p(
                     "Denne boken handler om å reise seg igjen. Om lagånd, om nerver før en stor kamp, og om å tro på seg selv mens hele verden ser på.\n"
-                    "Etter finalen hjemme får (Navn) et brev han knapt tør å åpne: landslaget vil ha ham med til VM.\n"
+                    "Etter den store kampen hjemme får (Navn) beskjeden han knapt tør å tro på: landslaget vil ha ham med til VM.\n"
                     "En varm og spennende fortelling om vennskap, mot og drømmer som blir større enn man tør å håpe på.\n"
                     "For den største forskjellen mellom en drøm og et eventyr er at noen tør å fortsette når det blir vanskelig."
                 ),
@@ -1328,8 +1311,7 @@ def render_page(page: Dict[str, Any], base_dir: str, out_dir: str) -> List[str]:
 
 
 FOTBALL_DREAMPAGE_FIRST = os.path.join(
-    DP_ROOT, "books", "fotball-vm",
-    "dreampage-first(fotball-vm).png"
+    DP_ROOT, "books", "fotball-vm", "dreampage-first(fotball-vm).png"
 )
 if not os.path.exists(FOTBALL_DREAMPAGE_FIRST):
     # Boka har ingen egen intro-side enda - bruk bok 1 sin.

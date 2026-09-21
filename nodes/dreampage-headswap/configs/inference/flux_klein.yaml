@@ -1,9 +1,12 @@
-# Requires an audited local BASE4B Diffusers snapshot AND a trained DreamSwap checkpoint.
+# Requires an audited local Klein 9B Diffusers snapshot AND a trained DreamSwap checkpoint.
 model:
   backbone: flux_klein
+  model_id: black-forest-labs/FLUX.2-klein-9B
+  transformer_checkpoint: ../../models/diffusion_models/flux-2-klein-9b.safetensors
+  text_guidance_scale: 1.0
   identity_dim: 64
   structure_dim: 16
-  weights_path: local_data/models/FLUX.2-klein-base-4B
+  weights_path: local_data/models/flux-klein-9b
   train_transformer: false
 inference:
   crop: {resolution: 512, context: 1.5, min_side: 16}
@@ -11,7 +14,7 @@ inference:
   quality: {threshold: 0.8}
   reference_resolution: 128
   degradation: neutral
-  steps: 28
+  steps: 4
   seed: 17
   identity_strength: 1.0
   refine_strength: 0.0

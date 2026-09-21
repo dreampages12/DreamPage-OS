@@ -32,7 +32,8 @@
     "class_type": "DP_LoadPhoto",
     "inputs": {
       "image": "26063001.jpg",
-      "mask_channel": "red"
+      "mask_channel": "red",
+      "mpo_frame": 0
     },
     "_meta": {
       "title": "A  /  person to insert"
@@ -42,7 +43,8 @@
     "class_type": "DP_LoadPhoto",
     "inputs": {
       "image": "forside(dyreparken).jpg",
-      "mask_channel": "red"
+      "mask_channel": "red",
+      "mpo_frame": 0
     },
     "_meta": {
       "title": "B  /  original scene"
@@ -52,7 +54,8 @@
     "class_type": "DP_LoadPhoto",
     "inputs": {
       "image": "forside-headmask(dyreparken).png",
-      "mask_channel": "red"
+      "mask_channel": "red",
+      "mpo_frame": 0
     },
     "_meta": {
       "title": "C  /  scene headmask · RED"

@@ -21,8 +21,14 @@ import os
 import sqlite3
 import sys
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
+import dp_platform  # noqa: E402
 
 # Windows-konsollen her er cp1252 og kan ikke skrive æøå. Uten dette krasjer
 # et hvilket som helst print med norsk tekst i en UnicodeEncodeError.
@@ -32,10 +38,13 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-DB = r"C:\Users\tobia\.n8n\database.sqlite"
+# n8n sin SQLite. Stien utledes av hjemmemappa, ikke av et brukernavn:
+# `Path.home()` gir C:\Users\<bruker>\.n8n paa Windows og ~/.n8n paa
+# Linux. DP_N8N_HOME overstyrer. Se flow/dp_platform.py.
+DB = str(dp_platform.n8n_db())
 WORKFLOW_ID = "xy8qiRUzcBpH52CI"
-CACHE_DIR = r"C:\DreamPage-OS\state\orders"
-BOOKS_DIR = r"C:\DreamPage-OS\books"
+CACHE_DIR = under("state/orders")
+BOOKS_DIR = under("books")
 
 # Hvor mange executions vi ser bakover når vi leter. Blobbene er store, så
 # vi filtrerer på ordrenummeret i SQL først og parser bare treffene.
@@ -355,7 +364,7 @@ def resolve(order_id: str, refresh: bool = False) -> dict:
         config = json.load(fh)
 
     order_path = os.path.join(BOOKS_DIR, slug, "orders", order_id)
-    comfy_dir = os.path.join(r"C:\DreamPage-OS\output",
+    comfy_dir = os.path.join(under("output"),
                              config.get("comfyOutputPrefix", f"{slug}/orders").replace("/", os.sep),
                              order_id, "comfy")
 
@@ -381,8 +390,13 @@ def resolve(order_id: str, refresh: bool = False) -> dict:
         "shipping": payload.get("shipping") or {},
         "cover_type": payload.get("cover_type") or "hardcover",
         "continue_code": str(payload.get("continue_code") or "").strip(),
-        "next_book_slug": next_book_slug(config, payload),
-        "next_book_title": next_book_title(config, payload),
+        # Rettet neste bok slaar payloaden, som navnet. Ordre 1553-b1 kom inn
+        # med "Den Magiske Bursdagen" mens WordPress siden ble endret til
+        # "Den Forsvunne Prinsen" - payloaden er kvitteringen og roeres ikke.
+        "next_book_slug": (overrides.get("next_book_slug")
+                           or next_book_slug(config, payload)),
+        "next_book_title": (overrides.get("next_book_title")
+                            or next_book_title(config, payload)),
         "text_script": text_script_for(config, payload),
     }
 
@@ -435,7 +449,7 @@ def page_entry(config: dict, page_key: str) -> dict | None:
 # faller tilbake til standardmalen, saa en halvferdig serie er brukbar med en
 # gang i stedet for aa maatte vente paa at hele boka er tegnet paa nytt.
 # --------------------------------------------------------------------------
-INPUT_DIR = r"C:\DreamPage-OS\input"
+INPUT_DIR = under("input")
 
 BODY_VARIANTS = {
     "standard": {"label": "Standard", "suffix": ""},

@@ -1,0 +1,35 @@
+{
+  "slug": "den-forsvunne-prinsen",
+  "displayName": "Den Forsvunne Prinsen",
+  "_status": "UNDER ARBEID: kun forside + headmask + logo er laget. Innersidene (page01-page14), textScript, prepareScript og bakside/ryggrad mangler. Boka kan IKKE produseres enna - den brukes forelopig kun som next_book for QR-siste-siden i kongerikets-hemmelighet.",
+  "_series": "Motet i hjertet, bok 3 (motet-i-hjertet -> kongerikets-hemmelighet -> den-forsvunne-prinsen)",
+  "_continuationOf": "kongerikets-hemmelighet",
+  "orderBasePath": "C:/DreamPage-OS/books/den-forsvunne-prinsen/orders",
+  "comfyOutputPrefix": "den-forsvunne-prinsen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "innerPatchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(prinsen).png",
+      "mask_image": "forside-headmask(prinsen).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "expectedInnerPages": 30,
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json",
+    "innerpages": "workflow_api.json"
+  }
+}

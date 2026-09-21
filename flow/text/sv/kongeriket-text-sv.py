@@ -109,7 +109,7 @@ LOGO_DIR = os.path.join(SCRIPT_ROOT_DIR, "logo", SCRIPT_LOCALE)
 INNER_FONT     = os.path.join(SCRIPT_DIR, "Georgia.ttf")
 
 BOOK_DREAMPAGE_FIRST = os.path.join(
-    DP_ROOT, "books", "kongerikets-hemmelighet", "dreampage-first-kongeriket.png"
+    DP_ROOT, "books", "kongerikets-hemmelighet", "dreampage-first-rosa.png"
 )
 DREAMPAGE_FIRST_TAGLINE = "Tryckt med omtanke för\nkvalitet"
 HIGHLIGHT_FONT = os.path.join(SCRIPT_DIR, "Georgia Bold.ttf")
@@ -1229,7 +1229,10 @@ def render_page(page: Dict[str, Any], base_dir: str, out_dir: str) -> List[str]:
                 int(img_w * 0.82),
                 box_bottom,
             )
-            line_spacing = max(10, int(block.get("line_spacing", 18)))
+            # draw_text sin standard er 10 PIKSLER, satt da sidene var smaa.
+            # Paa en 4096 px side ble linjene klistret sammen under tittelen
+            # (19.09.2026). Luften maa foelge skriftstoerrelsen.
+            line_spacing = max(10, int(block.get("line_spacing", 0)) or int(font_size * 0.42))
 
             draw_text(
                 draw=draw,
@@ -1393,7 +1396,7 @@ def render_page(page: Dict[str, Any], base_dir: str, out_dir: str) -> List[str]:
             draw_text_backdrop(
                 img, box, block["text"], font, line_spacing,
                 highlights=block.get("highlights", []),
-                align="center", strength="strong",
+                align="center", shape="block", strength="strong",
             )
 
 
@@ -1782,7 +1785,7 @@ def _dp_highlight_font(size: int, fallback):
     return fallback
 
 
-def draw_text_backdrop(img, box, text, font, line_spacing, highlights=None, align="left", strength="normal"):
+def draw_text_backdrop(img, box, text, font, line_spacing, highlights=None, align="left", strength="normal", shape="lines"):
     # Per-line "pill" backdrop. Mirrors the exact layout the shared text engine
     # draws (balanced wrap + auto-shrink) so each pill hugs its own line instead
     # of one greedy, too-wide rectangle. Falls back to a simple greedy wrap if
@@ -1904,15 +1907,36 @@ def draw_text_backdrop(img, box, text, font, line_spacing, highlights=None, alig
     plate = Image.new("RGBA", img.size, (0, 0, 0, 0))
     pd = ImageDraw.Draw(plate)
 
+    if shape == "block":
+        # Baksiden: EN myk sky bak hele bolken - ingen synlig kant, samme som
+        # motet-i-hjertet. Per-linje-platene i "strong" ga en altfor hard
+        # skygge paa kongeriket-baksiden (19.09.2026).
+        pad_x = int(pad_x * 1.9)
+        pad_y = int(pad_y * 2.4)
+        plate_alpha = 0
+        shadow_alpha = 110
+        blur_amount = max(30, int(fs * 2.1))
+        boxes = [(
+            min(lb[0] for lb in line_boxes),
+            min(lb[1] for lb in line_boxes),
+            max(lb[2] for lb in line_boxes),
+            max(lb[3] for lb in line_boxes),
+        )]
+    else:
+        boxes = line_boxes
+
     drew = False
-    for lb in line_boxes:
+    for lb in boxes:
         left = max(0, lb[0] - pad_x)
         top = max(0, lb[1] - pad_y)
         right = min(img.size[0], lb[2] + pad_x)
         bottom = min(img.size[1], lb[3] + pad_y)
         if right <= left or bottom <= top:
             continue
-        radius = max(6, min((right - left) // 2, int((bottom - top) * 0.40)))
+        if shape == "block":
+            radius = max(24, int(fs * 0.9))
+        else:
+            radius = max(6, min((right - left) // 2, int((bottom - top) * 0.40)))
         sd.rounded_rectangle((left, top, right, bottom), radius=radius, fill=(0, 0, 0, shadow_alpha))
         pd.rounded_rectangle((left, top, right, bottom), radius=radius, fill=(0, 0, 0, plate_alpha))
         drew = True

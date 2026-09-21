@@ -1,0 +1,68 @@
+# Vanlig Klein 9B (distilled). Kun etter eksplisitt datasettgodkjenning.
+model:
+  backbone: flux_klein
+  identity_dim: 64
+  structure_dim: 16
+  weights_path: local_data/models/flux-klein-9b
+  dtype: bf16
+  train_transformer: false
+  gradient_checkpointing: true
+  model_id: black-forest-labs/FLUX.2-klein-9B
+  transformer_checkpoint: ../../models/diffusion_models/flux-2-klein-9b.safetensors
+  text_guidance_scale: 1.0
+dataset:
+  manifest: local_data/enrolled/v1/pairs/pairs.train.jsonl
+  peer_manifests: []
+  resolution: 512
+  reference_count: 1
+  allow_synthetic: false
+  degradation: neutral
+  registry_path: local_data/enrolled/v1/pairs/dataset_registry.json
+optimizer:
+  name: adamw
+  lr: 0.0001
+  betas:
+  - 0.9
+  - 0.999
+  weight_decay: 0.01
+scheduler:
+  name: constant
+  warmup_steps: 100
+training:
+  device: cuda
+  precision: bf16
+  seed: 1234
+  batch_size: 1
+  accumulation_steps: 4
+  max_steps: 1000
+  gradient_clip: 1.0
+  checkpoint_every: 100
+  log_every: 10
+  cpu_threads: 2
+  tracker: jsonl
+  output_dir: runs/unmanaged-klein-9b-pilot
+validation:
+  manifest: local_data/enrolled/v1/pairs/pairs.validation.jsonl
+  split: validation
+  every: 100
+  seed: 4321
+  batch_size: 1
+  max_batches: 8
+  sampling_steps: 4
+  samples: false
+  metric: validation/total
+losses:
+  flow_matching: 1.0
+  reconstruction: 0.0
+  outside_mask: 0.0
+  boundary: 0.0
+  lighting: 0.0
+  local_texture: 0.0
+  global_identity: 0.0
+  local_identity: 0.0
+  facial_perceptual: 0.0
+  pose: 0.0
+  landmark: 0.0
+  gaze: 0.0
+  expression: 0.0
+  age_consistency: 0.0

@@ -65,6 +65,11 @@ sys.path.insert(0, SCRIPT_DIR)
 
 import dp_order
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location(
     "regen_page", os.path.join(SCRIPT_DIR, "regen_page.py"))
 regen = importlib.util.module_from_spec(_spec)
@@ -77,9 +82,9 @@ for _stream in (sys.stdout, sys.stderr):
     except (AttributeError, ValueError):
         pass
 
-INPUT_DIR = r"C:\DreamPage-OS\input"
-OUTPUT_DIR = r"C:\DreamPage-OS\output"
-BOOKS_DIR = r"C:\DreamPage-OS\books"
+INPUT_DIR = under("input")
+OUTPUT_DIR = under("output")
+BOOKS_DIR = under("books")
 WORKDIR = os.path.join(INPUT_DIR, "_maskwork")
 
 # Instruksjonen til Klein. To ting maa staa der: at BARE huden endrer seg, og

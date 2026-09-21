@@ -270,6 +270,11 @@ def create_app(runner=None, consumer=None) -> FastAPI:
         return {
             "status": "ok" if (comfy_ok is not False) else "degraded",
             "at": jobs_mod.now(),
+            # HVA denne maskinen er til. Foerste spoersmaal naar noe ser rart
+            # ut: er dette i det hele tatt en bok-PC? En preview-PC lytter
+            # paa en annen koe og kjoerer en annen pipeline, og en jobb som
+            # "forsvant" kan vaere en melding som havnet paa feil maskin.
+            "mode": status_mod.mode_block(),
             "worker": (runner.snapshot() if runner is not None
                        else {"alive": False, "note": "API-et kjoerer uten runner"}),
             "comfy": {"ok": comfy_ok, "version": comfy_version,
@@ -409,12 +414,12 @@ def create_app(runner=None, consumer=None) -> FastAPI:
             raise HTTPException(409, "kunne ikke settes til pending")
         store.action(who, "retry", job_key,
                      {"forrige_status": row["status"], "feil": row.get("error"),
-                      "pipeline": pipeline or pipeline_mod.ACTIVE})
+                      "pipeline": pipeline or pipeline_mod.active_name()})
         if runner is not None:
             from runner import QueuedJob
             runner.submit(QueuedJob(job_key, row["payload"], pipeline=pipeline))
         return {"job_key": job_key, "status": "pending", "requested_by": who,
-                "pipeline": pipeline or pipeline_mod.ACTIVE,
+                "pipeline": pipeline or pipeline_mod.active_name(),
                 "at": jobs_mod.now()}
 
     @app.post("/api/jobs/{job_key}/cancel")
@@ -438,7 +443,11 @@ def create_app(runner=None, consumer=None) -> FastAPI:
     # -- pipelines og boeker ----------------------------------------------
     @app.get("/api/workflows")
     def workflows(who: str = Depends(caller)):
-        return {"at": jobs_mod.now(), "active": pipeline_mod.ACTIVE,
+        # `active` er den pipelinen SERVEREN faktisk kjoerer, altsaa etter at
+        # modusen har sagt sitt - ikke pipeline.ACTIVE, som bare gjelder
+        # boeker. Panelet tegner den som "den aktive", og den maa stemme.
+        return {"at": jobs_mod.now(), "active": pipeline_mod.active_name(),
+                "mode": status_mod.mode_block(),
                 "workflows": pipeline_mod.describe_all()}
 
     @app.get("/api/books")

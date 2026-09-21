@@ -39,6 +39,11 @@ sys.path.insert(0, SCRIPT_DIR)
 import dp_order
 import importlib.util
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 # regen_page.py har bindestrek-fritt navn, men ligger ved siden av oss og
 # eier alt maskineriet vi trenger (laas, node-deteksjon, ventelogikk).
 _spec = importlib.util.spec_from_file_location(
@@ -94,14 +99,14 @@ def main() -> int:
     # ett bilde for hele ordren, og en ombygging mistet uttrykkene stille.
     faces = {p["page_key"]: regen.page_face(info, p, args.face or None) for p in pages}
     for face in set(faces.values()):
-        face_path = os.path.join(r"C:\DreamPage-OS\input", face)
+        face_path = os.path.join(under("input"), face)
         if not os.path.isfile(face_path):
             raise SystemExit("fant ikke barnebildet " + face_path)
 
     workflow_file = (config.get("workflowApi")
                      or (config.get("workflowApis") or {}).get("innerpages")
                      or "workflow_api.json")
-    workflow_path = os.path.join(r"C:\DreamPage-OS\books", info["book_slug"], workflow_file)
+    workflow_path = os.path.join(under("books"), info["book_slug"], workflow_file)
     with open(workflow_path, encoding="utf-8-sig") as fh:
         base_prompt = json.load(fh)
 

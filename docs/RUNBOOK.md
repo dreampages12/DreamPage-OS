@@ -13,9 +13,19 @@ hvorfor, dette er *hva gjør jeg nå*.
 .\dreampage.ps1 up         # start alt som er nede
 .\dreampage.ps1 down       # nekter å stoppe midt i en ordre uten -Force
 .\dreampage.ps1 test       # alle testene + check_assets. Kjør før commit
+.\dreampage.ps1 mode       # er dette en BOOK- eller PREVIEW-server?
 ```
 
+**Står maskinen i riktig modus?** Første spørsmål når en ordre «forsvant».
+En PREVIEW-server lytter på `preview-jobs` og rører aldri `dreampage-jobs`,
+så en bokordre blir liggende i køen uten at noe sier fra. `mode` viser kø og
+pipeline; bytte krever `restart`. Se `docs/preview-modus.md`.
+
 Panelet: `http://127.0.0.1:8765/panel`, med et token fra `config/api.json`.
+
+**På Linux heter supervisoren `./dreampage.sh` og tar de samme kommandoene.**
+Samme kode, samme config, samme kø. Vaktmesteren er en systemd-timer i stedet
+for en scheduled task. Se `docs/SETUP-LINUX.md`.
 
 **Portkart**
 

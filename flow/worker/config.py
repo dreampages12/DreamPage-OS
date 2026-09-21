@@ -22,7 +22,40 @@ from paths import CONFIG, COMFY_URL  # noqa: E402
 
 CONFIG_PATH = CONFIG / "flow.json"
 
+# Hva denne server-PC-en er. Én maskin gjoer én ting:
+#
+#   book      hele bokproduksjonen: RabbitMQ `dreampage-jobs` -> sider ->
+#             PDF -> Drive -> Gelato-UTKAST. Dagens oppfoersel, og standarden.
+#   preview   forhaandsvisninger til nettbutikken: RabbitMQ `preview-jobs` ->
+#             ÉN side -> tittel/tekst -> opplasting + callback. Bestiller
+#             ingenting og trykker ingenting.
+#
+# Modusen staar i config/flow.json ("mode") og kan overstyres med DP_MODE i
+# miljoeet. Den avgjoer TO ting, og bare de to: hvilken koe konsumenten lytter
+# paa, og hvilken pipeline runneren kjoerer. Alt annet - jobb-DB, API, logg,
+# status, ack-semantikk, serialiseringen mot ComfyUI - er felles, fordi det
+# er infrastruktur og ikke arbeidsflyt.
+#
+# En ukjent verdi er en FEIL, ikke "da tar vi book". En preview-PC som stille
+# faller tilbake til bokmodus ville koblet seg paa ordrekoeen for ekte,
+# betalte boeker.
+MODES = ("book", "preview")
+
 DEFAULTS: dict = {
+    "mode": "book",
+
+    # Per modus: koenavn og pipeline. Dette er hele bryteren - den er DATA,
+    # paa samme maate som pipelinen selv, saa en ny modus er en oppfoering
+    # her og en liste i pipeline.py, ikke en if-gren i runneren.
+    #
+    # pipeline=null betyr "bruk pipeline.ACTIVE". Bokmodus staar slik med
+    # vilje: hvilken bokpipeline som er aktiv ("pages"/"full") er et valg som
+    # hoerer hjemme i pipeline.py, der begrunnelsen staar.
+    "modes": {
+        "book": {"queue": "dreampage-jobs", "pipeline": None},
+        "preview": {"queue": "preview-jobs", "pipeline": "preview"},
+    },
+
     "comfy": {
         "url": COMFY_URL,
 
@@ -109,6 +142,50 @@ DEFAULTS: dict = {
         "timeout_s": 3600,
     },
 
+    # ---------------------------------------------------------------
+    # Bare PREVIEW-modus leser dette. En bok-PC har hele blokka staaende
+    # ubrukt, og det er meningen: da er en modusbytte én linje, ikke en ny
+    # configfil noen maa huske aa lage.
+    # ---------------------------------------------------------------
+    "preview": {
+        # Hvor det ferdige bildet og statusfila skal. "supabase" er det
+        # nettbutikken faktisk leser; "local" skriver bare til disk og er
+        # for utvikling og test.
+        #
+        # Det finnes MED VILJE ingen standard som "prov supabase, faller
+        # tilbake paa local". Et preview som havner paa en lokal disk i
+        # stedet for hos kunden er en jobb som ser vellykket ut og ikke er
+        # det - noeyaktig feilklassen i CLAUDE.md. Er sinken ikke satt opp,
+        # skal jobben feile hoeyt.
+        "sink": "supabase",
+
+        # Under state/ og output/, relativt til ROOT.
+        "status_dir": "state/preview_jobs",
+        "output_dir": "output/preview",
+
+        # Supabase Storage. url og service_key ligger i config/secrets.json
+        # under "supabase" - aldri her, og aldri i kildekoden.
+        "supabase": {
+            # Statusfila frontenden poller: <bucket>/<status_prefix>/<job_id>.json
+            "status_bucket": "uploads",
+            "status_prefix": "preview-jobs",
+            # Det ferdige bildet: <bucket>/<prefix>/<session>/<job_id>_preview.jpg
+            "result_bucket": "storage",
+            "result_prefix": "previews",
+            "timeout_s": 60,
+        },
+
+        # Callbacken til WordPress. Feiler den, er jobben likevel ferdig -
+        # bildet ligger hos Supabase og statusfila sier "completed".
+        "callback_timeout_s": 30,
+
+        # Telegram-varsel per ferdig preview. Av som standard: en
+        # preview-PC kan gjoere hundrevis om dagen, og et varsel per stykk
+        # er stoey - og stoey er det som gjorde at tolv ekte advarsler i
+        # ordre 1528 saa ut som mer av det samme.
+        "notify_each": False,
+    },
+
     "log": {
         "level": "INFO",
         # Én loggfil per jobb, i tillegg til fellesloggen. Naar en ordre
@@ -157,8 +234,52 @@ def comfy() -> dict:
     return load()["comfy"]
 
 
+def mode() -> str:
+    """"book" eller "preview". DP_MODE i miljoeet vinner over fila.
+
+    Kaster ValueError paa en ukjent verdi. Det er med vilje: en skrivefeil
+    skal ikke bety at en preview-PC stille kobler seg paa koen med ekte,
+    betalte bokordre. main.py fanger den ved oppstart og stopper prosessen
+    med en setning som sier hva som er lov.
+    """
+    raw = (os.environ.get("DP_MODE") or load().get("mode") or "book")
+    value = str(raw).strip().lower()
+    if value not in MODES:
+        raise ValueError(
+            f"ukjent servermodus {raw!r}. Lov: {', '.join(MODES)}. "
+            f"Sett den i {CONFIG_PATH} (\"mode\") eller i DP_MODE.")
+    return value
+
+
+def mode_conf(name: str | None = None) -> dict:
+    """Koe og pipeline for en modus."""
+    key = name or mode()
+    conf = dict((load().get("modes") or {}).get(key) or {})
+    if not conf:
+        # Modusen er kjent (mode() har validert den), men mangler i tabellen.
+        # Det er en configfeil, og den skal ikke gjettes bort.
+        raise ValueError(f"modus {key!r} har ingen oppfoering under \"modes\" "
+                         f"i {CONFIG_PATH}")
+    return conf
+
+
 def queue() -> dict:
-    return load()["queue"]
+    """Koeinnstillingene, med navnet hentet fra den aktive modusen.
+
+    Navnet er DERFOR ikke noe mq.py trenger aa vite noe om: konsumenten
+    spoer om "koen", og faar den koen denne serveren er satt til aa lytte
+    paa. prefetch, ack-regel og heartbeat er de samme i begge moduser -
+    ComfyUI taaler én jobb uansett hva jobben lager.
+    """
+    conf = dict(load()["queue"])
+    name = mode_conf().get("queue")
+    if name:
+        conf["name"] = str(name)
+    return conf
+
+
+def preview() -> dict:
+    return load()["preview"]
 
 
 def api() -> dict:

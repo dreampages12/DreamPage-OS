@@ -58,7 +58,7 @@ ARCHIVE = ROOT / "state" / "comfy-workflows-arkiv"
 # headmasken til en NY bok (se nodes/README.md). Den er ikke i ordreveien, men
 # den er i arbeidsveien til et menneske - arkiverer man den, blir en ny bok
 # vanskeligere aa sette opp enn den trenger aa vaere.
-KEEP = ("Head_Hair_Mask_FullSize_Fast.json",)
+KEEP = ("Head_Hair_Mask_FullSize_Fast.json", "LAB-DreamPage-HeadSwap.json")
 
 # Typenavn som er en VERDI (widget), ikke en ledning. Alt annet - IMAGE,
 # MODEL, CLIP, LATENT, MASK, SEGS ... - er en ledning mellom to noder.

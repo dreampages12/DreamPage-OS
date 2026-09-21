@@ -19,20 +19,21 @@ enkelt `DP_*`-klasse.** Headswappen i produksjon gjøres med hyllevare —
 FLUX.2 Klein + LoRA + LanPaint + InpaintCropAndStitch + Ultralytics
 ansiktsdeteksjon + den håndtegnede headmasken.
 
-De eneste `DP_*`-referansene finnes i `DreamPage_Klein9B_Studio.json` — som
-etter ryddingen 18.09.2026 ligger i `state/comfy-workflows-arkiv/`, ikke i
-ComfyUI-ets workflow-liste (se `tools/comfy_workflows.py`) — og de peker på et
-*annet* klassesett enn det den installerte noden registrerer i dag
-(`DP_DreamSwap`, `DP_SceneStudio`, `DP_ReviewBoard`… mot
-`DP_HeadSwapPipeline`, `DP_QualityCheck`…). Den studio-workflowen ville ikke
-lastet nå.
+Oppdatert kontroll 20.09.2026: ComfyUI på konfigurert port 8189 registrerer
+**alle 16 DreamPage-noder**: de sju kjernenodene over og ni Studio-noder
+(`DP_LoadPhoto`, `DP_ReferenceStudio`, `DP_IdentityEncoder`, `DP_SceneStudio`,
+`DP_SwapPrompt`, `DP_KleinConditioning`, `DP_DreamSwap`, `DP_SeamFinish`,
+`DP_ReviewBoard`). Den tidligere påstanden om at Studio-nodene manglet var feil.
 
-`dreampage-headswap/` er altså et forsknings- og treningsprosjekt — det har
-`training/`, `benchmarks/`, 15 GB `local_data/` og egne docs — og nodene er
-ikke (ennå) koblet inn i bokproduksjonen. Det gjør det **ikke** mindre viktig
-å ta vare på: det er vår kode, den var untracked, og 15 GB modeller og
-datasett kan ikke lages om igjen. Men det betyr at en maskin uten den
-fortsatt kan trykke bøker.
+`python tools/headswap.py studio` bygger fra serverens faktiske kontrakter og
+installerer `LAB-DreamPage-HeadSwap.json` i GUI-lista. Workflow-verktøyet bevarer
+denne eksplisitte LAB-fila ved synkronisering. Bokworkflowene bruker fortsatt
+sin eksisterende pipeline. Å bygge LAB-grafen sender ingen GPU-jobb.
+
+Treningsprosjektet, modellkvitteringen og lokale data er bevart under
+`nodes/dreampage-headswap/`. Eget miljø, datasettreview og versjonerte
+fresh/resume/finetune-kjøringer beskrives i [MODEL-TRAINING.md](../docs/MODEL-TRAINING.md).
+Ingen trening starter før Tobias har godkjent det konkrete fotorealistiske datasettet.
 
 ## Custom nodes som MÅ være installert for at bøkene skal bygges
 

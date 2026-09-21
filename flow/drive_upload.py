@@ -114,8 +114,14 @@ def find_or_create_folder(token: str, name: str, parent: str) -> str:
     return res["id"]
 
 
-def _start_session(token: str, name: str, size: int, parent: str) -> str:
-    """Be Google om en opplastingssesjon. Selve URL-en er engangsbruk."""
+def _start_session(token: str, name: str, size: int, parent: str,
+                   mime: str = "application/pdf") -> str:
+    """Be Google om en opplastingssesjon. Selve URL-en er engangsbruk.
+
+    mime er PDF som standard fordi det er det ordrene laster opp. Datasettene
+    til modelltrening laster opp PNG og JPG, og en PNG merket som PDF ville
+    ikke kunne vises i Drive.
+    """
     meta = json.dumps({"name": name, "parents": [parent]}).encode()
     last = None
     for attempt in range(MAX_ATTEMPTS):
@@ -126,7 +132,7 @@ def _start_session(token: str, name: str, size: int, parent: str) -> str:
         req.add_header("User-Agent", UA)
         req.add_header("Authorization", f"Bearer {token}")
         req.add_header("Content-Type", "application/json; charset=UTF-8")
-        req.add_header("X-Upload-Content-Type", "application/pdf")
+        req.add_header("X-Upload-Content-Type", mime)
         req.add_header("X-Upload-Content-Length", str(size))
         try:
             with _open(req, timeout=120) as resp:
@@ -165,35 +171,39 @@ def _received(session_url: str, size: int):
         return (int(rng.split("-")[1]) + 1 if rng else 0), None
 
 
-def _put(session_url: str, body: bytes, offset: int, size: int) -> dict:
+def _put(session_url: str, body: bytes, offset: int, size: int,
+         mime: str = "application/pdf") -> dict:
     req = urllib.request.Request(session_url, data=body[offset:], method="PUT")
     req.add_header("User-Agent", UA)
-    req.add_header("Content-Type", "application/pdf")
+    req.add_header("Content-Type", mime)
     req.add_header("Content-Range", f"bytes {offset}-{size - 1}/{size}")
     with _open(req, timeout=1800) as resp:
         return json.loads(resp.read().decode("utf-8") or "{}")
 
 
-def upload(token: str, path: str, parent: str) -> dict:
+def upload(token: str, path: str, parent: str,
+           mime: str = "application/pdf", name: str | None = None) -> dict:
     """Resumable upload - de kombinerte PDF-ene er titalls megabyte.
 
     Gjenopptar der Google stoppet i stedet for aa gi opp. Ordre 1512 feilet
     paa HTTP 500 i det avsluttende PUT-et, og fordi reprint_order avbryter
     paa foerste feil ble hverken innmat eller Gelato-utkast rort.
     """
-    name = os.path.basename(path)
+    # Navnet i Drive kan vaere et annet enn paa disk: datasettene skal hete
+    # foer/etter/person, mens kildefilene begge heter "06(styrken).png".
+    name = name or os.path.basename(path)
     size = os.path.getsize(path)
     if not size:
         raise SystemExit(f"{path} er tom - nekter aa laste den opp")
     with open(path, "rb") as fh:
         body = fh.read()
 
-    session_url = _start_session(token, name, size, parent)
+    session_url = _start_session(token, name, size, parent, mime)
     offset = 0
     last = None
     for attempt in range(MAX_ATTEMPTS):
         try:
-            res = _put(session_url, body, offset, size)
+            res = _put(session_url, body, offset, size, mime)
             print(f"[DRIVE] lastet opp {name} ({size // 1024 // 1024} MB): {res['id']}")
             return res
         except urllib.error.HTTPError as error:
@@ -203,7 +213,7 @@ def upload(token: str, path: str, parent: str) -> dict:
                 last = error
                 if attempt + 1 < MAX_ATTEMPTS:
                     _sleep(attempt)
-                    session_url = _start_session(token, name, size, parent)
+                    session_url = _start_session(token, name, size, parent, mime)
                     offset = 0
                 continue
             if error.code not in RETRY_STATUS:
@@ -222,7 +232,7 @@ def upload(token: str, path: str, parent: str) -> dict:
         except urllib.error.HTTPError as error:
             if error.code not in (404, 410):
                 raise
-            session_url = _start_session(token, name, size, parent)
+            session_url = _start_session(token, name, size, parent, mime)
             offset = 0
             continue
         if done:
@@ -232,6 +242,15 @@ def upload(token: str, path: str, parent: str) -> dict:
               f"{size // 1024 // 1024} MB")
     raise SystemExit(f"Drive-opplasting av {name} feilet etter {MAX_ATTEMPTS} "
                      f"forsoek. Siste feil: {last}")
+
+
+def list_folders(token: str, parent: str) -> list[dict]:
+    """Undermappene i en mappe, navn og id. Brukes til aa finne neste ledige navn."""
+    q = (f"'{parent}' in parents and trashed=false and "
+         "mimeType='application/vnd.google-apps.folder'")
+    url = ("https://www.googleapis.com/drive/v3/files?q=" + urllib.parse.quote(q) +
+           "&fields=files(id,name)&pageSize=1000&supportsAllDrives=true")
+    return _req(url, headers={"Authorization": f"Bearer {token}"}).get("files", [])
 
 
 def find_by_name(token: str, name: str, parent: str) -> list[dict]:

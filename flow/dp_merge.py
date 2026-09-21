@@ -40,8 +40,13 @@ import dp_order                                                    # noqa: E402
 import reprint_order                                               # noqa: E402
 from finish_order import PRODUCT_UID, gelato                       # noqa: E402
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 DRAFT_STATE_DIR = reprint_order.DRAFT_STATE_DIR
-SESSION_DIR = r"C:\DreamPage-OS\state\reprint"
+SESSION_DIR = under("state/reprint")
 
 
 # --------------------------------------------------------------------------
@@ -284,6 +289,21 @@ def merged_group(order_id: str) -> list[str]:
         data = _receipt(data.get("merged_into_order"))
     orders = [str(o) for o in ((data or {}).get("merged_orders") or [])]
     return orders if len(orders) > 1 else []
+
+
+def merged_draft_id(order_id: str) -> str | None:
+    """Id-en til det samlede utkastet, spurt fra hvilken som helst av ordrene.
+
+    Den PRIMAERE har den i `draft_id`, den SEKUNDAERE i `merged_into_draft`.
+    Uten dette maatte hver kaller vite hvilken side den sto paa, og botten
+    viste «ukjent utkast» til operatoren nettopp naar hun trengte id-en.
+    """
+    data = _receipt(order_id)
+    if not data:
+        return None
+    if data.get("status") == "merged":
+        return str(data.get("merged_into_draft") or "") or None
+    return str(data.get("draft_id") or "") or None
 
 
 def _receipt(order_id) -> dict | None:

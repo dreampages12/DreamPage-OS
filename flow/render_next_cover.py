@@ -25,6 +25,11 @@ sys.path.insert(0, SCRIPT_DIR)
 import dp_order
 import regen_page
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 for _stream in (sys.stdout, sys.stderr):
     try:
         _stream.reconfigure(errors="replace")
@@ -46,7 +51,7 @@ def next_shim(info: dict, next_slug: str) -> dict:
     Rendringen skal bruke neste bok sin mal/maske/workflow, men ordrens
     barnebilde og ordrens egen utmappe - ikke neste bok sin.
     """
-    next_config_path = os.path.join(r"C:\DreamPage-OS\books", next_slug, "config.json")
+    next_config_path = os.path.join(under("books"), next_slug, "config.json")
     if not os.path.isfile(next_config_path):
         raise FileNotFoundError(f"fant ikke {next_config_path}")
     with open(next_config_path, encoding="utf-8-sig") as fh:

@@ -1,12 +1,11 @@
 """Build the editable Klein Studio UI graph and matching API graph; never queue a job.
 
 Node widgets and connection indices are derived from the real schemas. The running
-ComfyUI server supplies core node metadata; DreamPage metadata comes from local code.
+ComfyUI server supplies both core and DreamPage node metadata.
 """
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 from pathlib import Path
 import sys
@@ -27,17 +26,9 @@ WIDGET_TYPES = {"INT", "FLOAT", "STRING", "BOOLEAN"}
 def get_schemas(server: str) -> dict:
     with urllib.request.urlopen(server.rstrip("/") + "/object_info", timeout=20) as response:
         schemas = json.load(response)
-    native = importlib.import_module("comfyui_dreampage_headswap.native_nodes")
-    mappings = getattr(native, "NODE_CLASS_MAPPINGS", None)
-    if mappings is None:
-        mappings = native.NATIVE_NODE_CLASS_MAPPINGS
-    for name, node in mappings.items():
-        schemas[name] = {
-            "input": node.INPUT_TYPES(),
-            "output": list(node.RETURN_TYPES),
-            "output_name": list(getattr(node, "RETURN_NAMES", node.RETURN_TYPES)),
-            "output_node": bool(getattr(node, "OUTPUT_NODE", False)),
-        }
+    # Bruk serverens faktiske kontrakt; lokale importer kan tilhoere en annen installasjon.
+    if "DP_LoadPhoto" not in schemas or "DP_DreamSwap" not in schemas:
+        raise ValueError("ComfyUI mangler DreamPage Studio-noder; last dem ved neste planlagte omstart")
     return schemas
 
 
@@ -123,6 +114,17 @@ class Graph:
             missing = set(required) - set(api)
             if missing:
                 raise ValueError(f"Missing required inputs for {node['type']}: {sorted(missing)}")
+            # Stopp foer installasjon hvis et valgt bilde eller en modell ikke finnes.
+            for section in ("required", "optional"):
+                for name, spec in self.schemas[node["type"]]["input"].get(section, {}).items():
+                    if name not in api:
+                        continue
+                    value = api[name]
+                    if isinstance(value, list):
+                        continue
+                    choices = spec[0]
+                    if isinstance(choices, (list, tuple)) and value not in choices:
+                        raise ValueError(f"Unavailable selection: {node['type']}.{name} = {value!r}")
         # Check every native node reaches a real output, rather than merely appearing on canvas.
         ancestors = set()
         stack = [nid for nid, item in self.api.items() if self.schemas[item["class_type"]].get("output_node")]
@@ -146,7 +148,7 @@ class Graph:
 
     def workflow(self):
         return {"id": str(uuid.uuid5(uuid.NAMESPACE_URL, "dreampage:klein9b-studio:v1")),
-                "revision": 1, "last_node_id": len(self.nodes), "last_link_id": len(self.links),
+                "revision": 2, "last_node_id": len(self.nodes), "last_link_id": len(self.links),
                 "nodes": self.nodes, "links": self.links, "groups": self.groups,
                 "config": {}, "extra": {"ds": {"scale": 0.33, "offset": [80, 120]},
                                            "dreampage": {"edition": "Klein 9B Studio", "training": False,
@@ -154,7 +156,8 @@ class Graph:
                 "version": 0.4}
 
 
-def build(schemas):
+def build(schemas, *, person="26063001.jpg", scene_image="forside(dyreparken).jpg",
+          mask_image="forside-headmask(dyreparken).png"):
     g = Graph(schemas)
     g.group("01  /  EXISTING KLEIN 9B", (0, 0, 720, 1160), "#34566b")
     g.group("02  /  YOUR THREE INPUTS", (780, 0, 1320, 1160), "#43655a")
@@ -163,7 +166,7 @@ def build(schemas):
     g.group("05  /  DIRECT & GENERATE", (1120, 1240, 1040, 1590), "#526186")
     g.group("06  /  FINISH & REVIEW", (2240, 1240, 1280, 1590), "#8a7150")
 
-    g.note("DreamPage  /  Klein 9B Studio", "START HERE\nUse your existing Klein 9B, Qwen3-8B and FLUX.2 VAE.\nChoose the three images in group 02, then run.\n4 steps · fixed seed · native sampler · no LoRA loaded.\nThis workflow performs inference only.", (30, 70), (660, 170))
+    g.note("DreamPage  /  START HER", "1. Velg person, originalbilde og tilhørende hodemaske i gruppe 02.\n2. Trykk Run. Se resultat og før/etter i gruppe 06.\n3. Bytt bare én innstilling om gangen; behold samme seed.\nVanlig Klein 9B · 4 steg · ingen LoRA eller trening.\nTestresultater lagres under DreamPage/Studio.", (30, 70), (660, 170))
     g.node("model", "UNETLoader", "Klein 9B  /  existing model", (30, 310), (660, 150),
            {"unet_name": "flux-2-klein-9b.safetensors", "weight_dtype": "default"}, "#2f4c63")
     g.node("clip", "CLIPLoaderGGUF", "Qwen3-8B  /  text encoder", (30, 530), (660, 150),
@@ -174,11 +177,11 @@ def build(schemas):
 
     g.note("One person  +  one scene  +  its headmask", "PERSON: sharp portrait with the full head, hair and ears visible.\nSCENE: the original image to edit. MASK: the matching headmask; keep channel = red.\nWhite is editable. Black stays exactly as it was. Replace these example selections with your own test case.", (810, 70), (1260, 170))
     g.node("person", "DP_LoadPhoto", "A  /  person to insert", (810, 310), (390, 660),
-           {"image": "26063001.jpg", "mask_channel": "red"}, "#355e51")
+           {"image": person, "mask_channel": "red"}, "#355e51")
     g.node("template", "DP_LoadPhoto", "B  /  original scene", (1245, 310), (390, 660),
-           {"image": "forside(dyreparken).jpg", "mask_channel": "red"}, "#355e51")
+           {"image": scene_image, "mask_channel": "red"}, "#355e51")
     g.node("mask", "DP_LoadPhoto", "C  /  scene headmask · RED", (1680, 310), (390, 660),
-           {"image": "forside-headmask(dyreparken).png", "mask_channel": "red"}, "#355e51")
+           {"image": mask_image, "mask_channel": "red"}, "#355e51")
 
     g.note("Identity  /  inspect the actual reference", "The preview shows what the image encoder receives. Aspect ratio is preserved.\nFor a wide source photo, connect a source headmask to isolate the full head.\nOptional view_2 and view_3 accept other photos of the SAME person.", (2190, 70), (1140, 170))
     g.node("references", "DP_ReferenceStudio", "Prepare identity views", (2190, 310), (540, 440),
@@ -244,10 +247,13 @@ def build(schemas):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--server", default="http://127.0.0.1:8188")
+    parser.add_argument("--server", required=True, help="URL fra DreamPage OS config/flow.json")
     parser.add_argument("--output-dir", type=Path, default=ROOT / "workflows")
+    parser.add_argument("--person", default="26063001.jpg", help="Personbilde i ComfyUI input")
+    parser.add_argument("--scene", default="forside(dyreparken).jpg", help="Originalbilde i ComfyUI input")
+    parser.add_argument("--mask", default="forside-headmask(dyreparken).png", help="Hodemaske i ComfyUI input")
     args = parser.parse_args()
-    graph = build(get_schemas(args.server))
+    graph = build(get_schemas(args.server), person=args.person, scene_image=args.scene, mask_image=args.mask)
     graph.validate()
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for filename, data in (("DreamPage_Klein9B_Studio.json", graph.workflow()),

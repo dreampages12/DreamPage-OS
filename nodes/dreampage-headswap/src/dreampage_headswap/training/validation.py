@@ -15,19 +15,32 @@ from ..utils.checkpoint import rng_state, restore_rng, seed_everything
 
 def dataset_fingerprint(*datasets) -> str:
     """Bind exact resume to actual enrolled records AND asset bytes, not just path strings."""
-    rows, paths = [], set()
+    rows, hashes = [], {}
+    def digest(path):
+        if path not in hashes:
+            hashes[path] = file_sha256(path)
+        return hashes[path]
     for dataset in datasets:
         if dataset is None:
             continue
         for row in dataset.rows:
-            rows.append(row)
-            paths.update(row["sources"])
-            paths.update(row.get("source_headmasks", []))
-            paths.update(row[k] for k in ("template", "ground_truth", "headmask"))
-            if row.get("generated"):
-                paths.add(row["generated"])
-    payload = {"records": rows, "files": {str(path): file_sha256(path) for path in sorted(paths)}}
-    return hashlib.sha256(json.dumps(payload, sort_keys=True, allow_nan=False).encode()).hexdigest()
+            record = {key: value for key, value in row.items() if key != "_manifest"}
+            for key in ("source", "template", "ground_truth", "headmask", "generated"):
+                if record.get(key):
+                    record[key] = digest(record[key])
+            for key in ("sources", "source_headmasks"):
+                if key in record:
+                    record[key] = [digest(path) for path in record[key]]
+            if record.get("refinement_artifact"):
+                artifact = dict(record["refinement_artifact"])
+                artifact["generated"] = digest(artifact["generated"])
+                if artifact.get("artifact_manifest"):
+                    artifact["artifact_manifest"] = digest(artifact["artifact_manifest"])
+                record["refinement_artifact"] = artifact
+            rows.append(record)
+    # Absolutte rotmapper varierer mellom servere; rekkefolge og bildeinnhold gjoer ikke det.
+    payload = {"version": 2, "records": rows}
+    return "v2:" + hashlib.sha256(json.dumps(payload, sort_keys=True, allow_nan=False).encode()).hexdigest()
 
 
 @torch.no_grad()

@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "package": "nodes/dreampage-headswap",
+  "training_environment": "nodes/dreampage-headswap/.venv",
+  "incoming_dataset": "nodes/dreampage-headswap/local_data/fra_tobias",
+  "reviews": "nodes/dreampage-headswap/local_data/reviews",
+  "training_backbone": "flux-klein-9b",
+  "training_model_id": "black-forest-labs/FLUX.2-klein-9B",
+  "training_weights": "nodes/dreampage-headswap/local_data/models/flux-klein-9b",
+  "training_transformer": "models/diffusion_models/flux-2-klein-9b.safetensors",
+  "training_transformer_receipt": "state/headswap/klein-9b-transformer.json",
+  "studio_backbone": "flux-2-klein-9b.safetensors",
+  "studio_filename": "LAB-DreamPage-HeadSwap.json",
+  "dataset_approval_required": true,
+  "photorealistic_only": true,
+  "automatic_customer_enrollment": false
+}

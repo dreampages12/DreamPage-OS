@@ -45,8 +45,23 @@ def main() -> int:
 
     conf = flow_config.load()
     log = Log(None, conf["log"]["level"])
+
+    # Modusen valideres FOERST, foer noe startes. En skrivefeil i "mode" skal
+    # stoppe prosessen her, ikke bli til "da tar vi book" - en preview-PC som
+    # stille koblet seg paa `dreampage-jobs` ville plukket opp ekte, betalte
+    # bokordre og kjoert dem gjennom en pipeline som ikke bygger boeker.
+    try:
+        mode = flow_config.mode()
+        queue_name = flow_config.queue()["name"]
+        import pipeline as pipeline_mod
+        pipeline_name = pipeline_mod.active_name()
+    except (ValueError, KeyError) as exc:
+        print(f"[flow] {exc}", file=sys.stderr)
+        return 2
+
     store = jobs_mod.store()
-    log.info("flow starter", root=str(Path(__file__).resolve().parent.parent.parent),
+    log.info("flow starter", modus=mode, koe=queue_name, pipeline=pipeline_name,
+             root=str(Path(__file__).resolve().parent.parent.parent),
              comfy=conf["comfy"]["url"], db=str(store.path))
 
     from runner import Runner

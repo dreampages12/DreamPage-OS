@@ -41,6 +41,11 @@ for _stream in (sys.stdout, sys.stderr):
         pass
 from finish_order import GELATO_KEY, PRODUCT_UID, gelato  # noqa: E402
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 LAST_PAGE = os.path.join(SCRIPT_DIR, "build_last_page.py")
 GELATO_PDF = os.path.join(SCRIPT_DIR, "build_gelato_pdf.py")
 DRIVE_UPLOAD = os.path.join(SCRIPT_DIR, "drive_upload.py")
@@ -51,8 +56,8 @@ CONTINUE_SECRET = (os.environ.get("DP_CONTINUE_CALLBACK_SECRET") or
                    __import__("json").load(open(os.path.join(
                        SCRIPT_DIR, "..", "config", "secrets.json"),
                        encoding="utf-8-sig")).get("continue_callback_secret", ""))
-DRAFT_STATE_DIR = r"C:\DreamPage-OS\state\gelato_drafts"
-PREPARED_DIR = r"C:\DreamPage-OS\state\reprint\prepared"
+DRAFT_STATE_DIR = under("state/gelato_drafts")
+PREPARED_DIR = under("state/reprint/prepared")
 
 # Disse lages på nytt av hvert bygg og er aldri "en manuell endring":
 # blank-back skrives av build_last_page ETTER prepare, page99 er QR-siden,

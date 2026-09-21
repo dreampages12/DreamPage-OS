@@ -134,6 +134,8 @@ def validate_identity(encoder, dataset, *, settings: dict, device, dtype, temper
 
 
 def train_identity_encoder(config: dict, resume: str | None = None) -> dict:
+    from .experiments import authorize_training
+    authorize_training(config, "identity")
     settings = config.get("training", {})
     objective = config.get("objective", {})
     name = objective.get("name", "supervised_contrastive")
@@ -172,6 +174,8 @@ def train_identity_encoder(config: dict, resume: str | None = None) -> dict:
                                          **pair_dataset_options({**data, "source_crops": source_crops}))
 
     encoder = build_encoder(config, device)
+    from ..utils.checkpoint import initialize_weights
+    initialize_weights(encoder, config, component="identity", resume=resume)
     optimizer = make_optimizer(encoder, config)
     scheduler = make_scheduler(optimizer, config)
     output = Path(settings.get("output_dir", "runs/identity"))
@@ -235,7 +239,7 @@ def train_identity_encoder(config: dict, resume: str | None = None) -> dict:
 
             metadata = {"dataset_fingerprint": fingerprint, "synthetic": all(row.get("synthetic") is True for row in dataset.rows),
                         "component": "dreamface_encoder", "supervised_outputs": ["global_embedding"],
-                        "training_identity_ids": sorted({row["identity_id"] for row in dataset.rows}),
+                        "training_identity_ids": sorted(set(settings.get("training_identity_lineage", [])) | {row["identity_id"] for row in dataset.rows}),
                         "identity_quality_validated": False}
             if validation_dataset is not None and (step == max_steps or (validation_every and step % validation_every == 0)):
                 measured = validate_identity(encoder, validation_dataset, settings=validation_settings,
@@ -280,8 +284,10 @@ def main():
     parser = argparse.ArgumentParser(description="Train the DreamFace identity encoder on enrolled pairs")
     parser.add_argument("--config", required=True)
     parser.add_argument("--resume")
+    parser.add_argument("--approval", required=True)
     args = parser.parse_args()
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
+    config.setdefault("training", {})["dataset_approval"] = args.approval
     print(json.dumps(train_identity_encoder(config, args.resume), indent=2))
 
 

@@ -225,12 +225,26 @@ def fetch_child_image(ctx: Context) -> dict:
         raise JobError(f"input/{ctx.job_key}.jpg finnes ikke, og payloaden har "
                        f"ingen image_url aa laste den fra")
 
+    download_child_image(url, target, ctx)
+    return {"path": str(target), "source": "lastet-ned",
+            "bytes": target.stat().st_size, "url": url}
+
+
+def download_child_image(url: str, target: Path, ctx: Context) -> Path:
+    """Hent barnets bilde til `target`. Delt av bok- og preview-modus.
+
+    Skilt ut fra fetch_child_image fordi PREVIEW-modus henter det samme
+    bildet fra den samme slags URL, men til et annet filnavn. To kopier av
+    denne funksjonen ville betydd to steder aa huske Cloudflare-headeren,
+    nattbruddet og 404-regelen - og det er alltid den ene kopien ingen
+    rettet som staar igjen i produksjon.
+    """
     # Nattbruddet 04:30-05:05 - se net.wait_for_internet. Uten denne bruker
     # steget opp forsoekene sine paa fem minutter og ordren er tapt.
     net.wait_for_internet(url, ctx.log, ctx.cancelled)
 
-    INPUT.mkdir(parents=True, exist_ok=True)
-    tmp = target.with_suffix(".jpg.part")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(target.suffix + ".part")
     req = urllib.request.Request(url, headers={
         # Cloudflare svarer 403 "error code: 1010" paa urllib sin standard UA.
         "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -251,7 +265,7 @@ def fetch_child_image(ctx: Context) -> dict:
             raise JobError(
                 f"serveren sier at barnebildet ikke kan hentes (HTTP "
                 f"{exc.code}) fra {url}. Skaff bildet, legg det som "
-                f"input/{ctx.job_key}.jpg og be om retry.") from exc
+                f"{target.parent.name}/{target.name} og be om retry.") from exc
         raise RuntimeError(f"kunne ikke laste ned barnebildet fra {url}: {exc}") from exc
     except (urllib.error.URLError, OSError) as exc:
         tmp.unlink(missing_ok=True)
@@ -260,8 +274,7 @@ def fetch_child_image(ctx: Context) -> dict:
         tmp.unlink(missing_ok=True)
         raise RuntimeError(f"barnebildet fra {url} var tomt")
     os.replace(tmp, target)
-    return {"path": str(target), "source": "lastet-ned",
-            "bytes": target.stat().st_size, "url": url}
+    return target
 
 
 def face_variants(ctx: Context) -> dict:

@@ -1,4 +1,11 @@
-# Implementation status — 2026-09-12
+# Implementation status — 2026-09-21
+
+Current integration: DreamPage OS `nodes/dreampage-headswap`, separate training `.venv`,
+hash-bound managed runs (fresh/resume/finetune), intake review with HEIC support, and
+the 30-node LAB Studio workflow. All 16 DP classes were observed on the running server.
+See [OS training guide](../../../docs/MODEL-TRAINING.md) and WORKLOG Session 10.
+The historical evidence below predates this migration. No new optimization was executed;
+the dataset is still empty/unapproved and real training/VRAM/quality validation remains pending.
 
 DreamPage HeadSwap has working training and inference infrastructure. It is **not yet a
 validated realistic child headswap model**. Tests of random modules and procedural shapes prove
@@ -10,12 +17,12 @@ software contracts, not identity likeness or print quality.
 | --- | --- | --- |
 | Mask/crop/composite | Native-resolution suppression, geometry transforms, strict protected-pixel copying; CPU and CUDA smoke checks | Real template/identity visual evaluation |
 | DreamFace | Multi-reference encoder; contrastive trainer, validation and exact resume | Broad face pretraining; local/anatomy supervision; independent real identity validation |
-| DreamSwap | Tiny flow trainer, sampling, adapters and optional BASE 4B bridge | Execute pretrained BASE weights on suitable data; tune identity/pose objectives |
+| DreamSwap | Explicit Klein 9B bridge, adapter training and variant/shape/hash checks | Obtain reviewed 9B components; validate actual loading/memory/optimization after dataset approval |
 | FLUX contract | Ten tests passed with real tiny Diffusers 0.37.1 modules, BF16 backward and gradient checkpointing | Full pretrained memory/gradient/quality measurements |
 | DreamRefine | Frozen independent teacher, bounded residual, artifact provenance, validation, bundled inference | Train on actual generator errors with an independently validated teacher |
 | Data | Rights checks, capture/mask ingestion, hash registry, identity splits, quality report | Approved multi-capture face corpus and reviewed masks |
 | Benchmark | Archived-result comparison, hash binding, review grids and blind A/B | Run current and new models on the same approved cases; human review |
-| ComfyUI | Seven thin nodes and conversion contracts | End-to-end validation in the production application |
+| ComfyUI | Seven core nodes plus nine native Klein Studio nodes; separate LAB graph installed | Current migrated graph's real-image quality and final-file evaluation; no production rollout |
 
 ## Reproducible receipts
 
@@ -30,31 +37,15 @@ and are ignored by Git; code and documentation do not depend on publishing priva
 - `runs/session6/refiner-fixture/training_run/`: six fixture steps, validation and best checkpoint.
 - Latest main-suite count before acquisition changes: 188 tests, nine environment-dependent skips.
 
-## Acquire the actual backbone
+## Current backbone and data source
 
-```powershell
-.venv-flux-test/Scripts/python.exe scripts/download_flux_base.py
-```
-
-The default target is `local_data/models/flux-klein-base-4b`. The download uses the official
-publisher's Apache-2.0 release, a pinned commit, and verifies every downloaded file against
-upstream hashes before writing `dreampage_provenance.json`.
-
-**Completed locally:** all 20 files, 15,980,151,379 bytes, verified. The snapshot is ready;
-full pretrained image inference and training have not yet run.
-
-## Candidate review preparation
-
-`configs/data/photoreal_candidates.json` proposes four fictional children with three camera views
-each. `scripts/prepare_photoreal_candidates.py` performs inference only, freezes the weights and
-leaves all outputs unapproved. Images, prompts, seeds, hashes and an HTML review go into
-`local_data/photoreal-candidates-v1/`. The planned twelve-image pilot evaluates a potential data
-source; it is not a sufficiently broad final training dataset.
-
-GPU availability currently limits candidate generation because ComfyUI has active work. The CPU
-prompt attempt was stopped without producing images or a cache. Do not interrupt active ComfyUI
-jobs. When sufficient memory is available, encode with `--stage encode --text-device cuda`, then
-run `--stage sample`. Neither operation is training; dataset approval is still required afterward.
+Tobias explicitly chose **Klein 9B** on 21.09.2026; 4B is retired. Use
+`configs/training/flux_klein_9b_photoreal_pilot.yaml` and
+`scripts/prepare_klein_9b.py`. The local 9B transformer exists, but official
+support-component access currently returns GatedRepoError. See the
+[OS training guide](../../../docs/MODEL-TRAINING.md) for the exact revision and steps.
+The older 4B download/candidate-generator configuration is archived. User-supplied
+photos and DreamPage swap examples remain the planned training-data source.
 
 ## Data needed for realistic training
 
@@ -73,13 +64,13 @@ identities must be disjoint. Use `scripts/ingest_dataset.py`, `scripts/preproces
 `scripts/generate_training_pairs.py` and `scripts/dataset_report.py` as described in DATASET and
 DATA_ACQUISITION. Customer inference permission is not training enrollment.
 
-The current FLUX config is `configs/training/flux_klein_base_4b.yaml`; the independently trained
+The current FLUX config is `configs/training/flux_klein_9b_photoreal_pilot.yaml`; the independently trained
 encoder can initialize `model.identity_checkpoint`. Set actual manifest paths, registry and
 `model.weights_path`, then run in the isolated environment:
 
 ```powershell
-.venv-flux-test/Scripts/python.exe training/train_identity_encoder.py --config <enrolled-encoder-config.yaml>
-.venv-flux-test/Scripts/python.exe training/train.py --config <enrolled-flux-config.yaml>
+.venv-flux-test/Scripts/python.exe training/train_identity_encoder.py --config <enrolled-encoder-config.yaml> --approval <approved-dataset.json>
+.venv-flux-test/Scripts/python.exe training/train.py --config <enrolled-flux-config.yaml> --approval <approved-dataset.json>
 ```
 
 Realistic output, successful training, benchmark superiority and production readiness are separate

@@ -1,5 +1,12 @@
 # DreamPage OS — migreringsplan
 
+> **HISTORISK DOKUMENT. Migreringen er gjennomført.** Fasene 0–7 er ferdige
+> (se «Status» i `README.md`), `C:\ComfyUI` finnes ikke lenger, og n8n eier
+> ingen del av ordreveien. Denne fila beskriver hvordan systemet kom hit, og
+> beholdes fordi den forklarer *hvorfor* mappestrukturen ser ut som den gjør
+> — ikke fordi noe her skal utføres. Vil du vite hvordan systemet er i dag:
+> `README.md`, `CLAUDE.md` og `docs/ARCHITECTURE.md`.
+
 Generert 2026-09-15. Kilde: DREAMPAGE-OS-BUILD-PROMPT.md + kartlegging av
 `C:\ComfyUI` (untracked produksjonskode inne i en ComfyUI-klone).
 

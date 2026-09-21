@@ -20,19 +20,38 @@ from story_fotball_vm import (  # noqa: E402
     COVER_NB, BACK_NB, BACK_HL, PAGES_NB, TRANSLATIONS,
 )
 
-SCRIPT_ROOT = r"C:\DreamPage-OS\flow"
+def _dp_find_root(start):
+    """Gaa oppover til mappa som har baade books/ og flow/ - ikke tell mapper."""
+    d = os.path.abspath(start)
+    while True:
+        if (os.path.isdir(os.path.join(d, "books"))
+                and os.path.isdir(os.path.join(d, "flow"))):
+            return d
+        nd = os.path.dirname(d)
+        if nd == d:
+            raise SystemExit(
+                "fant ingen DreamPage-rot (mappe med books/ og flow/) over " + start)
+        d = nd
+
+
+# Tekstbuntene ligger i <rot>/flow/text/<locale>/. Sto som en hardkodet sti til
+# <rot>/flow, og da fant den ingenting etter at buntene ble flyttet ned i text/
+# - samme feilklasse som ordre 1506.
+SCRIPT_ROOT = os.path.join(
+    _dp_find_root(os.path.dirname(os.path.abspath(__file__))), "flow", "text")
 SRC_NAME = "fotballstjernen-text-%s.py"
 DST_NAME = "fotball-vm-text-%s.py"
 LOCALES = ["nb", "nn", "en-US", "en-GB", "sv"]
 APPLY = "--apply" in sys.argv
 OUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "out")
 
-# Side 12 er kvadratparet. Venstre kvadrat er comfy-headswappen (barnet i
-# glideturneringen) og skal vaere ren; teksten staar paa hoyre kvadrat, som er
-# et statisk bilde. Boksen gaar nesten fra kant til kant og ligger i nedre
-# halvdel, over gresset - der er det ingenting som blir dekket til.
-SQUARE_INDEX = 12                     # 1-basert sidenummer i PAGES_NB
-SQUARE_BOX_FRAC = [0.07, 0.66, 0.93, 0.98]
+# Side 10 er kvadratparet (semifinalen mot Argentina). Venstre kvadrat er
+# comfy-headswappen og skal vaere ren; teksten staar paa hoyre kvadrat, som er
+# et statisk bilde. 19.09.2026: ny kunst, og skytteren staar lenger ned i
+# bildet enn foer - boksen begynner derfor paa 0.76, under foettene hans, der
+# det bare er gress. Byttes kunsten igjen, maa tallet kontrolleres paa nytt.
+SQUARE_INDEX = 10                     # 1-basert sidenummer i PAGES_NB
+SQUARE_BOX_FRAC = [0.07, 0.76, 0.93, 0.98]
 
 
 def pylit(text, indent):
@@ -547,16 +566,16 @@ def transform(src, locale):
 
     # 4) intro-siden: bokas egen dreampage-first hvis den finnes, ellers
     #    fotballstjernens (samme serie, samme utseende).
-    old = ('    os.path.dirname(SCRIPT_ROOT_DIR), "books", "fotballstjernen", '
+    # 19.09.2026: malen bruker DP_ROOT her naa, ikke dirname(SCRIPT_ROOT_DIR).
+    old = ('    DP_ROOT, "books", "fotballstjernen", '
            '"dreampage-first(fotballstjernen).png"\n)')
     assert out.count(old) == 1, "dreampage-first ikke funnet"
-    out = out.replace(old, '''    os.path.dirname(SCRIPT_ROOT_DIR), "books", "fotball-vm",
-    "dreampage-first(fotball-vm).png"
+    out = out.replace(old, '''    DP_ROOT, "books", "fotball-vm", "dreampage-first(fotball-vm).png"
 )
 if not os.path.exists(FOTBALL_DREAMPAGE_FIRST):
     # Boka har ingen egen intro-side enda - bruk bok 1 sin.
     FOTBALL_DREAMPAGE_FIRST = os.path.join(
-        os.path.dirname(SCRIPT_ROOT_DIR), "books", "fotballstjernen",
+        DP_ROOT, "books", "fotballstjernen",
         "dreampage-first(fotballstjernen).png"
     )''')
 

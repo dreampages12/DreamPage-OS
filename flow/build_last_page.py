@@ -55,7 +55,15 @@ from PIL import Image, ImageDraw, ImageFont
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PRE_DIR = os.path.join(SCRIPT_DIR, "pre")
-TITLES_CONFIG = "C:/DreamPage-OS/config/next_book_titles.json"
+
+# Stiene utledes fra roten, ikke fra en diskbokstav. Denne fila kjoerer i dag
+# paa Windows og skal kjoere paa Linux paa nye maskiner - se flow/paths.py og
+# docs/SETUP-LINUX.md. `resolve` oversetter i tillegg de gamle absolutte
+# stiene som fortsatt staar i config/next_book_titles.json.
+sys.path.insert(0, SCRIPT_DIR)
+from paths import BOOKS, CONFIG, INPUT, resolve_str  # noqa: E402
+
+TITLES_CONFIG = str(CONFIG / "next_book_titles.json")
 
 PAGE_PX = 2625            # 8.75 tommer * 300 dpi — samme som LULU_PAGE_PX
 PAGE_INCH = 8.5           # tekst-scriptene tegner siden som 8.5x8.5 i PDF-en
@@ -202,7 +210,7 @@ def resolve_background(book_slug: str, explicit: str = "") -> str:
         warn(f"oppgitt bakgrunn finnes ikke: {explicit}")
     if book_slug:
         import glob
-        hits = sorted(glob.glob(f"C:/DreamPage-OS/books/{book_slug}/dreampage-first*.png"))
+        hits = sorted(glob.glob(f"{BOOKS}/{book_slug}/dreampage-first*.png"))
         if hits:
             return hits[0]
         warn(f"fant ingen dreampage-first*.png for {book_slug}")
@@ -286,7 +294,26 @@ def resolve_title_params(next_slug: str, lang: str) -> Optional[Dict]:
     if not book:
         warn(f"ingen tittelparametre for bok '{next_slug}' i {TITLES_CONFIG}")
         return None
-    return book.get(lang) or book.get("nb") or next(iter(book.values()), None)
+    params = book.get(lang) or book.get("nb") or next(iter(book.values()), None)
+    return resolve_title_paths(params)
+
+
+# Noeklene i next_book_titles.json som er en FILSTI. Filen er full av
+# absolutte `C:/DreamPage-OS/...`-stier fra den gangen alt fantes paa én
+# Windows-maskin; her oversettes de til denne maskinens rot. Paa Windows er
+# det en identitet - se flow/paths.py.
+TITLE_PATH_KEYS = ("line2_image", "font_small_path", "font_large_path",
+                   "bottom_logo")
+
+
+def resolve_title_paths(params: Optional[Dict]) -> Optional[Dict]:
+    if not params:
+        return params
+    out = dict(params)
+    for key in TITLE_PATH_KEYS:
+        if out.get(key):
+            out[key] = resolve_str(out[key])
+    return out
 
 
 def resolve_raw_cover(raw: str, prefix: str) -> str:
@@ -309,10 +336,10 @@ def resolve_raw_cover(raw: str, prefix: str) -> str:
 def template_size(next_slug: str) -> Optional[int]:
     """Bredden på forside-malen tittelparametrene er tunet mot."""
     try:
-        with open(f"C:/DreamPage-OS/books/{next_slug}/config.json", encoding="utf-8-sig") as fh:
+        with open(BOOKS / next_slug / "config.json", encoding="utf-8-sig") as fh:
             cfg = json.load(fh)
         front = next(p for p in cfg.get("pages", []) if p.get("page_key") == "page00")
-        path = os.path.join("C:/DreamPage-OS/input", front["template_image"])
+        path = os.path.join(str(INPUT), front["template_image"])
         if os.path.isfile(path):
             with Image.open(path) as im:
                 return im.width

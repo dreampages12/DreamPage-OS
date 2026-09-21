@@ -114,6 +114,118 @@ class Sandbox:
         for key in keys:
             (d / f"{key}_00001_.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 128)
 
+    # -- PREVIEW-modus ----------------------------------------------------
+    #
+    # Sandkassa er foedt som en bok-PC, fordi det er det denne maskinen er.
+    # Preview-oppsettet legges paa naar en test ber om det, og er idempotent:
+    # sandkassa deles av alle testene i filen.
+    def preview_setup(self) -> None:
+        """Gjoer sandkassa i stand til aa kjoere en forhaandsvisning.
+
+        Legger inn det som skiller preview fra bok: markedsconfig, et
+        SIDEVALG for innersider, tittelparametre med logo, malene i input/ -
+        og STUBBER av de tre rendrerne.
+
+        Merk hva som IKKE staar her: historieteksten. Den finnes bare i bokas
+        eget tekstscript, og en forhaandsvisning som hadde sin egen kopi
+        ville vist kunden en annen side 7 enn den de faar trykt.
+
+        Stubbene skriver argv-en sin til argv.json ved siden av utfila. Da
+        kan en test sjekke at riktig rendrer ble valgt og at barnets navn
+        faktisk havnet i --line1, uten aa vaere avhengig av fonter og
+        bildebehandling. Den EKTE rendreren testes for seg, i
+        test_innerside_rendreren_tegner_teksten.
+        """
+        from PIL import Image
+
+        logo_dir = self.root / "flow" / "text" / "logo" / "nb"
+        logo_dir.mkdir(parents=True, exist_ok=True)
+        logo = logo_dir / "testbok-logo.png"
+        if not logo.is_file():
+            Image.new("RGBA", (64, 32), (255, 255, 255, 255)).save(logo)
+
+        (self.root / "config" / "next_book_titles.json").write_text(
+            json.dumps({self.slug: {"nb": {
+                "line1_suffix": "og",
+                "line2": "",
+                "line2_image": str(logo).replace("\\", "/"),
+                "font_small": 80, "font_large": 90,
+                "gold": "255, 255, 255", "shadow": "0, 0, 0",
+                "top_margin": 0.04, "line_spacing": 0.01,
+                "logo_scale": 0.38, "logo_x_offset": 0,
+            }}}, ensure_ascii=False), encoding="utf-8")
+
+        markets = self.root / "config" / "preview" / "markets"
+        markets.mkdir(parents=True, exist_ok=True)
+        (markets / "nb.json").write_text(json.dumps({
+            "title_lang": "nb", "logo_locale": "nb", "script_language": "nb",
+            "aliases": {}, "defaults": {"workflow_api": ""},
+        }), encoding="utf-8")
+
+        books_nb = self.root / "config" / "preview" / "books" / "nb"
+        books_nb.mkdir(parents=True, exist_ok=True)
+        # Bokfila sier BARE hvilken side som skal vises. Hva som staar paa
+        # den kommer fra bokas tekstscript.
+        (books_nb / f"{self.slug}.json").write_text(json.dumps({
+            "innerpage": {"page_key": "page01"},
+        }, ensure_ascii=False), encoding="utf-8")
+
+        # Malene og maskene der ComfyUI leter etter dem.
+        inp = self.root / "input"
+        inp.mkdir(parents=True, exist_ok=True)
+        for i in range(3):
+            for name in (f"{i:02d}(test).png", f"{i:02d}-headmask(test).png"):
+                path = inp / name
+                if not path.is_file():
+                    path.write_bytes(PNG_STUB)
+
+        pre = self.root / "flow" / "pre"
+        pre.mkdir(parents=True, exist_ok=True)
+        stub = (
+            "import json, sys\n"
+            "from PIL import Image\n"
+            "flags = {}\n"
+            "argv = sys.argv[1:]\n"
+            "for i in range(0, len(argv) - 1):\n"
+            "    if argv[i].startswith('--'):\n"
+            "        flags[argv[i]] = argv[i + 1]\n"
+            "out = flags['--out']\n"
+            "import os\n"
+            "os.makedirs(os.path.dirname(out), exist_ok=True)\n"
+            "Image.new('RGB', (64, 64), (10, 20, 30)).save(out)\n"
+            "with open(os.path.join(os.path.dirname(out), 'argv.json'), 'w',\n"
+            "          encoding='utf-8') as fh:\n"
+            "    json.dump({'script': os.path.basename(sys.argv[0]),\n"
+            "               'flags': flags}, fh, ensure_ascii=False)\n"
+        )
+        for name in ("render-title.py", "render-title-line2logo.py",
+                     "render-innerpage.py"):
+            (pre / name).write_text(stub, encoding="utf-8")
+
+    def preview_payload(self, job_id: str) -> dict:
+        """En melding slik nettbutikken publiserer den paa `preview-jobs`.
+
+        Uten `preview_callback_url`: testene skal ikke kunne treffe noe
+        utenfor maskinen, og et callback til en URL som ikke finnes ville
+        vaert et nettverkskall i en testkjoering.
+        """
+        return {
+            "job_id": job_id,
+            "stored_image_url": "https://example.invalid/barn.jpg",
+            "product_handle": self.slug,
+            "book_title": "Testbok",
+            "child_name": "Testbarn",
+            "gender": "boy",
+            "language": "nb",
+            "site_language": "no",
+            "market": "no",
+            "dp_session_id": "sess-" + job_id,
+        }
+
+    def preview_photo(self, job_id: str) -> None:
+        (self.root / "input" / f"preview-{job_id}.jpg").write_bytes(
+            b"\xff\xd8\xff" + b"0" * 64)
+
     def close(self) -> None:
         shutil.rmtree(self.root, ignore_errors=True)
 
@@ -1671,6 +1783,710 @@ def test_fotballstjernen_har_ingen_side_15(sb: Sandbox) -> None:
     for lang in ("nb", "nn", "sv", "en-US", "en-GB"):
         text = (FLOW / "text" / lang / f"fotballstjernen-text-{lang}.py").read_text(encoding="utf-8")
         assert "15(fotballstjernen)" not in text, f"{lang}: tekstscriptet har fortsatt side 15"
+
+
+# ---------------------------------------------------------------------------
+# SERVERMODUS: BOOK og PREVIEW
+#
+# Kriteriene disse daekker:
+#
+#   * Bokmodus er UENDRET. Samme koe, samme pipeline, samme steg i samme
+#     rekkefoelge som foer modusbryteren fantes. (test_bokmodus_er_uendret)
+#   * Modusen - og bare den - avgjoer koe og pipeline.
+#     (test_modus_styrer_koe_og_pipeline)
+#   * En skrivefeil i "mode" er en FEIL, ikke "da tar vi book".
+#   * En preview-jobb naar aldri Gelato, Drive eller PDF.
+#     (test_preview_roerer_ikke_penger)
+#   * Stille fallback finnes ikke: ukjent bok, manglende tittellogo og
+#     manglende innerside-tekst stopper FOER rendringen.
+#   * En feilet preview-jobb etterlater `failed` i statusfila, saa kunden
+#     ikke staar med en spinner for alltid.
+# ---------------------------------------------------------------------------
+import contextlib
+
+
+@contextlib.contextmanager
+def preview_mode(sandbox: "Sandbox", sink: str = "local"):
+    """Kjoer blokka som om denne maskinen var en preview-PC.
+
+    DP_MODE i miljoeet i stedet for aa skrive config/flow.json: modusen leses
+    paa nytt hver gang, mens configfila er cachet paa modulnivaa og ville
+    laekket inn i alle etterfoelgende tester.
+    """
+    import config as flow_config
+    sandbox.preview_setup()
+    before_env = os.environ.get("DP_MODE")
+    conf = flow_config.load()
+    before_sink = conf["preview"]["sink"]
+    os.environ["DP_MODE"] = "preview"
+    conf["preview"]["sink"] = sink
+    try:
+        yield
+    finally:
+        conf["preview"]["sink"] = before_sink
+        if before_env is None:
+            os.environ.pop("DP_MODE", None)
+        else:
+            os.environ["DP_MODE"] = before_env
+
+
+@test
+def test_bokmodus_er_uendret(sb: Sandbox) -> None:
+    """Standardmodusen er bok, og den ser ut som foer bryteren fantes.
+
+    Dette er den viktigste testen i filen. Modusbryteren er lagt inn paa et
+    system som selger og trykker ekte boeker; hvis den endrer noe som helst
+    for en bokordre, er den feil uansett hvor pen den er.
+    """
+    import config as flow_config
+    import pipeline as pipeline_mod
+
+    assert "DP_MODE" not in os.environ, "en tidligere test ryddet ikke opp"
+    assert flow_config.mode() == "book", flow_config.mode()
+    assert flow_config.queue()["name"] == "dreampage-jobs", flow_config.queue()
+
+    # prefetch og ack-regel er delt infrastruktur og skal ikke ha flyttet seg.
+    assert flow_config.queue()["prefetch"] == 1, flow_config.queue()
+    assert flow_config.queue()["ack_on"] == "checkpoint", flow_config.queue()
+
+    # Stegene i bokpipelinene, i rekkefoelge. Skrevet ut i sin helhet med
+    # vilje: en test som bare teller steg ville sagt ja til at to av dem
+    # byttet plass.
+    assert [s.name for s in pipeline_mod.PAGES_PIPELINE] == [
+        "check_assets", "validate_job", "persist_payload", "setup_dirs",
+        "fetch_child_image", "face_variants", "render_pages", "verify_pages",
+        "notify_pages_ready",
+    ], [s.name for s in pipeline_mod.PAGES_PIPELINE]
+
+    assert [s.name for s in pipeline_mod.FULL_PIPELINE][9:] == [
+        "claim_post_comfy", "wp_book_creating", "build_pdfs",
+        "validate_gelato_files", "upload_and_draft", "auto_merge_multibook",
+        "telegram_approval", "wp_quality_check", "cleanup_comfy_folder",
+    ], [s.name for s in pipeline_mod.FULL_PIPELINE]
+
+    # ACTIVE er fortsatt det som velges i bokmodus - modusen overstyrer den
+    # ikke. (Sandkassa setter ACTIVE = "pages", se main().)
+    assert pipeline_mod.active_name() == pipeline_mod.ACTIVE, (
+        pipeline_mod.active_name(), pipeline_mod.ACTIVE)
+
+
+@test
+def test_modus_styrer_koe_og_pipeline(sb: Sandbox) -> None:
+    """Modusen avgjoer TO ting: hvilken koe, og hvilken pipeline."""
+    import config as flow_config
+    import pipeline as pipeline_mod
+
+    with preview_mode(sb):
+        assert flow_config.mode() == "preview"
+        assert flow_config.queue()["name"] == "preview-jobs", flow_config.queue()
+        assert pipeline_mod.active_name() == "preview"
+        assert [s.name for s in pipeline_mod.active()] == [
+            "check_delivery", "validate_preview_job", "status_processing",
+            "fetch_child_image", "render_preview_page", "render_preview_text",
+            "deliver_preview", "notify_preview", "cleanup_preview",
+        ]
+
+    # ... og tilbake, uten spor.
+    assert flow_config.mode() == "book"
+    assert flow_config.queue()["name"] == "dreampage-jobs"
+
+
+@test
+def test_ukjent_modus_er_en_feil(sb: Sandbox) -> None:
+    """En skrivefeil i "mode" skal STOPPE, ikke bli til bokmodus.
+
+    En preview-PC som stille falt tilbake til "book" ville koblet seg paa
+    koen med ekte, betalte bokordre og kjoert dem gjennom en pipeline som
+    ikke bygger boeker. Det er samme feilklasse som resten av CLAUDE.md
+    handler om, bare paa maskinnivaa.
+    """
+    import config as flow_config
+
+    os.environ["DP_MODE"] = "previeww"
+    try:
+        raised = None
+        try:
+            flow_config.mode()
+        except ValueError as exc:
+            raised = exc
+        assert raised is not None, "ukjent modus gikk rett gjennom"
+        assert "previeww" in str(raised), str(raised)
+        assert "book" in str(raised) and "preview" in str(raised), str(raised)
+    finally:
+        os.environ.pop("DP_MODE", None)
+
+
+@test
+def test_meldingsnoekkelen_foelger_modusen(sb: Sandbox) -> None:
+    """Bokmodus leser job_key/order_id, preview-modus leser job_id.
+
+    Smalt med vilje. En bok-PC som ogsaa godtok `job_id` kunne plukket opp en
+    preview-melding som havnet paa feil koe og kjoert den gjennom HELE
+    bokpipelinen - PDF, Drive og et Gelato-utkast for noe som aldri var en
+    ordre.
+    """
+    import mq as mq_mod
+
+    bok = {"job_key": "1411-b2", "order_id": "1411"}
+    prev = {"job_id": "pv-77", "stored_image_url": "https://x/y.jpg"}
+
+    assert mq_mod.Consumer._job_key(bok) == "1411-b2"
+    assert mq_mod.Consumer._job_key(prev) == "", (
+        "en bok-PC godtok en preview-melding")
+
+    with preview_mode(sb):
+        assert mq_mod.Consumer._job_key(prev) == "pv-77"
+        assert mq_mod.Consumer._job_key(bok) == "", (
+            "en preview-PC godtok en bokordre")
+
+
+@test
+def test_preview_kjoerer_helt_igjennom(sb: Sandbox) -> None:
+    """En preview-jobb gaar fra melding til levert bilde, uten nett.
+
+    Dekker hele livssyklusen: koe -> ComfyUI -> tittelrendring -> levering ->
+    statusfil. Alt som ville gaatt ut av maskinen er slaatt av (sink=local,
+    ingen callback-URL), saa testen kan kjoeres paa maskinen som trykker
+    boeker uten aa treffe noe der ute.
+    """
+    import json as _json
+    import runner as runner_mod
+
+    with preview_mode(sb):
+        store = fresh_store(sb, "preview1")
+        r = runner_mod.Runner(store)
+        r.comfy = FakeComfy(sb, render_seconds=0)
+        payload = sb.preview_payload("PV1")
+        sb.preview_photo("PV1")
+        store.enqueue("PV1", payload)
+        res = r.run_job(runner_mod.QueuedJob("PV1", payload, pipeline="preview"))
+
+        assert res["status"] == "done", res
+        job = store.job("PV1") or {}
+        kjoerte = [s["name"] for s in job.get("steps", []) if s["status"] == "done"]
+        assert "render_preview_page" in kjoerte, kjoerte
+        assert "deliver_preview" in kjoerte, kjoerte
+
+        # Statusfila er det frontenden poller. Staar den ikke paa completed,
+        # ser kunden en spinner uansett hvor fint bildet ble.
+        state = sb.root / "state" / "preview_jobs" / "PV1.json"
+        assert state.is_file(), f"ingen statusfil i {state.parent}"
+        record = _json.loads(state.read_text(encoding="utf-8"))
+        assert record["status"] == "completed", record
+        assert record["preview_url"], record
+
+        # Det ferdige bildet ligger der URL-en peker.
+        result = sb.root / "output" / "preview" / "PV1" / "PV1_preview.jpg"
+        assert result.is_file() and result.stat().st_size > 0, result
+
+        # Riktig rendrer, med barnets navn i foerste tittellinje.
+        args = _json.loads((result.parent / "argv.json").read_text(encoding="utf-8"))
+        assert args["script"] == "render-title-line2logo.py", args["script"]
+        assert "Testbarn" in args["flags"]["--line1"], args["flags"]
+        assert args["flags"]["--line2_image"].endswith("testbok-logo.png"), args["flags"]
+
+
+@test
+def test_preview_roerer_ikke_penger(sb: Sandbox) -> None:
+    """Preview-pipelinen inneholder ingen steg som koster penger.
+
+    Ikke en regel noen maa huske - en paastand om at stegene ikke FINNES i
+    listen. Legger noen til build_pdfs, upload_and_draft eller
+    telegram_approval her, feiler denne.
+    """
+    import pipeline as pipeline_mod
+
+    forbudt = {"build_pdfs", "validate_gelato_files", "upload_and_draft",
+               "auto_merge_multibook", "wp_book_creating", "wp_quality_check",
+               "claim_post_comfy", "cleanup_comfy_folder", "telegram_approval"}
+    navn = {s.name for s in pipeline_mod.PREVIEW_PIPELINE}
+    overlapp = navn & forbudt
+    assert not overlapp, (
+        f"preview-pipelinen har bok-steg som treffer Gelato, Drive eller "
+        f"WooCommerce: {sorted(overlapp)}")
+
+    # Og motsatt: bokpipelinene skal ikke ha faatt preview-steg.
+    for name in ("pages", "full"):
+        bok = {s.name for s in pipeline_mod.PIPELINES[name]}
+        assert not (bok & navn - {"fetch_child_image"}), (name, bok & navn)
+
+
+@test
+def test_ukjent_bok_i_preview_roper(sb: Sandbox) -> None:
+    """En bok vi ikke har, er en hard feil - ikke en annen bok.
+
+    Alternativet ville vaert en forhaandsvisning av FEIL bok, med kundens
+    barn i den. Det er verre enn ingen forhaandsvisning.
+    """
+    from books import JobError
+
+    with preview_mode(sb):
+        import preview as preview_mod
+
+        payload = sb.preview_payload("PV-UKJENT")
+        payload["product_handle"] = "finnes-ikke-i-det-hele-tatt"
+        payload["book_title"] = "Finnes Ikke I Det Hele Tatt"
+        raised = None
+        try:
+            preview_mod.build_job(payload)
+        except JobError as exc:
+            raised = exc
+        assert raised is not None, "ukjent bok gikk rett gjennom"
+        assert "config.json finnes ikke" in str(raised), str(raised)
+
+
+@test
+def test_manglende_tittellogo_stopper_preview(sb: Sandbox) -> None:
+    """Ordre 1510, men foran kunden: line2-logoen MAA finnes.
+
+    For de fleste boeker ER logoen hele andre tittellinje ("line2" er tom).
+    render-title-line2logo.py skriver "ADVARSEL: Fant ikke line2_image" og
+    avslutter med 0, saa uten denne sjekken ville forhaandsvisningen blitt
+    en halv setning - akkurat som forsiden som bare sa "Henry og det", bare
+    at her ser KUNDEN den.
+
+    Sjekken maa skje FOER rendringen, ikke under: etterpaa er bildet laget.
+    """
+    from books import JobError
+    import steps_preview as sp
+
+    with preview_mode(sb):
+        logo = sb.root / "flow" / "text" / "logo" / "nb" / "testbok-logo.png"
+        logo.rename(logo.with_suffix(".png.flyttet"))
+        try:
+            ctx = steps_mod_context(sb, "PV-LOGO")
+            raised = None
+            try:
+                sp.validate_preview_job(ctx)
+            except JobError as exc:
+                raised = exc
+            assert raised is not None, "manglende tittellogo gikk rett gjennom"
+            assert "line2_image" in str(raised), str(raised)
+        finally:
+            logo.with_suffix(".png.flyttet").rename(logo)
+
+
+@test
+def test_preview_innerside_bruker_bokas_egen_side(sb: Sandbox) -> None:
+    """Innersida hentes fra BOKA - configen sier bare hvilken side.
+
+    Det er hele poenget: side 7 i forhaandsvisningen skal vaere side 7 i
+    boka. Hadde config/preview hatt sin egen tekst, ville kunden sett én
+    historie paa nettsiden og faatt en annen i posten.
+
+    Derfor peker preview-configen bare paa en `page_key`, og malfilnavnet
+    fra bokas egen config.json er noekkelen rendreren slaar opp teksten med.
+    Hvilken SCENE som selger boka er fortsatt en redaksjonell avgjoerelse, og
+    mangler den, sier feilmeldingen hvilken fil valget skal inn i.
+    """
+    from books import JobError
+    import preview as preview_mod
+
+    with preview_mode(sb):
+        payload = sb.preview_payload("PV-INNER")
+        payload["asset_type"] = "inner"
+        job = preview_mod.build_job(payload)
+        assert job["asset_kind"] == "innerpage", job["asset_kind"]
+
+        # Sidevalget peker inn i bokas EGEN config, ikke paa en kopi.
+        page = preview_mod.build_page(job)
+        assert page["page_key"] == "page01", page
+        assert page["template_image"] == "01(test).png", page
+
+        # Og teksten hentes fra bokas tekstscript, med malfilnavnet som
+        # noekkel mellom de to.
+        source = preview_mod.innerpage_source(job, page)
+        assert source["filename"] == "01(test).png", source
+        assert source["script"] == job["text_script"], source
+        assert Path(source["script"]).is_file(), source
+
+        # Uten sidevalg: en setning som sier hvor det skal inn.
+        job["override"] = {}
+        raised = None
+        try:
+            preview_mod.build_page(job)
+        except JobError as exc:
+            raised = exc
+        assert raised is not None, "innerside uten sidevalg gikk rett gjennom"
+        assert "config/preview/books/nb/testbok.json" in str(raised), str(raised)
+        assert "page_key" in str(raised), str(raised)
+
+
+@test
+def test_preview_jobber_ser_ikke_hverandres_sider(sb: Sandbox) -> None:
+    """Hver preview-jobb har sin EGEN mappe.
+
+    Sidenoekkelen er "page00" i hver eneste omslagsjobb. Da to bokordre fikk
+    se i hverandres output-mapper 14.09.2026, hoppet de over hverandres sider
+    - bildene var ikke feil, de var borte. Her ville prisen vaert feil barns
+    ansikt i en forhaandsvisning.
+    """
+    import comfy as comfy_mod
+    import preview as preview_mod
+
+    with preview_mode(sb):
+        a = preview_mod.comfy_output_dir(preview_mod.build_job(
+            sb.preview_payload("PV-A")))
+        b = preview_mod.comfy_output_dir(preview_mod.build_job(
+            sb.preview_payload("PV-B")))
+        assert a != b, (a, b)
+
+        a.mkdir(parents=True, exist_ok=True)
+        (a / "page00_00001_.png").write_bytes(PNG_STUB)
+        assert comfy_mod.Comfy.existing_page(a, "page00") is not None
+        assert comfy_mod.Comfy.existing_page(b, "page00") is None, (
+            "jobb B saa jobb A sin side")
+
+
+@test
+def test_preview_uten_legitimasjon_stopper_foer_gpu(sb: Sandbox) -> None:
+    """sink="supabase" uten legitimasjon er en feil - ikke en lokal fil.
+
+    Aa skrive bildet til disk og melde "completed" ville vaert en jobb som
+    ser vellykket ut mens kunden ser en tom rute. Og den ville brukt tjue
+    sekunder GPU foerst.
+    """
+    from books import JobError
+    import steps_preview as sp
+
+    with preview_mode(sb, sink="supabase"):
+        import dp_secrets
+        before = dp_secrets._cache
+        dp_secrets._cache = {}
+        try:
+            raised = None
+            try:
+                sp.check_delivery(steps_mod_context(sb, "PV-SINK"))
+            except JobError as exc:
+                raised = exc
+            assert raised is not None, "manglende sink gikk rett gjennom"
+            assert "secrets.json" in str(raised), str(raised)
+        finally:
+            dp_secrets._cache = before
+
+    # Steget staar FOERST, saa ingenting er rendret naar det feiler.
+    import pipeline as pipeline_mod
+    assert pipeline_mod.PREVIEW_PIPELINE[0].name == "check_delivery"
+
+
+@test
+def test_feilet_preview_skriver_failed_status(sb: Sandbox) -> None:
+    """En preview-jobb som stopper, sier fra i statusfila.
+
+    Uten dette staar frontenden og poller en `processing` som aldri blir
+    noe, og kunden ser en spinner for alltid. Det er ordre 1517 om igjen -
+    arbeidet stopper et sted ingen ser - bare med en betalende kunde foran
+    seg i stedet for en operatoer.
+    """
+    import json as _json
+    import notify
+
+    original = notify.send
+    notify.send = lambda text, log=None, timeout=30: {"sent": True}
+    try:
+        with preview_mode(sb):
+            notify.job_failed("PV-FEIL", {"book_slug": "testbok"},
+                              "ComfyUI svarte ikke", "ComfyError", None, False)
+    finally:
+        notify.send = original
+
+    path = sb.root / "state" / "preview_jobs" / "PV-FEIL.json"
+    assert path.is_file(), f"ingen statusfil i {path.parent}"
+    record = _json.loads(path.read_text(encoding="utf-8"))
+    assert record["status"] == "failed", record
+    assert "ComfyUI svarte ikke" in record["error"], record
+
+
+@test
+def test_innerside_preview_er_bokas_egen_side(sb: Sandbox) -> None:
+    """Den EKTE rendreren tegner BOKAS side 7, ikke sin egen tekst.
+
+    Kjoerer flow/pre/render-innerpage.py mot en EKTE bok (dyreparken) og
+    bokas EKTE tekstscript. Den importerer scriptet, kaller `build_pages()`
+    og lar bokas egen `render_page()` tegne - saa navnebytte, uthevede ord,
+    delingen i to balanserte blokker, puta bak teksten og kolonnevalget er
+    ikke etterlignet, det er det samme.
+
+    Tre paastander, og de henger sammen:
+      1. sida tegnes, og bare i den kolonnen boka bruker
+      2. barnets navn naar faktisk fram - to navn gir to forskjellige bilder
+      3. en side tekstscriptet IKKE kjenner er en hard feil, ikke en tom side
+
+    Bruker produksjonsfiler med vilje. Forsvinner dyreparken eller side 07,
+    skal denne feile hoeyt - en forhaandsvisning av en bok som ikke finnes
+    er verre enn ingen test.
+    """
+    import subprocess
+    from PIL import Image
+
+    renderer = FLOW / "pre" / "render-innerpage.py"
+    script = FLOW / "text" / "nb" / "dyreparken-text-nb.py"
+    mal = FLOW.parent / "input" / "07(dyreparken).png"
+    if not (script.is_file() and mal.is_file()):
+        raise AssertionError(f"produksjonsfilene mangler: {script}, {mal}")
+
+    def render(child_name: str, filename: str, out_name: str):
+        out = sb.root / out_name
+        return subprocess.run(
+            [sys.executable, str(renderer), "--script", str(script),
+             "--image", str(mal), "--out", str(out),
+             "--child-name", child_name, "--filename", filename],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace"), out
+
+    proc, emma = render("Emma", "07(dyreparken).png", "inner-emma.png")
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert emma.is_file(), proc.stdout + proc.stderr
+    # Rendreren sier hvilken side den tegnet og hvor mange blokker boka delte
+    # teksten i. Blokkdelingen kommer fra tekstscriptet, ikke herfra.
+    assert "07(dyreparken).png" in proc.stdout, proc.stdout
+    assert "blokk(er)" in proc.stdout, proc.stdout
+
+    side = "right" if "side=right" in proc.stdout else "left"
+    kolonne = (996, 135, 1396, 895) if side == "right" else (140, 135, 540, 895)
+    annen = (140, 135, 540, 895) if side == "right" else (996, 135, 1396, 895)
+
+    with Image.open(mal) as im:
+        foer = im.convert("RGB").resize((1536, 1024))
+    with Image.open(emma) as im:
+        etter = im.convert("RGB").resize((1536, 1024))
+    assert etter.crop(kolonne).tobytes() != foer.crop(kolonne).tobytes(), (
+        f"ingen tekst i {side}-kolonnen - tegnet rendreren i det hele tatt?")
+    assert etter.crop(annen).tobytes() == foer.crop(annen).tobytes(), (
+        "rendreren skrev i BEGGE kolonnene")
+
+    # Barnets navn staar i teksten, saa to navn kan ikke gi samme bilde.
+    _, mats = render("Mats", "07(dyreparken).png", "inner-mats.png")
+    with Image.open(mats) as im:
+        etter_mats = im.convert("RGB").resize((1536, 1024))
+    assert etter_mats.crop(kolonne).tobytes() != etter.crop(kolonne).tobytes(), (
+        "to forskjellige barn ga samme side - naadde navnet fram i det hele "
+        "tatt?")
+
+    # En side boka ikke har: hard feil med en setning som sier hva som finnes.
+    proc, _ = render("Emma", "99(finnes-ikke).png", "inner-tull.png")
+    assert proc.returncode != 0, proc.stdout
+    assert "99(finnes-ikke).png" in proc.stdout, proc.stdout
+
+
+
+def steps_mod_context(sandbox: "Sandbox", job_id: str):
+    """En Context for et enkeltsteg, uten runner og uten jobb-DB."""
+    import steps as steps_mod
+    return steps_mod.Context(job_key=job_id,
+                             payload=sandbox.preview_payload(job_id),
+                             log=_NullLog())
+
+
+# ---------------------------------------------------------------------------
+# WINDOWS OG LINUX
+#
+# DreamPage OS trykker boeker fra Windows i dag. Nye maskiner settes opp paa
+# Linux. Testene her holder de to fra aa gli fra hverandre - og de kjoerer
+# paa BEGGE, saa en forskjell oppdages paa maskinen der den ikke gjoer noe.
+# ---------------------------------------------------------------------------
+@test
+def test_stier_utledes_ikke_hardkodes(sb: Sandbox) -> None:
+    """ROOT foelger DP_ROOT, og alt annet foelger ROOT.
+
+    Dette er hele grunnlaget for at treet kan ligge et annet sted - en annen
+    disk, en annen bruker, en annen maskin, et annet OS. Bryter den, er
+    ingenting annet i denne filen verdt noe.
+    """
+    import paths
+
+    # Sandkassa setter DP_ROOT, saa dette BEVISER at overstyringen virker.
+    assert paths.ROOT == sb.root, (paths.ROOT, sb.root)
+    for name in ("BOOKS", "INPUT", "OUTPUT", "STATE", "CONFIG", "FLOW"):
+        value = getattr(paths, name)
+        assert str(value).startswith(str(sb.root)), (name, value)
+
+
+@test
+def test_gamle_windows_stier_oversettes(sb: Sandbox) -> None:
+    """De 435 `C:/DreamPage-OS/...`-stiene i configfilene maa virke paa Linux.
+
+    De ble skrevet den gangen alt fantes paa én Windows-maskin. Aa skrive om
+    435 stier i 30 filer som styrer trykk ville vaert en diff ingen kan lese;
+    i stedet oversettes de naar de LESES. Paa Windows er det en identitet, og
+    det er nettopp derfor testen maa staa her: uten den er det ingenting som
+    viser at oversettelsen i det hele tatt skjer.
+    """
+    import paths
+
+    got = paths.resolve_str("C:/DreamPage-OS/flow/text/nb/x.py")
+    assert got == (sb.root / "flow" / "text" / "nb" / "x.py").as_posix(), got
+
+    # Bakoverskraastrek ogsaa - det er formen de fleste av dem har.
+    got = paths.resolve_str("C:" + chr(92) + "DreamPage-OS" + chr(92) + "books")
+    assert got == (sb.root / "books").as_posix(), got
+
+    # Relativt er formen NYE oppfoeringer skal ha.
+    assert paths.resolve_str("books/x/config.json") == \
+        (sb.root / "books" / "x" / "config.json").as_posix()
+
+    # En sti som IKKE er vaar skal ligge i fred. En font i /usr/share eller
+    # paa en annen disk er ikke noe vi kan flytte, og aa gjette ville gjort
+    # en tydelig feil om til en stille.
+    assert paths.resolve_str("/usr/share/fonts/X.ttf") == "/usr/share/fonts/X.ttf"
+    assert paths.resolve_str("D:/annet/font.ttf") == "D:/annet/font.ttf"
+    assert paths.resolve_str("") == ""
+
+    # `C:/ComfyUI/script/...` ble splittet i fire da mappa ble DreamPage OS,
+    # saa den kan IKKE oversettes som én rot. Da skal den staa - og feile med
+    # sin egen sti i feilmeldingen - i stedet for aa peke et sted som ser
+    # riktig ut og ikke er det.
+    assert paths.resolve_str("C:/ComfyUI/script/nb/x.py") == "C:/ComfyUI/script/nb/x.py"
+    assert paths.resolve_str("C:/ComfyUI/input/f.jpg") == \
+        (sb.root / "input" / "f.jpg").as_posix()
+
+
+@test
+def test_bokconfig_oversettes_ved_lesing(sb: Sandbox) -> None:
+    """Tekstscript og prepare-script i bokconfigen skal peke hit, ikke til C:.
+
+    Ordre 1506 ble bygget med feil aapningsside fordi en sti pekte ett hakk
+    feil etter en mappeflytting. En sti som peker til en HELT ANNEN MASKIN er
+    den samme feilen, bare stoerre.
+    """
+    import json as _json
+    import books as B
+
+    path = sb.root / "books" / sb.slug / "config.json"
+    config = _json.loads(path.read_text(encoding="utf-8"))
+    config["textScript"] = "C:/DreamPage-OS/flow/text/nb/testbok-text-nb.py"
+    config["prepareScript"] = "C:" + chr(92) + "DreamPage-OS" + chr(92) + "p.py"
+    config["textScripts"] = {"nb": "C:/DreamPage-OS/flow/text/nb/testbok-text-nb.py"}
+    config["comfyOutputPrefix"] = "testbok/orders"
+    path.write_text(_json.dumps(config, ensure_ascii=False), encoding="utf-8")
+
+    loaded = B.load_config(sb.slug)
+    assert loaded["textScript"] == \
+        (sb.root / "flow" / "text" / "nb" / "testbok-text-nb.py").as_posix(), loaded
+    assert loaded["prepareScript"] == (sb.root / "p.py").as_posix(), loaded
+    assert loaded["textScripts"]["nb"].startswith(sb.root.as_posix()), loaded
+
+    # comfyOutputPrefix er en RELATIV prefiks som settes sammen med output/
+    # lenger nede. Gjoeres den absolutt, brekker hver eneste filename_prefix
+    # i ComfyUI - og da havner sidene et annet sted enn der vi leter.
+    assert loaded["comfyOutputPrefix"] == "testbok/orders", loaded
+
+
+@test
+def test_plattformforskjeller_har_ett_sted(sb: Sandbox) -> None:
+    """dp_platform svarer paa alt som er ulikt, og kaster aldri.
+
+    Regelen er at en `if windows:` i produksjonskoden er en feil. Da maa
+    dette stedet faktisk virke paa begge, ogsaa naar /proc eller kernel32
+    ikke svarer - en statusrute som krasjer er en server som ser doed ut.
+    """
+    import dp_platform as P
+
+    assert P.NAME in ("windows", "linux") or P.NAME, P.NAME
+    assert P.WINDOWS != P.LINUX or not (P.WINDOWS or P.LINUX)
+
+    uptime = P.machine_uptime_s()
+    assert uptime is None or uptime >= 0, uptime
+
+    described = P.describe()
+    for key in ("os", "python", "supervisor"):
+        assert key in described, described
+    # Ingen stier og ingen brukernavn: dette gaar ut av maskinen.
+    blob = str(described)
+    assert str(sb.root) not in blob and "Users" not in blob, blob
+
+    # n8n-stien foelger hjemmemappa, ikke et brukernavn.
+    assert P.n8n_db().name == "database.sqlite"
+    assert ".n8n" in str(P.n8n_db())
+
+    assert P.exe("python").endswith("python.exe" if P.WINDOWS else "python")
+
+
+@test
+def test_supervisorene_er_enige(sb: Sandbox) -> None:
+    """dreampage.ps1 og tools/dreampage.py maa kjenne SAMME tjenester.
+
+    To supervisorer som er uenige om hvilke tjenester som finnes er verre
+    enn én som er feil: da avhenger svaret paa "lever alt?" av hvilken
+    maskin du spoer. Windows-lista leses ut av PowerShell-fila med regex -
+    den er ikke kjoerbar herfra, men den er lesbar.
+    """
+    import re as _re
+
+    ps1 = (FLOW.parent / "dreampage.ps1").read_text(encoding="utf-8-sig")
+    # @{ Name = 'flow' ... Modes = @('book', 'preview') ... }
+    windows = {}
+    for block in _re.finditer(
+            r"Name\s*=\s*'([^']+)'\s*\r?\n\s*Modes\s*=\s*@\(([^)]*)\)", ps1):
+        name = block.group(1)
+        modes = tuple(sorted(_re.findall(r"'([^']+)'", block.group(2))))
+        windows[name] = modes
+
+    sys.path.insert(0, str(FLOW.parent / "tools"))
+    import dreampage as supervisor
+
+    linux = {s["name"]: tuple(sorted(s["modes"])) for s in supervisor.SERVICES}
+
+    # `tunnel` er Windows-tjenesten for en cloudflared som kjoerer i en ANNEN
+    # Cloudflare-konto, installert som en Windows-tjeneste. Den har ingen
+    # motstykke paa Linux, og det er et bevisst valg - ikke en forglemmelse.
+    windows.pop("tunnel", None)
+
+    assert set(windows) == set(linux), (
+        f"supervisorene kjenner ulike tjenester.\n"
+        f"  bare i dreampage.ps1:      {sorted(set(windows) - set(linux))}\n"
+        f"  bare i tools/dreampage.py: {sorted(set(linux) - set(windows))}")
+    for name in sorted(windows):
+        assert windows[name] == linux[name], (
+            f"{name}: dreampage.ps1 sier {windows[name]}, "
+            f"tools/dreampage.py sier {linux[name]}")
+
+    # Og de to som ALDRI skal kjoere paa en preview-PC: to Telegram-pollere
+    # paa samme token spiser hverandres oppdateringer, og en preview-PC har
+    # ingen ordre aa lage produktbilder av.
+    for name in ("dp_bot", "mockup"):
+        assert linux[name] == ("book",), (name, linux[name])
+
+    # Og filteret maa faktisk virke, ikke bare staa i tabellen.
+    with preview_mode(sb):
+        running = {s["name"] for s in supervisor.services_for_mode()}
+    assert "dp_bot" not in running and "mockup" not in running, running
+    assert "comfyui" in running and "flow" in running, running
+
+    # ComfyUI-argumentene skal peke paa DENNE rotas mapper. Det er hele
+    # grunnen til at DreamPage-image aldri redigeres: vi endrer ComfyUI ved
+    # aa gi den andre stier, ikke ved aa endre filene dens.
+    argv = supervisor.comfy_argv()
+    for flag in ("--output-directory", "--input-directory", "--temp-directory"):
+        assert flag in argv, argv
+        mappe = argv[argv.index(flag) + 1]
+        assert str(mappe).startswith(str(supervisor.ROOT)), (flag, mappe)
+    assert str(supervisor.IMAGE) in " ".join(argv), argv
+
+
+@test
+def test_ingenting_hardkoder_windows(sb: Sandbox) -> None:
+    """tools/check_portability.py skal ikke finne noe - og den maa VIRKE.
+
+    Uten den andre halvdelen er dette en test som alltid gaar gjennom: en
+    sjekk som ikke kan feile, sjekker ingenting. Derfor gis den en sti med
+    feil bokstav, og den skal se den.
+    """
+    from pathlib import Path as _Path
+    sys.path.insert(0, str(FLOW.parent / "tools"))
+    import check_portability as CP
+
+    # Virker case-sjekken i det hele tatt? Windows aapner `GEORGIA.ttf` selv
+    # om fila heter `Georgia.ttf`; Linux gjoer det ikke. Det er den eneste
+    # feilklassen her som er HELT usynlig paa maskinen som trykker boeker.
+    font = FLOW / "text" / "nb" / "Georgia.ttf"
+    if font.is_file():
+        assert CP._case_exact(font), font
+        assert not CP._case_exact(_Path(str(font).replace("Georgia", "GEORGIA")))
+
+    assert not CP.hardcoded_paths(), CP.hardcoded_paths()[:5]
+    assert not CP.hardcoded_in_config(), CP.hardcoded_in_config()[:5]
+    assert not CP.windows_only_api(), CP.windows_only_api()[:5]
 
 
 def main() -> int:

@@ -11,7 +11,9 @@
 # installasjonen. En ny maskin som installerer noe annet, kjorer noe annet -
 # og forskjellen viser seg foerst i en bok som er trykt.
 #
-# Python 3.10 (C:\Users\<bruker>\AppData\Local\Programs\Python\Python310).
+# Python 3.10. Paa Windows: C:\Users\<bruker>\AppData\Local\Programs\
+# Python\Python310. Paa Linux: et venv i treet (.venv/), som dreampage.sh
+# finner selv - se docs/SETUP-LINUX.md.
 # IKKE 3.11+: drive_upload.py haandterer HTTP 308 fra Google sin
 # resumable-opplasting selv, fordi 3.11 sin HTTPRedirectHandler folger 308
 # automatisk og da forsvinner Range-headeren. Koden har en _NoRedirect-opener

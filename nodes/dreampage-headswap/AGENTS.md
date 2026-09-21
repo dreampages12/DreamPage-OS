@@ -1,5 +1,11 @@
 # User requirements — 2026-09-12
 
+**Updated 2026-09-21:** the user explicitly selected **Klein 9B** for training.
+4B is retired as a training target. Do not train, select, download or silently fall
+back to 4B. The configured default is the existing standard/distilled Klein 9B;
+BASE 9B is a distinct explicit variant, not an automatic substitution. The rules
+below about photorealism and explicit dataset approval remain unchanged.
+
 Read `docs/WORKLOG.md` and inspect current files before continuing another agent's work.
 
 The user explicitly requires **only photorealistic images in the training dataset**.

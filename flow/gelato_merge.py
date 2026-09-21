@@ -51,10 +51,15 @@ from datetime import datetime, timezone
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 import dp_secrets  # noqa: E402
-STATE_DIR = "C:/DreamPage-OS/state/gelato_drafts"
-CONFIG_PATH = "C:/DreamPage-OS/config/merge_orders.json"
+
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+STATE_DIR = under("state/gelato_drafts")
+CONFIG_PATH = under("config/merge_orders.json")
 LOCK_PATH = os.path.join(STATE_DIR, ".merge.lock")
-LOG_PATH = "C:/DreamPage-OS/state/gelato_merge.log"
+LOG_PATH = under("state/gelato_merge.log")
 
 # Standardverdier. config/merge_orders.json kan overstyre alt sammen, slik at
 # du kan skru funksjonen av uten aa rore n8n eller denne fila.

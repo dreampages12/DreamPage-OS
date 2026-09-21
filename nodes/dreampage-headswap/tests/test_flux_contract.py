@@ -17,6 +17,7 @@ from unittest.mock import patch
 import torch
 
 from dreampage_headswap.backbones.flux_klein import FluxKleinBackbone
+from dreampage_headswap.model_target import ARCHITECTURE, KLEIN_BASE_9B
 from dreampage_headswap.dreamface import DreamFaceEncoder
 from dreampage_headswap.types import GeometryCondition, SwapCondition
 
@@ -109,21 +110,20 @@ class FluxLoadingContractTests(unittest.TestCase):
         if distilled is not None:
             index["is_distilled"] = distilled
         (folder / "model_index.json").write_text(json.dumps(index))
-        (folder / "transformer" / "config.json").write_text(json.dumps({
-            "joint_attention_dim": 7680, "in_channels": 128, "guidance_embeds": False}))
+        (folder / "transformer" / "config.json").write_text(json.dumps(ARCHITECTURE))
         return folder
 
-    def test_omitted_distilled_defaults_to_base_then_requires_provenance(self):
+    def test_explicit_9b_requires_provenance(self):
         with tempfile.TemporaryDirectory() as directory:
-            folder = self.snapshot(directory)
+            folder = self.snapshot(directory, distilled=True)
             with self.assertRaisesRegex(ValueError, "dreampage_provenance"):
                 FluxKleinBackbone.from_local_pretrained(folder)
 
-    def test_distilled_snapshot_refused(self):
+    def test_distilled_snapshot_refused_for_explicit_base_target(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = self.snapshot(directory, distilled=True)
-            with self.assertRaisesRegex(ValueError, "is_distilled=false"):
-                FluxKleinBackbone.from_local_pretrained(folder)
+            with self.assertRaisesRegex(ValueError, "is_distilled"):
+                FluxKleinBackbone.from_local_pretrained(folder, model_id=KLEIN_BASE_9B)
 
 
 @unittest.skipUnless(FLUX2_AVAILABLE, FLUX2_REASON + "; run the isolated FLUX contract environment")
@@ -132,7 +132,7 @@ class RealFluxContractTests(unittest.TestCase):
         torch.set_num_threads(2)
         self.pipeline = make_real_tiny_pipeline()
         self.backbone = FluxKleinBackbone(self.pipeline, identity_dim=16, structure_dim=8,
-                                          adapter_width=16, prompt_max_sequence_length=16)
+                                          adapter_width=16, prompt_max_sequence_length=16, text_guidance_scale=4.0)
         self.encoder = DreamFaceEncoder(dim=16, structure_dim=8, token_grid=2)
 
     def test_real_qwen3_prompt_extraction(self):

@@ -158,6 +158,35 @@ def send(text: str, log=None, timeout: int = 30) -> dict:
     return result
 
 
+def _is_preview() -> bool:
+    try:
+        import config as flow_config
+        return flow_config.mode() == "preview"
+    except Exception:                                 # noqa: BLE001
+        return False
+
+
+def _report_preview_failure(job_key: str, error: str, log=None) -> None:
+    """Statusfila for en feilet PREVIEW-jobb. No-op i bokmodus.
+
+    Ligger her, og ikke i preview-pipelinen, fordi et steg som feiler
+    avbryter pipelinen - da kjoerer ingen senere steg. job_failed er det ENE
+    stedet alle feilende jobber uansett kommer forbi.
+
+    Svelger alt. En rapportering som blir feilen er en verre feil, og denne
+    kalles fra en except-gren der et unntak ville spist RabbitMQ-ack-en.
+    """
+    try:
+        import config as flow_config
+        if flow_config.mode() != "preview":
+            return
+        import preview_sink
+        preview_sink.report_failed(job_key, error, log)
+    except Exception as exc:                          # noqa: BLE001
+        if log:
+            log.warn(f"kunne ikke skrive failed-status for {job_key}: {exc}")
+
+
 def job_failed(job_key: str, job: dict, error: str, kind: str,
                step: str | None, permanent: bool, log=None) -> dict:
     """Varselet som mangler i dag: en ordre stoppet.
@@ -169,15 +198,26 @@ def job_failed(job_key: str, job: dict, error: str, kind: str,
                        ikke bedre av aa vente. Noen maa rette aarsaken.
       permanent=False  systemfeil. Den kan vaere lagt tilbake paa koen og
                        forsoekt paa nytt, eller gitt opp etter tre forsoek.
+
+    I PREVIEW-modus gjoer den ÉN ting til foerst: skriver `failed` i
+    jobbens statusfil. Uten det ville frontenden staatt og pollet en
+    `processing` som aldri ble noe, og kunden sett en spinner for alltid -
+    samme stillhet som ordre 1517, bare foran en betalende kunde i stedet
+    for bak en operatoer.
     """
+    _report_preview_failure(job_key, error, log)
     child = job.get("child_name") or "?"
     book = job.get("book_slug") or "?"
-    head = ("ORDREN ER STOPPET og starter ikke av seg selv."
-            if permanent else "Ordren feilet.")
+    # Ordet betyr noe: i PREVIEW-modus finnes det ingen ordre og ingen
+    # betaling, og en operatoer som leser "ORDREN ER STOPPET" ville begynt
+    # aa lete etter en kunde som venter paa en bok.
+    what = "FORHAANDSVISNINGEN" if _is_preview() else "ORDREN"
+    head = (f"{what} ER STOPPET og starter ikke av seg selv."
+            if permanent else f"{what.capitalize()} feilet.")
     lines = [
         f"❌ {head}",
         "",
-        f"Ordre:  {job_key}",
+        f"Jobb:   {job_key}",
         f"Barn:   {child}",
         f"Bok:    {book}",
         f"Steg:   {step or '?'}",

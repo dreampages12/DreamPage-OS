@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from paths import BOOKS, INPUT, OUTPUT  # noqa: E402
+from paths import BOOKS, INPUT, OUTPUT, resolve_str  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from book_titles import (  # noqa: E402
@@ -120,13 +120,50 @@ def resolve_slug(payload: dict) -> str:
     return slug
 
 
+# Noeklene i books/<slug>/config.json som inneholder en FILSTI.
+#
+# `comfyOutputPrefix` staar med vilje IKKE her: den er en relativ prefiks
+# ("dyreparken/orders") som settes sammen med output/ lenger nede, og aa
+# gjoere den absolutt ville brutt hver eneste filename_prefix.
+CONFIG_PATH_KEYS = ("textScript", "prepareScript", "orderBasePath")
+
+
+def _resolve_config_paths(config: dict) -> dict:
+    """Gjoer configens stier gyldige paa DENNE maskinen.
+
+    De 28 bokfilene er fulle av absolutte stier som starter med
+    `C:/DreamPage-OS/`. Det var riktig da alt bare fantes paa én
+    Windows-maskin. Paa en Linux-server finnes ikke den disken, og hver
+    eneste sti ville pekt i tomme luften - tekstscriptet, prepare-scriptet og
+    ordremappa.
+
+    Aa skrive om 435 stier i 30 configfiler ville vaert en diff ingen kan
+    lese, paa filer som styrer trykk. I stedet oversettes de naar de LESES:
+    det som laa under den gamle roten, ligger under denne roten. Paa Windows
+    er de to det samme, saa dette er en identitet og ingenting endrer seg -
+    se paths.resolve().
+
+    Det gjoer ogsaa at nye oppfoeringer kan skrives relativt
+    ("flow/text/nb/x.py"), og det er formen de skal ha.
+    """
+    out = dict(config)
+    for key in CONFIG_PATH_KEYS:
+        if out.get(key):
+            out[key] = resolve_str(out[key])
+    scripts = out.get("textScripts")
+    if isinstance(scripts, dict):
+        out["textScripts"] = {lang: (resolve_str(p) if p else p)
+                              for lang, p in scripts.items()}
+    return out
+
+
 def load_config(slug: str) -> dict:
     """books/<slug>/config.json. utf-8-sig fordi filene har BOM."""
     path = BOOKS / slug / "config.json"
     if not path.is_file():
         raise JobError(f"fant ingen config.json for bok {slug!r} ({path})")
     with open(path, encoding="utf-8-sig") as fh:
-        return json.load(fh)
+        return _resolve_config_paths(json.load(fh))
 
 
 def select_text_script(config: dict, script_language: str) -> str:

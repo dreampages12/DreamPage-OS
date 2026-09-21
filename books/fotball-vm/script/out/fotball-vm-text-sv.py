@@ -8,6 +8,7 @@ import shutil
 
 import filecmp
 import os
+import sys
 import re
 import argparse
 from typing import List, Dict, Any
@@ -24,6 +25,46 @@ from dream_pdf_guard import (
 EXPECTED_INNER_PAGES = 30
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# DP_ROOT er DreamPage-roten: mappa som inneholder books/. Den ble regnet ut
+# som dirname(SCRIPT_ROOT_DIR) den gangen tekstscriptene laa i <rot>/script/<sprak>.
+# Etter flyttingen til <rot>/flow/text/<sprak> ga det <rot>/flow, og ALLE
+# bok-spesifikke sider (dreampage-first, blank-back) falt stille tilbake til
+# den delte gamle malen. Vi gaar oppover til vi finner books/ i stedet, slik at
+# en ny flytting ikke kan gjenskape feilen.
+def _dp_find_root(start):
+    cur = os.path.abspath(start)
+    while True:
+        if os.path.isdir(os.path.join(cur, "books")):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            raise RuntimeError(
+                "Fant ingen DreamPage-rot (mappe med books/) over " + str(start))
+        cur = parent
+
+
+DP_ROOT = _dp_find_root(SCRIPT_DIR)
+
+
+def _dp_first(book_page):
+    """Bokas EGEN aapningsside, med den delte gamle malen som naudloesning.
+
+    Fallbacket var stille foer: ordre 1506 ble bygget om med den delte malen
+    uten at noe sa fra, fordi stien til bokas egen side pekte feil. Naa ropes
+    det - en ombygging som skriver dette skal ikke sendes til trykk.
+    """
+    if os.path.exists(book_page):
+        return book_page
+    shared = os.path.join(SCRIPT_DIR, "dreampage-first.png")
+    sys.stderr.write(
+        "[FEIL] Bokas egen aapningsside mangler: %s\n"
+        "[FEIL] Faller tilbake til den DELTE gamle malen: %s\n"
+        "[FEIL] Denne boka skal IKKE trykkes med den sida.\n"
+        % (book_page, shared))
+    return shared
+
+
 SCRIPT_LOCALES = {"nb", "nn", "en-US", "en-GB", "sv"}
 SCRIPT_LOCALE = os.path.basename(SCRIPT_DIR) if os.path.basename(SCRIPT_DIR) in SCRIPT_LOCALES else "nb"
 SCRIPT_ROOT_DIR = os.path.dirname(SCRIPT_DIR) if SCRIPT_LOCALE in SCRIPT_LOCALES else SCRIPT_DIR
@@ -561,17 +602,15 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
         {
             "filename": "01(fotball-vm).png",
             "type": "inner",
-            "side": "right",
+            "side": "left",
             "blocks": [{
                 "text": p(
-                    "Noen dager etter den store finalen var (Navn) tilbake på treningsbanen.\n"
-                    "Alt så helt vanlig ut, helt til treneren ropte ham bort.\n"
-                    "I hånden holdt han en konvolutt med et lite norsk flagg på.\n"
-                    "(Navn) kjente hjertet begynne å hamre."
+                    "Etter den store kampen får (Navn) en helt spesiell beskjed.\n"
+                    "En speider har sett ham spille, og nå er han invitert til landslagssamling."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "treneren", "konvolutt", "flagg"],
+                "highlights": [child_name, "speider", "landslagssamling"],
             }],
         },
 
@@ -582,14 +621,12 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "En landslagsspeider hadde sittet på tribunen under finalen.\n"
-                    "Han hadde sett at (Navn) kjempet videre da kampen ble vanskelig.\n"
-                    "Nå ville de se ham igjen.\n"
-                    "(Navn) åpnet brevet: han var invitert til landslagssamling."
+                    "På samlingen trener (Navn) sammen med mange andre flinke barn.\n"
+                    "Han gir alt han har og håper at treneren legger merke til ham."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "landslagsspeider", "brevet", "landslagssamling"],
+                "highlights": [child_name, "samlingen", "treneren"],
             }],
         },
 
@@ -597,17 +634,16 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
         {
             "filename": "03(fotball-vm).png",
             "type": "inner",
-            "side": "left",
+            "side": "right",
             "blocks": [{
                 "text": p(
-                    "På samlingen møtte (Navn) spillere han aldri hadde sett før.\n"
-                    "De var raske. Veldig raske.\n"
-                    "Allerede i den første øvelsen mistet han ballen. Så én gang til.\n"
-                    "Men han husket hva treneren hadde lært ham, og jaget ballen igjen."
+                    "Til slutt leser treneren opp navnene på spillerne som skal til VM.\n"
+                    "Så hører (Navn) sitt eget navn.\n"
+                    "Han skal spille for Norge!"
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "raske", "ballen", "treneren"],
+                "highlights": [child_name, "treneren", "VM", "Norge"],
             }],
         },
 
@@ -618,14 +654,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "På slutten av dagen leste landslagstreneren opp navnene.\n"
-                    "Det var bare én plass igjen på laget som skulle til VM.\n"
-                    "(Navn) hørte mange andre bli valgt, men ikke sitt eget navn.\n"
-                    "Så løftet treneren blikket, og alt ble stille."
+                    "VM starter mot Tyskland, men kampen blir tøff.\n"
+                    "Da dommeren blåser av, står det 2–0 til Tyskland.\n"
+                    "Det var ikke starten Norge hadde håpet på."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "landslagstreneren", "plass", "stille"],
+                "highlights": [child_name, "Tyskland", "dommeren", "Norge"],
             }],
         },
 
@@ -636,14 +671,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "«(Navn)!»\n"
-                    "Lagkameratene jublet, og (Navn) fikk landslagsdrakten i hendene.\n"
-                    "På brystet satt det norske flagget.\n"
-                    "Nå var det ikke lenger bare trening. Han skulle spille for Norge."
+                    "(Navn) sitter stille i garderoben etter tapet.\n"
+                    "For første gang begynner han å lure på om VM-eventyret kan være over\n"
+                    "før det egentlig har begynt."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "landslagsdrakten", "flagget", "Norge"],
+                "highlights": [child_name, "garderoben", "VM-eventyret"],
             }],
         },
 
@@ -654,14 +688,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Flyet landet i vertslandet.\n"
-                    "Gjennom vinduet så (Navn) enorme stadioner og flagg fra hele verden.\n"
-                    "På hotellet fikk laget vite hvem de skulle møte først:\n"
-                    "et av verdens beste lag. VM hadde begynt."
+                    "Treneren samler laget.\n"
+                    "«Én kamp bestemmer ikke hvem vi er.»\n"
+                    "(Navn) ser på lagkameratene. De er ikke ferdige ennå."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "vertslandet", "stadioner", "verden"],
+                "highlights": [child_name, "Treneren", "lagkameratene"],
             }],
         },
 
@@ -672,14 +705,12 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Den første kampen gikk ikke slik Norge håpet.\n"
-                    "Motstanderne scoret. Så scoret de igjen.\n"
-                    "(Navn) mistet ballen i et viktig angrep, og kampen endte med tap.\n"
-                    "I garderoben sa nesten ingen noe."
+                    "Norge kjemper seg videre, og neste store utfordring er Brasil.\n"
+                    "(Navn) løper ut på banen klar for en av de største kampene i livet sitt."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "Norge", "ballen", "garderoben"],
+                "highlights": [child_name, "Norge", "Brasil", "banen"],
             }],
         },
 
@@ -690,14 +721,12 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "«Dere er ikke her fordi alt alltid går perfekt,» sa treneren.\n"
-                    "«Dere er her fordi dere reiser dere igjen.»\n"
-                    "(Navn) tenkte på sitt aller første bomskudd hjemme på banen.\n"
-                    "Så reiste han seg: «Da vinner vi den neste.»"
+                    "Brasil presser hardt, men (Navn) nekter å gi seg.\n"
+                    "Han dribler mellom motstanderne og leter etter åpningen som Norge trenger."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "treneren", "bomskudd", "neste"],
+                "highlights": [child_name, "Brasil", "dribler", "Norge"],
             }],
         },
 
@@ -708,32 +737,41 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Den neste kampen ble vill. Norge lå under, og tiden rant ut.\n"
-                    "(Navn) fikk ballen på kanten og driblet forbi den ene, så den andre.\n"
-                    "Han kunne skutt selv, men foran mål sto en lagkamerat helt alene.\n"
-                    "(Navn) sendte ballen inn. Mål! 1–1."
+                    "Da sluttsignalet går, bryter jubelen løs.\n"
+                    "Norge har slått Brasil!\n"
+                    "Nå er de bare én kamp unna VM-finalen."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "vill", "driblet", "lagkamerat"],
+                "highlights": [child_name, "jubelen", "Brasil", "VM-finalen"],
             }],
         },
 
-        # Side 10
+        # Side 10 - venstre kvadrat (comfy-headswap, ingen tekst)
         {
-            "filename": "10(fotball-vm).png",
+            "filename": "10(fotball-vm-left).png",
             "type": "inner",
+            "square": True,
+            "blocks": [],
+        },
+
+        # Side 10 - hoyre kvadrat (statisk bilde, baerer teksten)
+        {
+            "filename": "10(fotball-vm-right).png",
+            "type": "inner",
+            "square": True,
             "side": "right",
+            "no_split": True,
+            "box_frac": [0.07, 0.76, 0.93, 0.98],
             "blocks": [{
                 "text": p(
-                    "Det sto bare sekunder igjen da ballen havnet hos (Navn) igjen.\n"
-                    "Tribunen reiste seg.\n"
-                    "Han løp mot mål mens forsvarerne kom fra begge sider.\n"
-                    "(Navn) så målet og trakk foten bakover."
+                    "I semifinalen mot Argentina står det 2–2 mot slutten.\n"
+                    "Så får (Navn) sjansen.\n"
+                    "Han scorer — og sender Norge til VM-finalen."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "sekunder", "Tribunen", "målet"],
+                "highlights": [child_name, "semifinalen", "Argentina", "VM-finalen"],
             }],
         },
 
@@ -744,43 +782,30 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "left",
             "blocks": [{
                 "text": p(
-                    "Skuddet suste mot hjørnet. Keeperen strakte seg, men rakk den ikke.\n"
-                    "MÅL! Lagkameratene stormet mot (Navn), og Norge var videre.\n"
-                    "Så vant de den neste kampen. Og den neste.\n"
-                    "Helt til bare fire lag var igjen i hele verden."
+                    "(Navn) står i spillertunnelen og ser ut mot stadion.\n"
+                    "På den andre siden venter Spania.\n"
+                    "Bare én kamp står mellom Norge og VM-pokalen."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "Keeperen", "videre", "verden"],
+                "highlights": [child_name, "spillertunnelen", "Spania", "VM-pokalen"],
             }],
         },
 
-        # Side 12 - venstre kvadrat (comfy-headswap, ingen tekst)
+        # Side 12
         {
-            "filename": "12(fotball-vm-left).png",
+            "filename": "12(fotball-vm).png",
             "type": "inner",
-            "square": True,
-            "blocks": [],
-        },
-
-        # Side 12 - hoyre kvadrat (statisk bilde, baerer teksten)
-        {
-            "filename": "12(fotball-vm-right).png",
-            "type": "inner",
-            "square": True,
-            "side": "right",
-            "no_split": True,
-            "box_frac": [0.07, 0.66, 0.93, 0.98],
+            "side": "left",
             "blocks": [{
                 "text": p(
-                    "Semifinalen ble den tøffeste kampen (Navn) hadde spilt.\n"
-                    "Det sto uavgjort helt mot slutten da motstanderne kom alene mot mål.\n"
-                    "(Navn) spurtet tilbake og klarte akkurat å stoppe angrepet.\n"
-                    "Sekunder senere kontret Norge, og lagkameraten scoret. Finale!"
+                    "Finalen blir jevn og nervepirrende.\n"
+                    "Begge lag får sjanser, men ingen klarer å avgjøre.\n"
+                    "Mot slutten står det fortsatt 1–1."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "Semifinalen", "spurtet", "Finale"],
+                "highlights": [child_name, "Finalen", "sjanser"],
             }],
         },
 
@@ -788,17 +813,17 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
         {
             "filename": "13(fotball-vm).png",
             "type": "inner",
-            "side": "left",
+            "side": "right",
             "blocks": [{
                 "text": p(
-                    "Finaledagen kom, og (Navn) sto i spillertunnelen.\n"
-                    "Foran ham lå den største stadion han noen gang hadde sett.\n"
-                    "Ved siden av banen glitret VM-pokalen under lysene.\n"
-                    "Én kamp. Det var alt som gjensto. Så åpnet dørene seg."
+                    "Så får (Navn) ballen.\n"
+                    "Han ser åpningen, skyter —\n"
+                    "MÅL!\n"
+                    "Norge leder 2–1."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "spillertunnelen", "stadion", "lysene"],
+                "highlights": [child_name, "ballen", "MÅL", "Norge"],
             }],
         },
 
@@ -809,14 +834,13 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "side": "right",
             "blocks": [{
                 "text": p(
-                    "Finalen sto 1–1 da Norge fikk frispark like utenfor sekstenmeteren.\n"
-                    "(Navn) la ballen til rette, løp frem og skjøt. Rett i krysset!\n"
-                    "Da dommeren blåste av, løftet lagkameratene (Navn) opp i konfettien.\n"
-                    "Han hadde vært fotballstjerne. Nå var han verdensmester."
+                    "Sluttsignalet går.\n"
+                    "Norge har slått Spania 2–1 og vunnet Fotball-VM!\n"
+                    "(Navn) jubler med laget. Han er verdensmester."
                 ),
                 "font_size": 30,
                 "color": "#FFFFFF",
-                "highlights": [child_name, "frispark", "krysset", "verdensmester"],
+                "highlights": [child_name, "Sluttsignalet", "Fotball-VM", "verdensmester"],
             }],
         },
 
@@ -828,7 +852,7 @@ def build_pages(child_name: str) -> List[Dict[str, Any]]:
             "blocks": [{
                 "text": p(
                     "Denne boken handler om å reise seg igjen. Om lagånd, om nerver før en stor kamp, og om å tro på seg selv mens hele verden ser på.\n"
-                    "Etter finalen hjemme får (Navn) et brev han knapt tør å åpne: landslaget vil ha ham med til VM.\n"
+                    "Etter den store kampen hjemme får (Navn) beskjeden han knapt tør å tro på: landslaget vil ha ham med til VM.\n"
                     "En varm og spennende fortelling om vennskap, mot og drømmer som blir større enn man tør å håpe på.\n"
                     "For den største forskjellen mellom en drøm og et eventyr er at noen tør å fortsette når det blir vanskelig."
                 ),
@@ -1287,13 +1311,12 @@ def render_page(page: Dict[str, Any], base_dir: str, out_dir: str) -> List[str]:
 
 
 FOTBALL_DREAMPAGE_FIRST = os.path.join(
-    os.path.dirname(SCRIPT_ROOT_DIR), "books", "fotball-vm",
-    "dreampage-first(fotball-vm).png"
+    DP_ROOT, "books", "fotball-vm", "dreampage-first(fotball-vm).png"
 )
 if not os.path.exists(FOTBALL_DREAMPAGE_FIRST):
     # Boka har ingen egen intro-side enda - bruk bok 1 sin.
     FOTBALL_DREAMPAGE_FIRST = os.path.join(
-        os.path.dirname(SCRIPT_ROOT_DIR), "books", "fotballstjernen",
+        DP_ROOT, "books", "fotballstjernen",
         "dreampage-first(fotballstjernen).png"
     )
 DREAMPAGE_FIRST_TAGLINE = "Tryckt med omtanke för\nkvalitet"
@@ -1304,7 +1327,7 @@ def render_dreampage_first(child_name: str, out_dir: str) -> str:
     Legger en personlig dedikasjon på den hvite øvre halvdelen av dreampage-first.png
     og lagrer resultatet til out_dir. Returnerer stien til den renderte filen.
     """
-    src = FOTBALL_DREAMPAGE_FIRST if os.path.exists(FOTBALL_DREAMPAGE_FIRST) else os.path.join(SCRIPT_DIR, "dreampage-first.png")
+    src = _dp_first(FOTBALL_DREAMPAGE_FIRST)
     dst = os.path.join(out_dir, "dreampage-first-rendered.png")
 
     img = Image.open(src).convert("RGBA")
@@ -1419,7 +1442,7 @@ def process_book(base_dir: str, out_dir: str, child_name: str, cover_type: str, 
 
     # Legg til dreampage-first.png først og blank-back.png bakerst (ingen Lastpage - det finnes ingen bok 3 i serien enda).
     # Disse er enkelt-sider (4096x4096) som ikke skal splittes – bare inkluderes direkte.
-    dreampage_first = FOTBALL_DREAMPAGE_FIRST if os.path.exists(FOTBALL_DREAMPAGE_FIRST) else os.path.join(SCRIPT_DIR, "dreampage-first.png")
+    dreampage_first = _dp_first(FOTBALL_DREAMPAGE_FIRST)
     # Ordrens egen blank-back.png (f.eks. "Fortsett eventyret"-siden med QR)
     # har forrang; den delte malen er fallback for boker uten oppsalg.
     blank_back = os.path.join(base_dir, "blank-back.png")
@@ -1623,21 +1646,21 @@ def main():
 # --- DreamPage translated text table (sv) ---
 _DREAMPAGE_TRANSLATIONS = {
   '{name} vinner\nFotball-VM': '{name} vinner\nFotbolls-VM',
-  'Noen dager etter den store finalen var {name} tilbake på treningsbanen.\nAlt så helt vanlig ut, helt til treneren ropte ham bort.\nI hånden holdt han en konvolutt med et lite norsk flagg på.\n{name} kjente hjertet begynne å hamre.': 'Några dagar efter den stora finalen var {name} tillbaka på träningsplanen.\nAllt såg helt vanligt ut, ända tills tränaren ropade på honom.\nI handen höll han ett kuvert med en liten norsk flagga på.\n{name} kände hjärtat börja bulta.',
-  'En landslagsspeider hadde sittet på tribunen under finalen.\nHan hadde sett at {name} kjempet videre da kampen ble vanskelig.\nNå ville de se ham igjen.\n{name} åpnet brevet: han var invitert til landslagssamling.': 'En landslagsscout hade suttit på läktaren under finalen.\nHan hade sett att {name} fortsatte kämpa när matchen blev svår.\nNu ville de se honom igen.\n{name} öppnade brevet: han var kallad till landslagssamling.',
-  'På samlingen møtte {name} spillere han aldri hadde sett før.\nDe var raske. Veldig raske.\nAllerede i den første øvelsen mistet han ballen. Så én gang til.\nMen han husket hva treneren hadde lært ham, og jaget ballen igjen.': 'På samlingen mötte {name} spelare han aldrig hade sett förut.\nDe var snabba. Väldigt snabba.\nRedan i den första övningen tappade han bollen. Sedan en gång till.\nMen han mindes vad tränaren hade lärt honom, och jagade bollen igen.',
-  'På slutten av dagen leste landslagstreneren opp navnene.\nDet var bare én plass igjen på laget som skulle til VM.\n{name} hørte mange andre bli valgt, men ikke sitt eget navn.\nSå løftet treneren blikket, og alt ble stille.': 'I slutet av dagen läste landslagstränaren upp namnen.\nDet fanns bara en plats kvar i laget som skulle till VM.\n{name} hörde många andra bli uttagna, men inte sitt eget namn.\nSedan lyfte tränaren blicken, och allt blev tyst.',
-  '«{name}!»\nLagkameratene jublet, og {name} fikk landslagsdrakten i hendene.\nPå brystet satt det norske flagget.\nNå var det ikke lenger bare trening. Han skulle spille for Norge.': '"{name}!"\nLagkamraterna jublade, och {name} fick landslagströjan i händerna.\nPå bröstet satt den norska flaggan.\nNu var det inte längre bara träning. Han skulle spela för Norge.',
-  'Flyet landet i vertslandet.\nGjennom vinduet så {name} enorme stadioner og flagg fra hele verden.\nPå hotellet fikk laget vite hvem de skulle møte først:\net av verdens beste lag. VM hadde begynt.': 'Planet landade i värdlandet.\nGenom fönstret såg {name} enorma arenor och flaggor från hela världen.\nPå hotellet fick laget veta vilka de skulle möta först:\nett av världens bästa lag. VM hade börjat.',
-  'Den første kampen gikk ikke slik Norge håpet.\nMotstanderne scoret. Så scoret de igjen.\n{name} mistet ballen i et viktig angrep, og kampen endte med tap.\nI garderoben sa nesten ingen noe.': 'Den första matchen gick inte som Norge hoppats.\nMotståndarna gjorde mål. Sedan gjorde de mål igen.\n{name} tappade bollen i ett viktigt anfall, och matchen slutade med förlust.\nI omklädningsrummet sa nästan ingen ett ord.',
-  '«Dere er ikke her fordi alt alltid går perfekt,» sa treneren.\n«Dere er her fordi dere reiser dere igjen.»\n{name} tenkte på sitt aller første bomskudd hjemme på banen.\nSå reiste han seg: «Da vinner vi den neste.»': '"Ni är inte här för att allt alltid går perfekt," sa tränaren.\n"Ni är här för att ni reser er igen."\n{name} tänkte på sitt allra första bomskott hemma på planen.\nSedan reste han sig: "Då vinner vi nästa."',
-  'Den neste kampen ble vill. Norge lå under, og tiden rant ut.\n{name} fikk ballen på kanten og driblet forbi den ene, så den andre.\nHan kunne skutt selv, men foran mål sto en lagkamerat helt alene.\n{name} sendte ballen inn. Mål! 1–1.': 'Nästa match blev vild. Norge låg under, och tiden rann ut.\n{name} fick bollen på kanten och dribblade förbi den ene, sedan den andre.\nHan kunde ha skjutit själv, men framför mål stod en lagkamrat helt ensam.\n{name} spelade in bollen. Mål! 1-1.',
-  'Det sto bare sekunder igjen da ballen havnet hos {name} igjen.\nTribunen reiste seg.\nHan løp mot mål mens forsvarerne kom fra begge sider.\n{name} så målet og trakk foten bakover.': 'Det återstod bara sekunder när bollen hamnade hos {name} igen.\nLäktaren reste sig.\nHan sprang mot mål medan försvararna kom från båda håll.\n{name} såg målet och drog foten bakåt.',
-  'Skuddet suste mot hjørnet. Keeperen strakte seg, men rakk den ikke.\nMÅL! Lagkameratene stormet mot {name}, og Norge var videre.\nSå vant de den neste kampen. Og den neste.\nHelt til bare fire lag var igjen i hele verden.': 'Skottet susade mot hörnet. Målvakten sträckte sig, men nådde det inte.\nMÅL! Lagkamraterna stormade mot {name}, och Norge var vidare.\nSedan vann de nästa match. Och nästa.\nÄnda tills bara fyra lag återstod i hela världen.',
-  'Semifinalen ble den tøffeste kampen {name} hadde spilt.\nDet sto uavgjort helt mot slutten da motstanderne kom alene mot mål.\n{name} spurtet tilbake og klarte akkurat å stoppe angrepet.\nSekunder senere kontret Norge, og lagkameraten scoret. Finale!': 'Semifinalen blev den tuffaste match {name} någonsin spelat.\nDet stod oavgjort ända till slutet när motståndarna kom ensamma mot mål.\n{name} spurtade tillbaka och lyckades precis stoppa anfallet.\nSekunder senare kontrade Norge, och lagkamraten gjorde mål. Final!',
-  'Finaledagen kom, og {name} sto i spillertunnelen.\nForan ham lå den største stadion han noen gang hadde sett.\nVed siden av banen glitret VM-pokalen under lysene.\nÉn kamp. Det var alt som gjensto. Så åpnet dørene seg.': 'Finaldagen kom, och {name} stod i spelartunneln.\nFramför honom låg den största arena han någonsin sett.\nBredvid planen glittrade VM-pokalen under strålkastarna.\nEn match. Det var allt som återstod. Sedan öppnades dörrarna.',
-  'Finalen sto 1–1 da Norge fikk frispark like utenfor sekstenmeteren.\n{name} la ballen til rette, løp frem og skjøt. Rett i krysset!\nDa dommeren blåste av, løftet lagkameratene {name} opp i konfettien.\nHan hadde vært fotballstjerne. Nå var han verdensmester.': 'Finalen stod 1-1 när Norge fick frispark strax utanför straffområdet.\n{name} lade bollen till rätta, sprang fram och sköt. Rakt i krysset!\nNär domaren blåste av lyfte lagkamraterna {name} upp i konfettin.\nHan hade blivit fotbollsstjärna. Nu var han världsmästare.',
-  'Denne boken handler om å reise seg igjen. Om lagånd, om nerver før en stor kamp, og om å tro på seg selv mens hele verden ser på.\nEtter finalen hjemme får {name} et brev han knapt tør å åpne: landslaget vil ha ham med til VM.\nEn varm og spennende fortelling om vennskap, mot og drømmer som blir større enn man tør å håpe på.\nFor den største forskjellen mellom en drøm og et eventyr er at noen tør å fortsette når det blir vanskelig.': 'Den här boken handlar om att resa sig igen. Om laganda, om nerver före en stor match, och om att tro på sig själv medan hela världen ser på.\nEfter finalen hemma får {name} ett brev han knappt vågar öppna: landslaget vill ha med honom till VM.\nEn varm och spännande berättelse om vänskap, mod och drömmar som blir större än man vågar hoppas på.\nFör den största skillnaden mellan en dröm och ett äventyr är att någon vågar fortsätta när det blir svårt.',
+  'Etter den store kampen får {name} en helt spesiell beskjed.\nEn speider har sett ham spille, og nå er han invitert til landslagssamling.': 'Efter den stora matchen får {name} ett alldeles särskilt besked.\nEn scout har sett honom spela, och nu är han kallad till landslagssamling.',
+  'På samlingen trener {name} sammen med mange andre flinke barn.\nHan gir alt han har og håper at treneren legger merke til ham.': 'På samlingen tränar {name} tillsammans med många andra duktiga barn.\nHan ger allt han har och hoppas att tränaren ska lägga märke till honom.',
+  'Til slutt leser treneren opp navnene på spillerne som skal til VM.\nSå hører {name} sitt eget navn.\nHan skal spille for Norge!': 'Till slut läser tränaren upp namnen på spelarna som ska till VM.\nSå hör {name} sitt eget namn.\nHan ska spela för Norge!',
+  'VM starter mot Tyskland, men kampen blir tøff.\nDa dommeren blåser av, står det 2–0 til Tyskland.\nDet var ikke starten Norge hadde håpet på.': 'VM börjar mot Tyskland, men matchen blir tuff.\nNär domaren blåser av står det 2–0 till Tyskland.\nDet var inte starten Norge hade hoppats på.',
+  '{name} sitter stille i garderoben etter tapet.\nFor første gang begynner han å lure på om VM-eventyret kan være over\nfør det egentlig har begynt.': '{name} sitter tyst i omklädningsrummet efter förlusten.\nFör första gången börjar han undra om VM-äventyret kan vara över\ninnan det egentligen har börjat.',
+  'Treneren samler laget.\n«Én kamp bestemmer ikke hvem vi er.»\n{name} ser på lagkameratene. De er ikke ferdige ennå.': 'Tränaren samlar laget.\n«En match avgör inte vilka vi är.»\n{name} ser på lagkamraterna. De är inte färdiga än.',
+  'Norge kjemper seg videre, og neste store utfordring er Brasil.\n{name} løper ut på banen klar for en av de største kampene i livet sitt.': 'Norge kämpar sig vidare, och nästa stora utmaning är Brasilien.\n{name} springer ut på planen redo för en av de största matcherna i sitt liv.',
+  'Brasil presser hardt, men {name} nekter å gi seg.\nHan dribler mellom motstanderne og leter etter åpningen som Norge trenger.': 'Brasilien pressar hårt, men {name} vägrar att ge sig.\nHan dribblar mellan motståndarna och letar efter öppningen som Norge behöver.',
+  'Da sluttsignalet går, bryter jubelen løs.\nNorge har slått Brasil!\nNå er de bare én kamp unna VM-finalen.': 'När slutsignalen går bryter jublet loss.\nNorge har slagit Brasilien!\nNu är de bara en match från VM-finalen.',
+  'I semifinalen mot Argentina står det 2–2 mot slutten.\nSå får {name} sjansen.\nHan scorer — og sender Norge til VM-finalen.': 'I semifinalen mot Argentina står det 2–2 mot slutet.\nSå får {name} chansen.\nHan gör mål — och skickar Norge till VM-finalen.',
+  '{name} står i spillertunnelen og ser ut mot stadion.\nPå den andre siden venter Spania.\nBare én kamp står mellom Norge og VM-pokalen.': '{name} står i spelartunneln och ser ut mot arenan.\nPå andra sidan väntar Spanien.\nBara en match står mellan Norge och VM-pokalen.',
+  'Finalen blir jevn og nervepirrende.\nBegge lag får sjanser, men ingen klarer å avgjøre.\nMot slutten står det fortsatt 1–1.': 'Finalen blir jämn och nervkittlande.\nBåda lagen får chanser, men ingen lyckas avgöra.\nMot slutet står det fortfarande 1–1.',
+  'Så får {name} ballen.\nHan ser åpningen, skyter —\nMÅL!\nNorge leder 2–1.': 'Så får {name} bollen.\nHan ser öppningen, skjuter —\nMÅL!\nNorge leder 2–1.',
+  'Sluttsignalet går.\nNorge har slått Spania 2–1 og vunnet Fotball-VM!\n{name} jubler med laget. Han er verdensmester.': 'Slutsignalen går.\nNorge har slagit Spanien 2–1 och vunnit Fotbolls-VM!\n{name} jublar med laget. Han är världsmästare.',
+  'Denne boken handler om å reise seg igjen. Om lagånd, om nerver før en stor kamp, og om å tro på seg selv mens hele verden ser på.\nEtter den store kampen hjemme får {name} beskjeden han knapt tør å tro på: landslaget vil ha ham med til VM.\nEn varm og spennende fortelling om vennskap, mot og drømmer som blir større enn man tør å håpe på.\nFor den største forskjellen mellom en drøm og et eventyr er at noen tør å fortsette når det blir vanskelig.': 'Den här boken handlar om att resa sig igen. Om laganda, om nerver före en stor match, och om att tro på sig själv medan hela världen tittar på.\nEfter den stora matchen hemma får {name} beskedet han knappt vågar tro på: landslaget vill ha honom med till VM.\nEn varm och spännande berättelse om vänskap, mod och drömmar som blir större än man vågar hoppas på.\nFör den största skillnaden mellan en dröm och ett äventyr är att någon vågar fortsätta när det blir svårt.',
 }
 _DREAMPAGE_ORIGINAL_BUILD_PAGES = build_pages
 

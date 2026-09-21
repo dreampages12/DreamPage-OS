@@ -1,0 +1,23 @@
+[Unit]
+# Hvert 5. minutt, og ved innlogging - samme kadens som scheduled task
+# "DreamPage ensure" paa Windows. Tallet er ikke tilfeldig: det er kort nok
+# til at en doed worker ikke rekker aa la ordrene hope seg opp i RabbitMQ, og
+# langt nok til at vaktmesteren kan kjoere for alltid uten aa koste noe.
+Description=DreamPage OS - kjoer vaktmesteren hvert 5. minutt
+Documentation=file:%h/DreamPage-OS/docs/SETUP-LINUX.md
+
+[Timer]
+# 2 minutter etter innlogging: gi nettverk, GPU-driver og Tailscale tid til
+# aa komme opp foerst. Starter vi ComfyUI foer GPU-en er klar, feiler den paa
+# en maate som ser ut som en modellfeil.
+OnStartupSec=2min
+OnUnitActiveSec=5min
+# Gikk maskinen glipp av en kjoering (den var av), kjoer med en gang den er
+# oppe igjen. Uten dette ville en maskin som vaakner staa i inntil fem
+# minutter med alt nede.
+Persistent=true
+AccuracySec=30s
+Unit=dreampage-ensure.service
+
+[Install]
+WantedBy=timers.target

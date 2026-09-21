@@ -1,0 +1,13 @@
+{
+  "_": "Britisk engelsk. Gjenbruker de SAMME malfilene som \"en\" - bare teksten og logomappa er en annen, og det finnes ingen egen uk-logomappe. Skal en bok ha britisk ordlyd i tittelen, legges den i config/preview/books/uk/<slug>.json; ellers brukes den engelske.",
+  "title_lang": "en",
+  "logo_locale": "en-GB",
+  "_script_language": "Hvilket av bokas tekstscript historien hentes fra i et innerside-preview (textScripts i books/<slug>/config.json). Side 7 i forhaandsvisningen skal vaere side 7 i boka - paa det spraaket kunden faar den trykt.",
+  "script_language": "en-GB",
+  "aliases": {
+    "regnbuens-skatt": "regnbuen"
+  },
+  "defaults": {
+    "workflow_api": ""
+  }
+}

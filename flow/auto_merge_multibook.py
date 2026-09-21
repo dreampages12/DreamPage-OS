@@ -40,9 +40,14 @@ import sys
 import time
 import traceback
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-DRAFT_STATE_DIR = r"C:\DreamPage-OS\state\gelato_drafts"
+DRAFT_STATE_DIR = under("state/gelato_drafts")
 LOCK_PATH = os.path.join(DRAFT_STATE_DIR, ".automerge.lock")
 LOCK_STALE_SECONDS = 900
 

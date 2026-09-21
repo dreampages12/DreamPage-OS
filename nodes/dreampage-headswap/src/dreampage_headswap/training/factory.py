@@ -21,8 +21,10 @@ def build_model(config: dict, device: str | torch.device = "cpu") -> DreamSwap:
     if spec.get("backbone", "tiny") == "tiny":
         backbone = TinyFlowBackbone(identity_dim, structure_dim, int(spec.get("width", 32)))
     elif spec["backbone"] == "flux_klein":
+        from ..model_target import training_target, PROFILES
+        training_target({"model": spec})
         if not spec.get("weights_path"):
-            raise ValueError("model.weights_path must identify a reviewed complete local BASE 4B Diffusers snapshot")
+            raise ValueError("model.weights_path must identify a reviewed local Klein 9B Diffusers snapshot")
         dtype_name = spec.get("dtype", "bf16")
         if dtype_name not in ("bf16", "fp32"):
             raise ValueError("FLUX model.dtype must be bf16 or fp32")
@@ -30,7 +32,8 @@ def build_model(config: dict, device: str | torch.device = "cpu") -> DreamSwap:
         backbone = FluxKleinBackbone.from_local_pretrained(spec["weights_path"], identity_dim=identity_dim,
                     structure_dim=structure_dim, device=str(device), dtype=dtype,
                     train_transformer=bool(spec.get("train_transformer", False)),
-                    text_guidance_scale=float(spec.get("text_guidance_scale", 4.0)),
+                    model_id=spec["model_id"], transformer_checkpoint=spec.get("transformer_checkpoint"),
+                    text_guidance_scale=float(spec.get("text_guidance_scale", PROFILES[spec["model_id"]]["guidance"])),
                     gradient_checkpointing=bool(spec.get("gradient_checkpointing", True)))
         encoder.to(dtype=dtype)
     else:

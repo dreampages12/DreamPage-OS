@@ -11,14 +11,25 @@ Bruk:
 """
 from __future__ import annotations
 
+import os
+
 import argparse
 import json
 import sqlite3
 import sys
 
-DB = r"C:\Users\tobia\.n8n\database.sqlite"
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import dp_platform  # noqa: E402
+from paths import under  # noqa: E402
+
+# n8n sin SQLite. Stien utledes av hjemmemappa, ikke av et brukernavn:
+# `Path.home()` gir C:\Users\<bruker>\.n8n paa Windows og ~/.n8n paa
+# Linux. DP_N8N_HOME overstyrer. Se flow/dp_platform.py.
+DB = str(dp_platform.n8n_db())
 TESTER_ID = "1BqeGkXyjbUBsR9N"
-TITLES_CONFIG = "C:/DreamPage-OS/config/next_book_titles.json"
+TITLES_CONFIG = under("config/next_book_titles.json")
 
 FRACTIONAL = {"top_margin", "line_spacing", "logo_scale"}
 ABSOLUTE = {"font_small", "font_large"}
@@ -26,10 +37,10 @@ ABSOLUTE = {"font_small", "font_large"}
 
 def template_width(slug: str) -> int:
     from PIL import Image
-    with open(f"C:/DreamPage-OS/books/{slug}/config.json", encoding="utf-8-sig") as fh:
+    with open(under(f"books/{slug}/config.json"), encoding="utf-8-sig") as fh:
         cfg = json.load(fh)
     front = next(p for p in cfg["pages"] if p["page_key"] == "page00")
-    with Image.open("C:/DreamPage-OS/input/" + front["template_image"]) as im:
+    with Image.open(under("input/") + front["template_image"]) as im:
         return im.width
 
 

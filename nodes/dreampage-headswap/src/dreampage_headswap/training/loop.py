@@ -125,6 +125,8 @@ def _epoch_batches(dataset, batch_size: int, seed: int, epoch: int, rank: int, w
 
 
 def train(config: dict, resume: str | None = None, providers=None) -> dict:
+    from .experiments import authorize_training
+    authorize_training(config, "swap")
     settings = config.get("training", {})
     rank, world = int(os.getenv("RANK", "0")), int(os.getenv("WORLD_SIZE", "1"))
     local_rank = int(os.getenv("LOCAL_RANK", "0"))
@@ -150,6 +152,8 @@ def train(config: dict, resume: str | None = None, providers=None) -> dict:
     if precision == "bf16" and device.type == "cuda" and not torch.cuda.is_bf16_supported():
         raise ValueError("Selected GPU does not support bf16")
     model = build_model(config, device)
+    from ..utils.checkpoint import initialize_weights
+    initialize_weights(model, config, component="swap", resume=resume)
     dtype = next(model.encoder.parameters()).dtype
     data = config["dataset"]
     dataset = PairDataset(data["manifest"], resolution=int(data.get("resolution", 64)), split="train",
@@ -256,7 +260,9 @@ def train(config: dict, resume: str | None = None, providers=None) -> dict:
             history.append(accumulated_metrics["total"])
             if rank == 0 and (step == 1 or step % int(settings.get("log_every", 20)) == 0):
                 print(json.dumps({"step": step, **accumulated_metrics}), flush=True)
-            metadata = {"world_size": world, "rank": rank, "synthetic": all(row.get("synthetic") is True for row in dataset.rows),
+            metadata = {"component": "dreamswap", "world_size": world, "rank": rank,
+                        "training_identity_ids": sorted(set(settings.get("training_identity_lineage", [])) | {r["identity_id"] for r in dataset.rows}),
+                        "synthetic": all(row.get("synthetic") is True for row in dataset.rows),
                         "dataset_fingerprint": fingerprint}
             if validation_dataset is not None and (step == max_steps or (validation_every and step % validation_every == 0)):
                 # Rank 0 only, on the unwrapped module: no collective runs inside validation,
@@ -302,8 +308,10 @@ def main():
     parser = argparse.ArgumentParser(description="Train DreamSwap on explicitly permitted pair manifests")
     parser.add_argument("--config", required=True)
     parser.add_argument("--resume")
+    parser.add_argument("--approval", required=True)
     args = parser.parse_args()
     config = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
+    config.setdefault("training", {})["dataset_approval"] = args.approval
     print(json.dumps(train(config, args.resume), indent=2))
 
 

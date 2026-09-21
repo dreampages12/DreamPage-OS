@@ -1,6 +1,6 @@
-"""Optional FLUX.2 Klein BASE 4B bridge, based on upstream Diffusers APIs.
+"""FLUX.2 Klein 9B bridge, based on upstream Diffusers APIs.
 
-No downloads and no fallback to the installed ComfyUI 9B checkpoint. Upstream
+No implicit downloads, variant switching or 4B fallback. Upstream
 pipeline is used for loading, VAE mechanics and schedules, never its no-grad
 generation call. The actual transformer forward remains differentiable.
 """
@@ -19,20 +19,22 @@ from torch.nn import functional as F
 from .base import GenerativeBackbone
 from ..conditioning import IdentityAdapter, age_features, conditioning_tokens
 from ..types import IdentityCondition, SwapCondition
+from ..model_target import KLEIN_9B, PROFILES, validate_snapshot_config, inspect_single_file
 
 
 class FluxKleinBackbone(GenerativeBackbone):
-    MODEL_ID = "black-forest-labs/FLUX.2-klein-base-4B"
+    MODEL_ID = KLEIN_9B
 
     def __init__(self, pipeline, identity_dim: int = 64, structure_dim: int = 16,
                  adapter_width: int = 64, train_transformer: bool = False,
                  prompt: str = "Realistic head matching the supplied identity, template pose, expression and lighting.",
-                 text_guidance_scale: float = 4.0, prompt_max_sequence_length: int = 512,
+                 text_guidance_scale: float = 1.0, prompt_max_sequence_length: int = 512,
                  prompt_embeddings: torch.Tensor | None = None,
                  negative_prompt_embeddings: torch.Tensor | None = None):
         super().__init__()
-        if getattr(pipeline.config, "is_distilled", False):
-            raise ValueError("DreamSwap requires the undistilled Klein BASE 4B checkpoint")
+        self.is_distilled = bool(getattr(pipeline.config, "is_distilled", False))
+        if self.is_distilled and text_guidance_scale != 1.0:
+            raise ValueError("Distilled Klein 9B requires text_guidance_scale=1")
         if not math.isfinite(text_guidance_scale) or text_guidance_scale < 1:
             raise ValueError("text_guidance_scale must be finite and >=1 (1 disables BASE text CFG)")
         self.text_guidance_scale = float(text_guidance_scale)
@@ -65,6 +67,8 @@ class FluxKleinBackbone(GenerativeBackbone):
                 text_device = next(pipeline.text_encoder.parameters()).device
                 prompt_embeddings, _ = pipeline.encode_prompt(prompt=prompt, device=text_device,
                                                         max_sequence_length=prompt_max_sequence_length)
+            if negative_prompt_embeddings is None and text_guidance_scale == 1:
+                negative_prompt_embeddings = prompt_embeddings.clone()
             if negative_prompt_embeddings is None:
                 if pipeline.text_encoder is None:
                     if text_guidance_scale > 1:
@@ -88,34 +92,55 @@ class FluxKleinBackbone(GenerativeBackbone):
     def from_local_pretrained(cls, model_path: str | Path, *, identity_dim: int = 64,
                               structure_dim: int = 16, device: str = "cuda",
                               dtype: torch.dtype = torch.bfloat16, train_transformer: bool = False,
-                              gradient_checkpointing: bool = True, **kwargs) -> "FluxKleinBackbone":
+                              gradient_checkpointing: bool = True, model_id: str = KLEIN_9B,
+                              transformer_checkpoint: str | None = None, **kwargs) -> "FluxKleinBackbone":
         path = Path(model_path).expanduser().resolve()
         if not path.is_dir() or not (path / "model_index.json").is_file():
-            raise FileNotFoundError("Supply a complete local Diffusers snapshot of " + cls.MODEL_ID +
-                                    "; standalone ComfyUI safetensors/GGUF files are not accepted. No download attempted.")
+            raise FileNotFoundError("Supply a reviewed local Diffusers component snapshot of " + model_id +
+                                    "; the ComfyUI transformer alone lacks text encoder/tokenizer/scheduler components. No download attempted.")
         index = json.loads((path / "model_index.json").read_text(encoding="utf-8"))
         transformer_config = json.loads((path / "transformer" / "config.json").read_text(encoding="utf-8"))
-        if index.get("is_distilled", False) is not False or index.get("_class_name") != "Flux2KleinPipeline":
-            raise ValueError("Local snapshot must declare Flux2KleinPipeline with is_distilled=false")
-        if transformer_config.get("joint_attention_dim") != 7680 or transformer_config.get("in_channels") != 128:
-            raise ValueError("Local config does not match audited Klein BASE 4B (7680 text width, 128 latent channels)")
-        if transformer_config.get("guidance_embeds") is not False:
-            raise ValueError("Unsupported FLUX variant; audited Klein BASE 4B has guidance_embeds=false")
-        # Explicit provenance prevents treating a renamed/repacked 9B checkpoint as an approved source.
+        validate_snapshot_config(index, transformer_config, model_id)
         provenance_path = path / "dreampage_provenance.json"
         if not provenance_path.is_file():
-            raise ValueError("Add dreampage_provenance.json to the local snapshot with model_id, revision, license='Apache-2.0', "
-                             "and commercial_use_reviewed=true after checking source provenance; see docs/TRAINING.md")
+            raise ValueError("9B snapshot mangler dreampage_provenance.json med verifiserte kildefiler")
         provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
-        if (provenance.get("model_id") != cls.MODEL_ID or not provenance.get("revision") or
-                provenance.get("license") != "Apache-2.0" or provenance.get("commercial_use_reviewed") is not True):
-            raise ValueError("Local model provenance must identify audited BASE 4B, revision and reviewed Apache-2.0 source")
+        if (provenance.get("model_id") != model_id or not provenance.get("revision") or
+                not provenance.get("license") or provenance.get("commercial_use_reviewed") is not True):
+            raise ValueError("9B kilde, revisjon og bruksrettigheter maa vaere gjennomgaatt; 4B-kvitteringer gjelder ikke")
+        from ..data.records import file_sha256
+        entries = provenance.get("files", [])
+        required_configs = {"model_index.json", "transformer/config.json", "scheduler/scheduler_config.json",
+                            "vae/config.json", "text_encoder/config.json"}
+        declared = {entry["path"] for entry in entries}
+        if not required_configs <= declared or not all(any(p.startswith(folder + "/") and p.endswith(".safetensors")
+                for p in declared) for folder in ("vae", "text_encoder")):
+            raise ValueError("9B snapshot-kvitteringen mangler komponenter")
+        if not transformer_checkpoint and not any(p.startswith("transformer/") and p.endswith(".safetensors") for p in declared):
+            raise ValueError("9B transformer-vekter mangler i snapshot")
+        for entry in entries:
+            asset = (path / entry["path"]).resolve()
+            if (not asset.is_relative_to(path) or not asset.is_file() or asset.stat().st_size != entry["bytes"]
+                    or file_sha256(asset) != entry["sha256"]):
+                raise ValueError("Snapshot-fil mangler eller er endret: " + entry["path"])
+        overrides = {}
+        if transformer_checkpoint:
+            inspect_single_file(transformer_checkpoint)
+            receipt = provenance.get("transformer_source", {})
+            if receipt.get("sha256") != file_sha256(transformer_checkpoint):
+                raise ValueError("Den lokale 9B-transformeren mangler matchende kildehash")
         try:
             from diffusers import Flux2KleinPipeline
         except (ImportError, RuntimeError) as exc:
             raise RuntimeError("Optional Flux bridge requires Diffusers with Flux2KleinPipeline and compatible Transformers. "
                                "Use a separate reviewed training environment; do not upgrade ComfyUI in place.") from exc
-        pipeline = Flux2KleinPipeline.from_pretrained(str(path), torch_dtype=dtype, local_files_only=True)
+        if transformer_checkpoint:
+            from diffusers import Flux2Transformer2DModel
+            overrides["transformer"] = Flux2Transformer2DModel.from_single_file(
+                transformer_checkpoint, config=str(path), subfolder="transformer",
+                torch_dtype=dtype, local_files_only=True)
+        pipeline = Flux2KleinPipeline.from_pretrained(str(path), torch_dtype=dtype, local_files_only=True, **overrides)
+        kwargs.setdefault("text_guidance_scale", PROFILES[model_id]["guidance"])
         required = {"hidden_states", "encoder_hidden_states", "timestep", "img_ids", "txt_ids"}
         if not required.issubset(inspect.signature(pipeline.transformer.forward).parameters):
             raise RuntimeError("Installed Diffusers transformer API differs from the audited Flux2 API")

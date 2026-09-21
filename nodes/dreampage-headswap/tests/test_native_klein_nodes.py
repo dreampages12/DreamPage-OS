@@ -522,6 +522,22 @@ class PhotoLoaderContracts(unittest.TestCase):
         Image.new("RGB", (8, 8), "green").save(second)
         self.assertNotEqual(initial, self.node.IS_CHANGED(second.name))
 
+    def test_mpo_selects_explicit_frame_without_batch_reduction(self):
+        path = self.directory / "mobile.jpg"
+        Image.new("RGB", (16, 16), "red").save(
+            path, format="MPO", save_all=True,
+            append_images=[Image.new("RGB", (16, 16), "blue")])
+        for index in (0, 1):
+            loaded, _, report = self.node.load(path.name, mpo_frame=index)["result"]
+            with Image.open(path) as source:
+                source.seek(index)
+                expected = np.asarray(source.convert("RGB"))
+            np.testing.assert_array_equal((loaded[0].numpy() * 255).astype(np.uint8), expected)
+            self.assertEqual(json.loads(report)["selected_frame"], index)
+            self.assertEqual(json.loads(report)["embedded_frames"], 2)
+        with self.assertRaisesRegex(ValueError, "frame does not exist"):
+            self.node.load(path.name, mpo_frame=2)
+
     def test_jpeg_and_png_full_scene_finish_standard_saveimage_preserves_exterior(self):
         rng = np.random.default_rng(1119)
         pixels = rng.integers(0, 256, (128, 192, 3), dtype=np.uint8)

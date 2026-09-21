@@ -923,5 +923,28 @@
       "logo_scale": 0.72,
       "logo_x_offset": 0
     }
+  },
+  "gullballen": {
+    "nb": {
+      "source": "manual:gullballen",
+      "title_node": "gullballen",
+      "line1_suffix": "vinner",
+      "line2": "",
+      "line2_image": "C:/DreamPage-OS/flow/text/logo/nb/gullballen-logo-nb.png",
+      "font_small": 80,
+      "font_large": 120,
+      "gold": "255, 255, 255",
+      "shadow": "15, 35, 65",
+      "top_margin": 0.02,
+      "line_spacing": 0.035,
+      "logo_scale": 0.55,
+      "logo_x_offset": 0,
+      "font_small_path": "C:/DreamPage-OS/flow/pre/Trebuchet MS Bold.ttf",
+      "font_large_path": "C:/DreamPage-OS/flow/pre/PlayfairDisplay.ttf",
+      "glow_color": "12, 28, 55",
+      "glow_opacity": 0.85,
+      "glow_radius_scale": 0.55,
+      "logo_shadow_opacity": 70
+    }
   }
 }

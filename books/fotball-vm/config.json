@@ -73,8 +73,8 @@
     },
     {
       "page_key": "page10",
-      "template_image": "10(fotball-vm).png",
-      "mask_image": "10-headmask(fotball-vm).png",
+      "template_image": "10(fotball-vm-left).png",
+      "mask_image": "10-headmask(fotball-vm-left).png",
       "face_expression": "noytral"
     },
     {
@@ -85,8 +85,8 @@
     },
     {
       "page_key": "page12",
-      "template_image": "12(fotball-vm-left).png",
-      "mask_image": "12-headmask(fotball-vm-left).png",
+      "template_image": "12(fotball-vm).png",
+      "mask_image": "12-headmask(fotball-vm).png",
       "face_expression": "noytral"
     },
     {

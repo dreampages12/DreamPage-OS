@@ -13,16 +13,26 @@ er vi ferdige. Ellers ville "1221" blitt tolket som indeks 1221.
 """
 from __future__ import annotations
 
+import os
+
 import argparse
 import json
 import sqlite3
 import subprocess
 import sys
 
-DB = r"C:\Users\tobia\.n8n\database.sqlite"
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+import dp_platform  # noqa: E402
+
+# n8n sin SQLite. Utledes av hjemmemappa, ikke av et brukernavn - se
+# flow/dp_platform.py. DP_N8N_HOME overstyrer.
+DB = str(dp_platform.n8n_db())
 QUEUE = "dreampage-jobs"
 CRED_ID = "paSMyl2k9MRFBE0P"
-CRED_TOOL = "C:/DreamPage-OS/flow/n8n_credential.py"
+CRED_TOOL = under("flow/n8n_credential.py")
 
 
 def load_payload(execution_id: int) -> dict:

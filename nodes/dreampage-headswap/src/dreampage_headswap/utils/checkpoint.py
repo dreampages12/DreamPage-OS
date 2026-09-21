@@ -8,6 +8,33 @@ import numpy as np
 import torch
 
 
+def initialize_weights(model, config, *, component, resume=None, teacher_sha256=None):
+    """Videreutvikling arver bare vekter. Ny optimizer, scheduler og RNG beholdes."""
+    settings = config.get("training", {})
+    path = settings.get("initialize_from")
+    if not path or resume:
+        return
+    from ..data.records import file_sha256
+    if not settings.get("initialize_sha256") or file_sha256(path) != settings["initialize_sha256"]:
+        raise ValueError("Forelder-checkpoint mangler verifisert hash eller er endret")
+    state = torch.load(path, map_location="cpu", weights_only=False)
+    meta = state.get("metadata", {})
+    if state.get("format_version") != 1 or meta.get("synthetic") is not False or state.get("step", 0) < 1:
+        raise ValueError("Bare registrerte checkpoints fra ikke-syntetiske data kan videreutvikles")
+    expected = {"identity": "dreamface_encoder", "refiner": "dreamrefine_system"}
+    if (component in expected and meta.get("component") != expected[component]) or (
+            component == "swap" and meta.get("component") not in (None, "dreamswap")):
+        raise ValueError("Forelder-checkpoint har feil komponent")
+    # Arkitektur og frosne vekter maa vaere de samme; hyperparametre/datasett kan endres.
+    if state.get("config", {}).get("model") != config.get("model"):
+        raise ValueError("Videreutvikling krever samme modellkonfigurasjon")
+    if component == "refiner" and meta.get("teacher", {}).get("checkpoint_sha256") != teacher_sha256:
+        raise ValueError("Videreutvikling kan ikke bytte den frosne laerermodellen")
+    model.load_state_dict(state["model"], strict=True)
+    settings["training_identity_lineage"] = sorted(set(settings.get("training_identity_lineage", []))
+                                                  | set(meta.get("training_identity_ids", [])))
+
+
 def seed_everything(seed: int) -> None:
     random.seed(seed)
     np.random.seed(seed)

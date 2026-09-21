@@ -41,8 +41,51 @@ import analyse_photo as AP
 import build_face_variants as BFV
 import straighten as ST
 
+# DreamPage-roten finnes ved aa gaa OPPOVER til mappa som har books/ og flow/
+# i seg - ikke ved aa telle mapper med dirname(dirname(...)), som brekker
+# neste gang noe flyttes, og ikke ved aa hardkode en diskbokstav, som ikke
+# finnes paa en Linux-server. Samme moenster som _dp_find_root i
+# tekstscriptene; se CLAUDE.md.
+def _dp_find_root(start):
+    cur = os.path.dirname(os.path.abspath(start))
+    while True:
+        if (os.path.isdir(os.path.join(cur, "books"))
+                and os.path.isdir(os.path.join(cur, "flow"))):
+            return cur
+        parent = os.path.dirname(cur)
+        if parent == cur:
+            raise RuntimeError("fant ingen DreamPage-rot (mappe med books/ "
+                               "og flow/) over " + str(start))
+        cur = parent
+
+
+DP_ROOT = _dp_find_root(__file__)
+
+sys.path.insert(0, os.path.join(DP_ROOT, "flow"))
+import dp_platform  # noqa: E402
+
+
+def under(*parts):
+    """En sti under DreamPage-roten, med plattformens separator.
+
+    "/" i argumentet deles opp, slik at under("state/reprint") gir
+    noeyaktig samme streng som under("state", "reprint") - og samme
+    streng som flow/paths.py sin under(). Uten oppdelingen ville
+    Windows fatt en sti med begge separatorer i seg. Den virker, men
+    den er ikke den samme strengen koden hadde foer.
+    """
+    bits = [b for part in parts for b in str(part).split("/") if b]
+    return os.path.join(DP_ROOT, *bits)
+
 WORKFLOW = os.path.join(HERE, "workflows", "barnebilde.json")
-CLAUDE = os.environ.get("DP_CLAUDE_BIN", "C:/Users/tobia/.local/bin/claude.exe")
+# Claude-binaeren. DP_CLAUDE_BIN vinner; ellers letes den opp paa PATH,
+# som er der den ligger paa en Linux-server. Den gamle standarden var
+# stien i ÉN brukers hjemmemappe paa ÉN Windows-maskin.
+CLAUDE = (os.environ.get("DP_CLAUDE_BIN")
+          or dp_platform.which("claude",
+                              os.path.expanduser("~/.local/bin/claude.exe"),
+                              os.path.expanduser("~/.local/bin/claude"))
+          or "claude")
 
 LOOK_PROMPT = """Look at the photo at {path}. It is a child photo a customer uploaded; only the child's HEAD will be cut out and placed into storybook illustrations.
 
@@ -179,7 +222,7 @@ def make(src, out_dir, use_ai=True, timeout=900, model=None):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("images", nargs="+")
-    ap.add_argument("--out", default="C:/DreamPage-OS/output/barnebilde")
+    ap.add_argument("--out", default=under("output/barnebilde"))
     ap.add_argument("--no-ai", action="store_true")
     ap.add_argument("--ai-model", default=None)
     ap.add_argument("--timeout", type=int, default=900)

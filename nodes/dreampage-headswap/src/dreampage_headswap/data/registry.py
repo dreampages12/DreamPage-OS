@@ -19,7 +19,7 @@ def create_registry(manifests, destination: str | Path, *, identity_manifest=Non
     paths = sorted({Path(path).resolve() for path in manifests})
     registry = {"schema_version": 1, "scope": "complete_declared_enrolled_corpus",
                 "identity_policy": "One resolved stable identity_id per person across every enrolled dataset",
-                "manifests": [{"path": os.path.relpath(path, destination.parent), "sha256": file_sha256(path)} for path in paths]}
+                "manifests": [{"path": Path(os.path.relpath(path, destination.parent)).as_posix(), "sha256": file_sha256(path)} for path in paths]}
     if identity_manifest is not None:
         registry["identity_manifest_sha256"] = file_sha256(identity_manifest)
     destination.parent.mkdir(parents=True, exist_ok=True)

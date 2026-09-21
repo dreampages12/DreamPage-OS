@@ -16,6 +16,12 @@ arithmetic, so no denoiser, VAE or refiner can drift them.
 
 ## Status
 
+**DreamPage OS (2026-09-21), Klein 9B target:** the canonical project is now `nodes/dreampage-headswap`.
+Setup, dataset intake and reusable fresh/resume/finetune runs are documented in
+[MODEL-TRAINING.md](../../docs/MODEL-TRAINING.md). All 16 DreamPage nodes are registered
+in the current ComfyUI; `LAB-DreamPage-HeadSwap.json` is the separate test workflow.
+No dataset has been approved and no real training has started.
+
 **Current user requirements (2026-09-12):** use only photorealistic images in training and
 obtain the user's approval of the exact dataset before any pretraining, fine-tuning or optimizer
 test. The commands below describe capabilities; they are not permission to start training.
@@ -32,7 +38,7 @@ mean what they say, and nothing in this repository has reached them yet.
 | Dataset enrollment, pairing, leakage audit | yes | yes | not applicable | not applicable |
 | DreamFace encoder and its own trainer | yes | yes | no | no |
 | DreamSwap with the tiny CPU backbone | yes | yes | synthetic overfit only | no |
-| DreamSwap with FLUX Klein BASE 4B | yes | loading refusals here, adapter contract in an isolated environment | no | no |
+| DreamSwap with FLUX Klein 9B | yes | loading refusals here, adapter contract in an isolated environment | no | no |
 | DreamRefine and its separate frozen-teacher trainer | yes | gradients, exact resume, provenance, bundled inference | synthetic mechanics only | no |
 | Training loop, checkpoints, exact resume | yes | yes | not applicable | not applicable |
 | Held-out validation and best-checkpoint selection | yes | yes | not applicable | not applicable |
@@ -59,7 +65,8 @@ $env:PYTHONPATH = "src;."
 ```
 
 The FLUX backbone needs the optional extra, `pip install -e ".[flux]"`, plus a reviewed local
-BASE 4B snapshot. It is never downloaded automatically. See `docs/LICENSE_AUDIT.md`.
+Klein 9B component snapshot and the verified 9B transformer. See the current
+[9B setup guide](../../docs/MODEL-TRAINING.md); official component access is pending.
 
 ## Commands
 
@@ -181,7 +188,7 @@ python scripts/smoke_gpu.py --config runs/fixture-next/training_smoke.yaml --out
 
 On the RTX 3090 this executed three optimizer steps, validation, checkpoint loading and
 inference, with exactly zero changed outside-mask pixels. This is a small software test,
-not a memory or speed estimate for the real BASE 4B model.
+not a memory or speed estimate for the real 9B model.
 
 **Benchmark against the current production workflow.** The benchmark tool cannot generate an
 image. It compares results that were produced elsewhere and recorded with their provenance.

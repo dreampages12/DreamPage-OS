@@ -47,8 +47,13 @@ import dp_order                                                    # noqa: E402
 import regen_page                                                  # noqa: E402
 import reprint_order                                               # noqa: E402
 
+# Stien til DreamPage-roten utledes, den hardkodes ikke: koden kjoerer paa
+# Windows i dag og paa Linux paa nye maskiner. Se flow/paths.py.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from paths import under  # noqa: E402
+
 BOOKS_DIR = dp_order.BOOKS_DIR
-COMFY_INPUT = r"C:\DreamPage-OS\input"
+COMFY_INPUT = under("input")
 TEST_MARKER = "is_test"
 
 
@@ -198,7 +203,7 @@ def delete(order_id: str) -> list[str]:
                 prefix = json.load(fh).get("comfyOutputPrefix", slug + "/orders")
         except (OSError, json.JSONDecodeError):
             continue
-        out = os.path.join(r"C:\DreamPage-OS\output", prefix.replace("/", os.sep), order_id)
+        out = os.path.join(under("output"), prefix.replace("/", os.sep), order_id)
         if os.path.isdir(out):
             shutil.rmtree(out, ignore_errors=True)
             removed.append(out)

@@ -164,10 +164,10 @@ class Consumer:
             self._ack(tag)
             return
 
-        job_key = str(payload.get("job_key") or payload.get("order_id") or "").strip()
+        job_key = self._job_key(payload)
         if not job_key:
-            self.log.error("melding uten job_key og order_id - forkastes")
-            self.store.event("mq-bad-message", "mangler job_key/order_id")
+            self.log.error(f"melding uten {self._key_fields()} - forkastes")
+            self.store.event("mq-bad-message", f"mangler {self._key_fields()}")
             self._ack(tag)
             return
 
@@ -201,6 +201,29 @@ class Consumer:
             on_checkpoint=self._on_checkpoint,
             on_finished=self._on_finished,
         ))
+
+    @staticmethod
+    def _key_fields() -> str:
+        return ("job_id" if flow_config.mode() == "preview"
+                else "job_key og order_id")
+
+    @staticmethod
+    def _job_key(payload: dict) -> str:
+        """Noekkelen jobben lagres og logges under.
+
+        Bok og forhaandsvisning kaller den forskjellige ting, fordi de kommer
+        fra to forskjellige deler av nettbutikken: en bokordre har `job_key`
+        (`1411-b2`, fordi én WooCommerce-ordre kan inneholde flere boeker), en
+        forhaandsvisning har `job_id`.
+
+        Modusen bestemmer hvilken vi leser, og det er med vilje smalt: en
+        bok-PC som godtok `job_id` ville kunne plukke opp en preview-melding
+        som havnet paa feil koe og kjoert den gjennom HELE bokpipelinen -
+        PDF, Drive og et Gelato-utkast for en jobb som aldri var en ordre.
+        """
+        if flow_config.mode() == "preview":
+            return str(payload.get("job_id") or "").strip()
+        return str(payload.get("job_key") or payload.get("order_id") or "").strip()
 
     @staticmethod
     def _parse(body: bytes) -> dict:

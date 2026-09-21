@@ -1,0 +1,26 @@
+{
+  "slug": "gullballen",
+  "displayName": "Gullballen",
+  "_continuationOf": "fotball-vm",
+  "_status": "UFERDIG 20.09.2026: bare forsiden finnes. Boka brukes i dag KUN som neste-bok-forside (page99_next) paa siste innerside i Fotball VM. Den har ingen innersider, ingen tekstscript og ingen prepareScript, saa en ekte ordre paa gullballen stopper med vilje i validate_job. Legg inn resten foer boka legges ut for salg.",
+  "orderBasePath": "C:/DreamPage-OS/books/gullballen/orders",
+  "comfyOutputPrefix": "gullballen/orders",
+  "patchNodes": {
+    "template": "192",
+    "face": "194",
+    "output": "9",
+    "mask": "165"
+  },
+  "pages": [
+    {
+      "page_key": "page00",
+      "template_image": "forside(gullballen).png",
+      "mask_image": "forside-headmask(gullballen).png",
+      "face_expression": "noytral"
+    }
+  ],
+  "workflowApi": "workflow_api.json",
+  "workflowApis": {
+    "frontpage": "workflow_api.json"
+  }
+}
