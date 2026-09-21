@@ -1,7 +1,7 @@
 {
   "_": "Kjorekonfigurasjon for flow. Standardverdiene staar i flow/worker/config.py, med referansen til n8n-noden de kommer fra. Her staar BARE det som skal vaere annerledes.",
   "_mode": "HVA denne server-PC-en er til. 'book' = hele bokproduksjonen (koen dreampage-jobs, pipeline 'full', PDF -> Drive -> Gelato-utkast). 'preview' = forhaandsvisninger til nettbutikken (koen preview-jobs, pipeline 'preview', ett bilde -> Supabase + callback). Den avgjor TO ting og bare de to: hvilken koe konsumenten lytter paa, og hvilken pipeline runneren kjorer - se flow/worker/config.py. Verdien under sier hva DENNE maskinen er - ikke stol paa denne kommentaren, les den. Setter du 'book', begynner maskinen aa ta ekte, betalte ordre fra dreampage-jobs, og BARE EN maskin om gangen faar gjore det. Byttet virker foerst etter `dreampage.ps1 restart`.",
-  "mode": "preview",
+  "mode": "book",
   "comfy": {
     "_": "url leses av fire steder: paths.py, worker/config.py, dreampage.ps1 og regen_page.py. Standardverdiene for timeout og retry staar i flow/worker/config.py, med referansen til n8n-noden de kommer fra.",
     "_port": "8189 er den PERMANENTE porten, ikke en midlertidig omvei. Den ble valgt fordi en gammel, elevert ComfyUI fra C:\\ComfyUI eide 8188 uten aa se modellene - men det er ingen grunn til aa flytte tilbake naar den er borte: alt (paths.py, worker/config.py, dreampage.ps1, regen_page.py) leser url herfra, og et bytte er bare ny risiko for at noe annet tar porten. Er du usikker paa om du snakker med RIKTIG instans: GET /api/status -> image.is_dreampage_image og image.models_visible.",
